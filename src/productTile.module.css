@@ -1,0 +1,26 @@
+@import './App.css';
+
+div.product {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #fba800;
+    padding: var(--productGap);
+    width: var(--productWidth);
+}
+
+img.productImage {
+    width: 100%;
+}
+
+span.productDescription {
+    color: #5c5352;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+span.productPrice {
+    color: #5c5352;
+    font-size: 1.3rem;
+    font-weight: bold;
+}

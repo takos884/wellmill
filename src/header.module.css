@@ -1,0 +1,68 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding: 0;
+  height: 4rem;
+  background-color: #fba800;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  min-width: 85%;
+}
+
+.headerLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 264px;
+  background-color: #fff;
+  height: 100%;
+}
+
+.headerLogo img {
+  width: 200px;
+}
+
+.navItems {
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.navItem {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+div.loginButton {
+  border: 1px solid #fff;
+  padding: 0.1rem 2rem;
+  border-radius: 0.25rem;
+}
+
+.cart {
+  margin-top: 10px;
+}
+
+.cart img {
+  height: 2rem;
+}
+
+div.breadcrumbs {
+  width: 90%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 2rem;
+}
+
+div.breadcrumbs a:link,
+div.breadcrumbs a:visited,
+div.breadcrumbs a:hover,
+div.breadcrumbs a:active {
+  color: #af3e92;
+  text-decoration: none;
+}
