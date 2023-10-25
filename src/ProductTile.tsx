@@ -1,27 +1,31 @@
 import React from "react";
 import styles from './productTile.module.css'
+import { Link } from "react-router-dom";
 
-interface productData {
-    id: number,
-    description: string,
-    base_price: number,
-    tax_rate: number,
-    images: string[],
-}
+type Product = {
+    id: string;
+    description: string;
+    long_description: string;
+    base_price: number;
+    tax_rate: number;
+    images: string[];
+};
 
 interface ProductProps {
-    productData: productData;
+    Product: Product;
 }
 
-function Product({productData}: ProductProps) {
-    const taxIncludedPrice = Math.round(productData.base_price * (1+ productData.tax_rate))
+function ProductTile({Product}: ProductProps) {
+    const taxIncludedPrice = Math.round(Product.base_price * (1+ Product.tax_rate))
     return(
-        <div className={styles.product}>
-            <img className={styles.productImage} src={productData.images[0]} alt={`Product #${productData.id}`} />
-            <span className={styles.productDescription}>{productData.description}</span>
-            <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
-        </div>
+        <Link to={`/shop/${Product.id}`}>
+            <div className={styles.product}>
+                <img className={styles.productImage} src={Product.images[0]} alt={`Product #${Product.id}`} />
+                <span className={styles.productDescription}>{Product.description}</span>
+                <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
+            </div>
+        </Link>
     )
 }
 
-export default Product
+export default ProductTile

@@ -3,12 +3,14 @@ import useWPData from './useWPData';
 import './App.css';
 import styles from './shop.module.css'
 
+import { useProducts } from './ProductContext';
 import Header from './Header';
 import ProductTile from './ProductTile';
 
 function Shop() {
+  const { products, setProducts } = useProducts();
+
   const internalData = true
-  const [productList, setProductList] = useState<any[]>([]);
   const [data, loading, error] = useWPData(internalData ? 'fake_products_list' : 'products_list');
 
   const breadcrumbs = [
@@ -18,7 +20,7 @@ function Shop() {
 
   useEffect(() => {
     if (data && !loading && !error) {
-      setProductList(data);
+      setProducts(data);
     }
   }, [data, loading, error]);
 
@@ -31,11 +33,12 @@ function Shop() {
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
       <div className={styles.productGrid}>
-        {productList.map(product => (
+        {products?.map(product => (
           <div key={product.id}>
-            <ProductTile productData={{
+            <ProductTile Product={{
               id: product.id,
               description: product.description,
+              long_description: product.description,
               base_price: product.base_price,
               tax_rate: product.tax_rate,
               images: product.images,
