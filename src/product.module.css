@@ -122,3 +122,42 @@ div.productFaq > details > p {
     font-size: 1.2rem;
     margin-top: 0;
 }
+
+div.infoLinks {
+    display: flex;
+    width: 100%;
+    max-width: 80rem;
+    margin: 3rem 0;
+    justify-content: space-evenly;
+}
+
+button.infoLink {
+    font-size: 1.5rem;
+    font-weight: bold;
+    width: 18rem;
+    padding: 1rem 0;
+    background-color: transparent;
+    border: 1px solid #bbb;
+    color: #af3e92;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+button.infoLink:hover {
+    background-color: #af3e92;
+    color: #ffffff;
+}
+
+span.otherHeader {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fba800;
+}
+
+div.otherProductsGrid {
+    display: grid;
+    width: 90%;
+    max-width: 80rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}

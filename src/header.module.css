@@ -12,6 +12,7 @@
   margin-bottom: 1rem;
   width: 85%;
   max-width: 70rem;
+  z-index: 10;
 }
 
 /* How to remove the sticky header: */
@@ -63,7 +64,7 @@ div.breadcrumbs {
   max-width: 70rem;
   font-size: 1.2rem;
   font-weight: bold;
-  margin-top: 10rem;
+  padding-top: 10rem;
 }
 
 div.breadcrumbs a:link,

@@ -7,29 +7,6 @@ div.shopRoot {
     margin-bottom: 10rem;
 }
 
-div.topDots {
-    background-image: url(../public/dots_purple.svg);
-    height: 300px;
-    width: 100%;
-    position: absolute;
-    background-repeat: repeat-x;
-    z-index: -1;
-    margin-top: -25px;
-}
-
-.header {
-    font-size: 4rem;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    width: 50%;
-    max-width: 40rem;
-    color: #af3e92;
-    border-bottom: 1rem solid #fff6e5;
-    margin-top: 5rem;
-    margin-bottom: 3rem;
-}
-
 span.shoppingDescription {
     width: 60%;
     max-width: 50rem;

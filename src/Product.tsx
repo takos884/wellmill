@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "./ProductContext";
 import Header from "./Header";
 
 import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
+import ProductTile from "./ProductTile";
 
 function Product() {
+    const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
     const { products } = useProducts();
     console.log("Products in Product component:", products);
@@ -17,6 +19,7 @@ function Product() {
 
     // eslint-disable-next-line
     const product = products?.find(p => p.id == productId);
+    const otherProducts = products?.filter(p => p.id != productId);
 
     const breadcrumbs = [
       { text: "ホーム", url: "/" },
@@ -82,6 +85,23 @@ function Product() {
       </div>
     )
 
+    const otherProductsList = (
+      <div className={styles.otherProductsGrid}>
+        {otherProducts?.map(product => (
+          <div key={product.id}>
+            <ProductTile Product={{
+              id: product.id,
+              description: product.description,
+              long_description: product.description,
+              base_price: product.base_price,
+              tax_rate: product.tax_rate,
+              images: product.images,
+            }} />
+          </div>
+        ))}
+      </div>
+    )
+
     return (
       <div className={styles.productRoot}>
         <div className={styles.topDots} />
@@ -98,9 +118,13 @@ function Product() {
           </div>
         </div>
         <div className={styles.infoLinks}>
-          <button>お支払いについて</button>
-          <button>配送について</button>
-          <button>返品について</button>
+          <button className={styles.infoLink} onClick={() => navigate('/payment')}>お支払いについて</button>
+          <button className={styles.infoLink} onClick={() => navigate('/')}>配送について</button>
+          <button className={styles.infoLink} onClick={() => navigate('/')}>返品について</button>
+        </div>
+        <span className={styles.otherHeader}>その他のおすすめキット</span>
+        <div>
+          {otherProductsList}
         </div>
         <Footer />
       </div>
