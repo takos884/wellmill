@@ -2,6 +2,7 @@ import React from "react";
 import './App.css';
 import styles from './header.module.css'
 
+
 // Define a TypeScript interface for the breadcrumb object
 interface Breadcrumb {
     text: string;
@@ -18,7 +19,7 @@ function Header({ breadcrumbs }: HeaderProps) {
         <>
             <div className={styles.header}>
                 <div className={styles.headerLogo}>
-                    <a href="/"><img src="logo.png" alt="Logo" /></a>
+                    <a href="/"><img src="/logo.png" alt="Logo" /></a>
                 </div>
                 <div className={styles.navItems}>
                     <div className={styles.navItem}>モータリング検索は?</div>
@@ -26,7 +27,7 @@ function Header({ breadcrumbs }: HeaderProps) {
                     <div className={styles.navItem}>お問い合わせ</div>
                     <div className={[styles.navItem, styles.loginButton].join(' ')}>ログイン</div>
                     <div className={[styles.navItem, styles.cart].join(' ')}>
-                        <img src="cart.png" alt="Cart" />
+                        <img src="/cart.png" alt="Cart" />
                     </div>
                 </div>
             </div>

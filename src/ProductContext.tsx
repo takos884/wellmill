@@ -1,15 +1,7 @@
 import React, { useEffect } from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
 import useWPData from './useWPData';
-
-type Product = {
-  id: string;
-  description: string;
-  long_description: string;
-  base_price: number;
-  tax_rate: number;
-  images: string[];
-};
+import { Product } from './types';
 
 type ProductContextType = {
   products: Product[];

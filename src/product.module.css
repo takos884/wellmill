@@ -1,0 +1,124 @@
+div.productRoot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+div.topDots {
+    background-image: url(../public/dots_purple.svg);
+    height: 300px;
+    width: 100%;
+    position: absolute;
+    background-repeat: repeat-x;
+    z-index: -1;
+    margin-top: -25px;
+}
+
+div.productGrid {
+    display: grid;
+    width: 90%;
+    max-width: 80rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 4rem;
+}
+
+div.imageGrid{
+    display: grid;
+    align-self: flex-start;
+    width: 100%;
+    grid-template-columns: 50% 50%;
+}
+
+img.productImage {
+    width: 100%;
+}
+
+div.productContent {
+    display: flex;
+    flex-direction: column;
+}
+
+span.productDescription {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+span.productPrice {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+}
+
+div.quantityComponent {
+    margin: 1rem 0;
+    padding: 0.5rem 0;
+    border-radius: 1rem;
+    border: 1px solid #000;
+    display: flex;
+    align-self: flex-start;
+}
+
+button.quantityButton {
+    border: 0;
+    background: transparent;
+    font-size: 2.5rem;
+    padding: 0 1rem;
+}
+
+input.quantityInput {
+    border: 0;
+    font-size: 2rem;
+    margin: 0 1rem;
+}
+
+span.quantityInfo {
+    font-size: 0.8rem;
+}
+
+button.addToCart {
+    background-color: #fba800;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 0.5rem;
+}
+
+span.productLongDescription {
+    font-size: 1.2rem;
+}
+
+div.productFaq {
+    margin: 2rem 0;
+}
+
+div.productFaq > details > summary {
+    display: flex;
+    position: relative;
+    cursor: pointer;
+    padding: 1rem 0;
+    border-top: 1px solid #fba800;
+    color: #666;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+div.productFaq > details > summary::before {
+    content: '›';   /* This is a right-pointing chevron */
+    position: absolute;
+    right: 20px;    /* Adjust as needed */
+    transform: rotate(90deg);
+    transition: transform 0.3s ease-in-out;  /* Smooth transition for rotation */
+}
+
+div.productFaq > details[open] summary::before {
+    transform: rotate(-90deg);  /* Rotate to point upwards */
+}
+
+div.productFaq > details > p {
+    font-size: 1.2rem;
+    margin-top: 0;
+}

@@ -1,5 +1,6 @@
 .header {
   display: flex;
+  position: fixed;
   justify-content: space-between;
   align-items: center;
   border-radius: 0.75rem;
@@ -9,8 +10,13 @@
   background-color: #fba800;
   margin-top: 3rem;
   margin-bottom: 1rem;
-  min-width: 85%;
+  width: 85%;
+  max-width: 70rem;
 }
+
+/* How to remove the sticky header: */
+/* .header position line, delete*/
+/* div.breadcrumbs margin-top from 10rem to 2rem */
 
 .headerLogo {
   display: flex;
@@ -54,9 +60,10 @@ div.loginButton {
 
 div.breadcrumbs {
   width: 90%;
+  max-width: 70rem;
   font-size: 1.2rem;
   font-weight: bold;
-  margin-top: 2rem;
+  margin-top: 10rem;
 }
 
 div.breadcrumbs a:link,

@@ -1,0 +1,50 @@
+div.footerGrid {
+    display: grid;
+    grid-template-columns: 20rem 1fr 1fr 1fr 1fr ;
+    margin: 2rem auto;
+    width: 90%;
+    max-width: 70rem;
+    min-width: 40rem;
+}
+
+div.imgWrapper {
+    display: flex;
+    flex-direction: column;
+    width: 18rem;
+    padding-right: 2rem;
+    border-right: 1px solid #888;
+}
+
+img.footerImg {
+    width: 18rem;
+    margin-bottom: 1rem;
+}
+
+span.footerLink {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: 1px solid #888;
+}
+
+div.smallPrint {
+    width: 90%;
+    max-width: 70rem;
+    min-width: 40rem;
+    text-align: center;
+
+    margin: 2rem auto;
+    font-size: 0.8rem;
+}
+
+span.smallPrint {
+    margin: 0 1rem;
+}
+
+div.footerBlock {
+    width: 100%;
+    text-align: center;
+    background: #fba800;
+    color: #fff;
+    padding: 3rem 0;
+}

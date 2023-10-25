@@ -4,23 +4,29 @@ type FetchType = 'customer' | 'product' | 'order' | 'products_list' | 'fake_cust
 
 const fakeProductData = [
   {
-    id: 1,
+    id: "1",
     description: "選べる1項目モニタリング検査",
+    long_description: "選べる1項目モニタリング検査は、2項目のお好きな検査項目を選んで検査することができるサービスです。管理医療機器承認のある採血キットを使用し、指先から少量の血液を採取します。採取した血液は、ポスト投函あるいは郵便局から郵送します。検査センターで血液を受け取ってから7営業日以内に検査を行います。結果は、マイページからご確認いただけます。",
     base_price: 6000,
     tax_rate: 0.10,
     images: ["https://cdn.shopify.com/s/files/1/0728/3933/2132/products/illust_1.png?v=1680808650", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/Clippathgroup.png?v=1680808650", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/img_1.jpg?v=1680808650"],
+    bloodTest: true,
   },{
-    id: 2,
+    id: "2",
     description: "選べる2項目モニタリング検査",
+    long_description: "選べる2項目モニタリング検査は、2項目のお好きな検査項目を選んで検査することができるサービスです。管理医療機器承認のある採血キットを使用し、指先から少量の血液を採取します。採取した血液は、ポスト投函あるいは郵便局から郵送します。検査センターで血液を受け取ってから7営業日以内に検査を行います。結果は、マイページからご確認いただけます。",
     base_price: 9000,
     tax_rate: 0.10,
     images: ["https://cdn.shopify.com/s/files/1/0728/3933/2132/products/illust_2.png?v=1680808708", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/Clippathgroup.png?v=1680808650", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/img_1.jpg?v=1680808650"],
+    bloodTest: true,
   },{
-    id: 3,
+    id: "3",
     description: "選べる3項目モニタリング検査",
+    long_description: "選べる3項目モニタリング検査は、2項目のお好きな検査項目を選んで検査することができるサービスです。管理医療機器承認のある採血キットを使用し、指先から少量の血液を採取します。採取した血液は、ポスト投函あるいは郵便局から郵送します。検査センターで血液を受け取ってから7営業日以内に検査を行います。結果は、マイページからご確認いただけます。",
     base_price: 12000,
     tax_rate: 0.10,
     images: ["https://cdn.shopify.com/s/files/1/0728/3933/2132/products/illust_3.png?v=1680808736", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/Clippathgroup.png?v=1680808650", "https://cdn.shopify.com/s/files/1/0728/3933/2132/products/img_1.jpg?v=1680808650"],
+    bloodTest: true,
   }
 ]
 
