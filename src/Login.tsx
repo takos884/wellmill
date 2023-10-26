@@ -85,7 +85,6 @@ const Login = () => {
         <input className={styles.loginInput} type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
         <span className={styles.loginSubheader}>パスワード</span>
         <input className={styles.loginInput} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Link to='/'><span className={styles.loginRecovery}>パスワードをお忘れの方はこちら</span></Link>(Not implimented yet)
         <button className={styles.loginButton} onClick={handleLogin}>ログイン</button>
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={() => navigate('/signup')}>新規登録はこちら</button>
@@ -98,3 +97,4 @@ const Login = () => {
 };
 
 export default Login;
+/*        <Link to='/'><span className={styles.loginRecovery}>パスワードをお忘れの方はこちら</span></Link>(Not implimented yet) */

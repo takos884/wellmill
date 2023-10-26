@@ -30,7 +30,7 @@ function Remote() {
                         調べたい検査項目は、検査キットに同封されている依頼書のQRコードを読み込んで、マイページで登録します。<br/>
                         当社に検体が到着後、数日以内に検査結果をマイページに反映いたしますので、ご確認ください。</span>
                 </div>
-                <img className={styles.colorImg} src="/remote-1.png" alt="People collecting online results" />
+                <img className={styles.colorImg} src="remote-1.png" alt="People collecting online results" />
             </div>
           </div>
 
@@ -45,7 +45,7 @@ function Remote() {
                     自己採血専用の、使い捨ての小さな針を使って、指から採血します。<br/>
                     少量の血液のみでOKなので、身体への負担も最小限に抑えられます。</span>
                 </div>
-                <img className={styles.colorImg} src="/remote-2.png" alt="A woman at home checking lab results on her phone" />
+                <img className={styles.colorImg} src="remote-2.png" alt="A woman at home checking lab results on her phone" />
             </div>
           </div>
 
@@ -65,7 +65,7 @@ function Remote() {
                     自身のカラダ数値をコンスタントに追うことで、<br/>
                     健康な状態をキープするために利用していただけます。</span>
                 </div>
-                <img className={styles.colorImg} src="/remote-3.png" alt="A man considering a doctor's appointment" />
+                <img className={styles.colorImg} src="remote-3.png" alt="A man considering a doctor's appointment" />
             </div>
           </div>
 
@@ -80,7 +80,7 @@ function Remote() {
                   <span className={styles.bubbleHeader}>キットを購入</span>
                   <span className={styles.bubbleText}>SHOPでお好きなキットを選んで購入します。</span>
                 </div>
-                <img className={styles.bubbleImg} src="/remote-foot-1.png" alt="A shopping cart"/>
+                <img className={styles.bubbleImg} src="remote-foot-1.png" alt="A shopping cart"/>
               </div>
 
               <div className={styles.bubble} style={{alignSelf: "flex-end"}}>
@@ -90,7 +90,7 @@ function Remote() {
                   <span className={styles.bubbleText}>※1個の注文時のみ<br/>
                     複数個注文された場合は、通常の宅配便となります。</span>
                 </div>
-                <img className={styles.bubbleImg} src="/remote-foot-2.png" alt="Blood collection steps"/>
+                <img className={styles.bubbleImg} src="remote-foot-2.png" alt="Blood collection steps"/>
               </div>
 
               <div className={styles.bubble}>
@@ -99,7 +99,7 @@ function Remote() {
                   <span className={styles.bubbleHeader}>検体の採取・マイページでID登録</span>
                   <span className={styles.bubbleText}>手順に沿って検体を採取します。マイページでID登録と検査する項目選びます。</span>
                 </div>
-                <img className={styles.bubbleImg} src="/remote-foot-3.png" alt="Collecting blood from a finger"/>
+                <img className={styles.bubbleImg} src="remote-foot-3.png" alt="Collecting blood from a finger"/>
               </div>
 
               <div className={styles.bubble} style={{alignSelf: "flex-end"}}>
@@ -108,7 +108,7 @@ function Remote() {
                   <span className={styles.bubbleHeader}>検体を郵便で返送</span>
                   <span className={styles.bubbleText}>採取した検体は、ポスト投函またはお近くの郵便局に提出して返送できます。</span>
                 </div>
-                <img className={styles.bubbleImg} src="/remote-foot-4.png" alt="A postbox"/>
+                <img className={styles.bubbleImg} src="remote-foot-4.png" alt="A postbox"/>
               </div>
 
               <div className={styles.bubble}>
@@ -117,7 +117,7 @@ function Remote() {
                   <span className={styles.bubbleHeader}>マイページで結果確認</span>
                   <span className={styles.bubbleText}>検査結果が反映されましたらメールが届きます。WEB上のマイページで結果を確認することができます。</span>
                 </div>
-                <img className={styles.bubbleImg} src="/remote-foot-5.png" alt="Generic test results"/>
+                <img className={styles.bubbleImg} src="remote-foot-5.png" alt="Generic test results"/>
               </div>
 
             </div>

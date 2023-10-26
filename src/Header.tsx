@@ -26,7 +26,7 @@ function Header({ breadcrumbs }: HeaderProps) {
     return (
         <>
             <div className={styles.header}>
-                <div className={styles.headerLogo}><Link to="/"><img src="/logo.png" alt="Logo" /></Link>
+                <div className={styles.headerLogo}><Link to="/"><img src="logo.png" alt="Logo" /></Link>
                 </div>
                 <div className={styles.navItems}>
                     <div className={styles.navItem}><Link to="/remote">モータリング検索は?</Link></div>
@@ -34,14 +34,14 @@ function Header({ breadcrumbs }: HeaderProps) {
                     <div className={styles.navItem}>お問い合わせ</div>
                     <div className={[styles.navItem, styles.loginButton].join(' ')}>{headerButtonLink}</div>
                     <div className={[styles.navItem, styles.cart].join(' ')}>
-                        <img src="/cart.png" alt="Cart" />
+                        <img src="cart.png" alt="Cart" />
                     </div>
                 </div>
             </div>
             <div className={styles.breadcrumbs}>
                 {breadcrumbs.map((breadcrumb, index) => (
                     <span key={index}>
-                        <a href={breadcrumb.url}>{breadcrumb.text}</a>
+                        <Link to={breadcrumb.url}>{breadcrumb.text}</Link>
                         {index < breadcrumbs.length - 1 && " ›› "}
                     </span>
                 ))}

@@ -43,7 +43,7 @@ function App() {
   return (
     <ProductProvider>
       <UserProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/wellmill">
           <Layout />
         </BrowserRouter>
       </UserProvider>

@@ -6,7 +6,7 @@ function Footer() {
         <>
             <div className={styles.footerGrid}>
                 <div className={styles.imgWrapper}>
-                    <img className={styles.footerImg} src="/logo.png" alt="Logo" />
+                    <img className={styles.footerImg} src="logo.png" alt="Logo" />
                     <span>ウェルミルは、いつでもどこでも簡単に、体内のホルモンやタンパク質の量を測定できる検査サービスです。</span>
                 </div>
                 <span className={styles.footerLink}>モニタリング検査とは？</span>

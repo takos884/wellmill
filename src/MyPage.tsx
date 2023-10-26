@@ -3,7 +3,7 @@ import Header from './Header';
 import './App.css';
 import styles from './mypage.module.css'
 import Footer from './Footer';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -19,7 +19,7 @@ const MyPage = () => {
     navigate('/login');
   }
 
-  if (!user) return <p>Please <a href='/login'>log in</a> first.</p>;
+  if (!user) return <p>Please <Link to='/login'>log in</Link> first.</p>;
 
   return (
     <>
