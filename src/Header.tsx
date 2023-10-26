@@ -22,7 +22,7 @@ function Header({ breadcrumbs }: HeaderProps) {
                     <a href="/"><img src="/logo.png" alt="Logo" /></a>
                 </div>
                 <div className={styles.navItems}>
-                    <div className={styles.navItem}>モータリング検索は?</div>
+                    <div className={styles.navItem}><a href="/remote">モータリング検索は?</a></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><a href="/shop">SHOP</a></div>
                     <div className={styles.navItem}>お問い合わせ</div>
                     <div className={[styles.navItem, styles.loginButton].join(' ')}>ログイン</div>

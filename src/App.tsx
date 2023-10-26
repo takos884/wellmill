@@ -8,6 +8,8 @@ import { ProductProvider } from './ProductContext';
 import Payment from './Payment';
 import Delivery from './Delivery';
 import ReturnPolicy from './ReturnPolicy';
+import Home from './Home';
+import Remote from './Remote';
 
 function Layout() {
   const location = useLocation();
@@ -24,6 +26,8 @@ function Layout() {
       <Route path="/payment" element={<Payment />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/return-policy" element={<ReturnPolicy />} />
+      <Route path="/remote" element={<Remote />} />
+      <Route path="/" element={<Home />} />
     </Routes>
   )
 }

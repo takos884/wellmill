@@ -26,6 +26,7 @@ function Payment() {
             <li>Apple Pay</li>
             <li>Google Pay</li>
           </ul>
+          <br/>
           弊社のECサイトをご利用になる際は、AMERICAN EXPRESS、VISA、MASTERのマークがプリントされているカードをご使用ください。<br/>
           お支払いは一括払いのみとさせていただいております。<br/>
           ※消費税の端数は切り捨てで計算しております。<br/>

@@ -1,0 +1,107 @@
+:root {
+    --max-width: 60rem;
+}
+
+span.blackHeader {
+    color: #666;
+}
+
+div.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+span.subHeader {
+    color: #af3e92;
+    font-size: 2.5rem;
+    font-weight: bold;
+    width: var(--max-width);
+    margin-bottom: 1rem;
+}
+
+div.colorBox {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5rem;
+}
+
+div.colorContent {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: var(--max-width);
+    padding: 1rem 0;
+    bottom: 3rem;
+}
+
+span.orange {
+    color: #fba800;
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 3rem;
+    display: flex;
+}
+
+img.colorImg {
+    width: 10rem;
+    height: auto;
+    transform: translateY(-70px);
+    margin-left: 5rem;
+}
+
+span.colorContent {
+    display: flex;
+    padding: 1rem 0;
+    font-size: 1.25rem;
+    line-height: 2rem;
+}
+
+
+div.bubbleWrapper {
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    width: 55rem;
+}
+
+div.bubble {
+    background-color: #fff;
+    width: 42rem;
+    height: 12rem;
+    padding: 1rem;
+    border-radius: 10rem;
+    display: flex;
+    align-items: center;
+}
+
+span.bubbleNumber {
+    padding: 0 2rem;
+    color: #fcc24c;
+    font-size: 10rem;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+}
+
+div.bubbleContent {
+    flex-grow: 1;
+}
+
+span.bubbleHeader {
+    display: flex;
+    margin-bottom: 1rem;
+    color: #af3e92;
+    font-size: 1.75rem;
+    font-weight: bold;
+}
+
+span.bubbleText {
+    font-size: 1.25rem;
+}
+
+img.bubbleImg {
+    width: 8rem;
+    margin: 2rem;
+}
