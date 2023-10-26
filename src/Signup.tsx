@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useRef, useState } from "react";
+import React, { ChangeEvent, useState } from "react";
 import { useUserData } from './useUserData';
 import Header from "./Header";
 
@@ -42,7 +42,6 @@ interface InputErrors {
 function Signup() {
   const navigate = useNavigate();
   const [, setUser] = useUserData();
-  const [selectedDate, setSelectedDate] = useState<string>('');
   const [inputs, setInputs] = useState<InputFields>({
     lastName: '',
     firstName: '',

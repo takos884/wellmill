@@ -19,6 +19,8 @@ function Product() {
 
     // eslint-disable-next-line
     const product = products?.find(p => p.id == productId);
+
+    // eslint-disable-next-line
     const otherProducts = products?.filter(p => p.id != productId);
 
     const breadcrumbs = [
