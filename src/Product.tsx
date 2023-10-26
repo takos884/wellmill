@@ -119,8 +119,8 @@ function Product() {
         </div>
         <div className={styles.infoLinks}>
           <button className={styles.infoLink} onClick={() => navigate('/payment')}>お支払いについて</button>
-          <button className={styles.infoLink} onClick={() => navigate('/')}>配送について</button>
-          <button className={styles.infoLink} onClick={() => navigate('/')}>返品について</button>
+          <button className={styles.infoLink} onClick={() => navigate('/delivery')}>配送について</button>
+          <button className={styles.infoLink} onClick={() => navigate('/return-policy')}>返品について</button>
         </div>
         <span className={styles.otherHeader}>その他のおすすめキット</span>
         <div>

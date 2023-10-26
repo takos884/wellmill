@@ -1,0 +1,17 @@
+div.content {
+    display: flex;
+    width: 90%;
+    max-width: 60rem;
+    justify-content: start;
+    margin-bottom: 5rem;
+}
+
+span.content {
+    font-size: 1.2rem;
+    line-height: 2.5rem;
+    color: #444;
+}
+
+ul {
+    margin: 0;
+}

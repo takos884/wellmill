@@ -6,6 +6,8 @@ import Shop from './Shop';
 import Product from './Product';
 import { ProductProvider } from './ProductContext';
 import Payment from './Payment';
+import Delivery from './Delivery';
+import ReturnPolicy from './ReturnPolicy';
 
 function Layout() {
   const location = useLocation();
@@ -20,6 +22,8 @@ function Layout() {
       <Route path="/shop" element={<Shop />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/payment" element={<Payment />} />
+      <Route path="/delivery" element={<Delivery />} />
+      <Route path="/return-policy" element={<ReturnPolicy />} />
     </Routes>
   )
 }
