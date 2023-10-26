@@ -88,7 +88,7 @@ const Login = () => {
         <Link to='/'><span className={styles.loginRecovery}>パスワードをお忘れの方はこちら</span></Link>(Not implimented yet)
         <button className={styles.loginButton} onClick={handleLogin}>ログイン</button>
         <div className={styles.loginLine}></div>
-        <button className={styles.loginSignup} onClick={handleLogin}>新規登録はこちら</button>
+        <button className={styles.loginSignup} onClick={() => navigate('/signup')}>新規登録はこちら</button>
       </div>
 
       {user && <span>You are already signed in {user.kaiin_first_name}. Go to <Link to='/mypage'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}

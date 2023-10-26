@@ -13,6 +13,7 @@ import Remote from './Remote';
 import { UserProvider } from './useUserData';
 import MyPage from './MyPage';
 import Login from './Login';
+import Signup from './Signup';
 
 function Layout() {
   const location = useLocation();
@@ -27,6 +28,7 @@ function Layout() {
       <Route path="/shop" element={<Shop />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/mypage" element={<MyPage />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/delivery" element={<Delivery />} />

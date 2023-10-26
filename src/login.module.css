@@ -21,15 +21,6 @@ span.loginRecovery {
   text-decoration: line-through;
 }
 
-button {
-  margin: 3rem 5rem;
-  padding: 1rem;
-  border-radius: 2rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  border: 0;
-}
-
 button.loginButton {
   color: #fff;
   background-color: #fba800;

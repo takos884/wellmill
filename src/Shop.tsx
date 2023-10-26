@@ -8,16 +8,16 @@ import Header from './Header';
 import ProductTile from './ProductTile';
 import Footer from './Footer';
 
+const breadcrumbs = [
+  { text: "ホーム", url: "/" },
+  { text: "SHOP", url: "/shop" },
+];
+
 function Shop() {
   const { products, setProducts } = useProducts();
 
   const internalData = true
   const [data, loading, error] = useWPData(internalData ? 'fake_products_list' : 'products_list');
-
-  const breadcrumbs = [
-    { text: "ホーム", url: "/" },
-    { text: "SHOP", url: "/shop" },
-  ];
 
   useEffect(() => {
     if (data && !loading && !error) {

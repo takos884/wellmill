@@ -1,0 +1,176 @@
+:root {
+  --radioSize: 1.5rem;
+  --checkboxSize: 1.75rem;
+}
+
+div.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 40rem;
+  padding-bottom: 10rem;
+}
+
+span.subheader {
+  margin-top: 1rem;
+  font-size: 1.25rem;
+}
+
+span.red {
+  color: #f00;
+  margin: 0 1rem;
+}
+
+div.doubleInput {
+  display: flex;
+  justify-content: space-between;
+}
+
+input[type="text"].signup,
+input[type="password"].signup {
+  flex: 1;
+  font-size: 1.25rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  transition: background-color 0.5s;
+}
+
+div.doubleInput > input[type="text"] {
+  max-width: calc(50% - 1rem);
+}
+
+
+.genderOptions {
+  display: flex;
+  font-size: var(--radioSize);
+  margin-bottom: 3rem;
+}
+
+.genderOptions label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-top: 1rem;
+  margin-right: 3rem;
+}
+
+.genderOptions input[type="radio"] {
+  display: none; /* Hide the default radio button */
+}
+
+.radioCircle {
+  width: var(--radioSize);
+  height: var(--radioSize);
+  border-radius: 50%;
+  border: 2px solid #000;
+  background-color: transparent;
+}
+
+.genderOptions input[type="radio"]:checked + .radioCircle {
+  background: radial-gradient(circle at center, #2f80ed 0%, #2f80ed 35%, transparent 45%, transparent 100%);
+}
+
+input[type="date"] {
+  position: relative;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 3rem;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  color: #444;
+  flex: 1;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  color: transparent;
+  background: transparent;
+}
+
+
+span.passwordInfo {
+  font-weight: bold;
+}
+
+
+div.customCheckbox {
+  display: flex;
+  justify-content: center;
+  margin-top: 3rem;
+  font-size: 1.25rem;
+  color: #444;
+}
+
+label.customCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+div.customCheckbox input[type="checkbox"] {
+  display: none; /* Hide the default checkbox */
+}
+
+span.customCheckbox {
+  font-size: var(--checkboxSize);
+  color: transparent;
+  display: inline-block;
+  width: var(--checkboxSize);
+  height: var(--checkboxSize);
+  border: 1px solid #000;
+  border-radius: 0.25rem;
+  text-align: center;
+  line-height: var(--checkboxSize);
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+
+div.customCheckbox input[type="checkbox"]:checked + span.customCheckbox {
+  background-color: #2f80ed;
+  color: #fff;
+}
+
+button.register {
+  width: 30rem;
+  color: #fff;
+  background-color: #fba800;
+  border: 1px solid transparent;
+  transition: background-color 0.25s;
+}
+
+button.register:hover {
+  color: #fba800;
+  background-color: transparent;
+  border: 1px solid #fba800;
+}
+
+div.success {
+  position: fixed;
+  display: flex;
+  display: none;
+  justify-content: center;
+  top:50%;
+  left: 0;
+  right: 0;
+  background: linear-gradient(rgba(136, 187, 68, 0.5) 0%, #8b4 25%, #8b4 75%, rgba(136, 187, 68, 0.5) 100%);
+  color: #fff;
+  font-size: 3rem;
+  padding: 2rem 0;
+}
+
+.inputError {
+  background-color: #fbb;
+}

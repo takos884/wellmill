@@ -1,0 +1,46 @@
+div.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60rem;
+}
+
+span.header {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #af3e92;
+}
+
+div.linksGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+span.link {
+  display: flex;
+  justify-content: center;
+  align-self: center;
+  padding: 1.5rem 0;
+  border: 1px solid #888;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #af3e92;
+}
+
+
+button.logout {
+  width: 30rem;
+  color: #fff;
+  background-color: #fba800;
+  border: 1px solid transparent;
+  transition: background-color 0.25s;
+}
+
+button.logout:hover {
+  color: #fba800;
+  background-color: transparent;
+  border: 1px solid #fba800;
+}
