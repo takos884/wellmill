@@ -10,6 +10,9 @@ import Delivery from './Delivery';
 import ReturnPolicy from './ReturnPolicy';
 import Home from './Home';
 import Remote from './Remote';
+import { UserProvider } from './useUserData';
+import MyPage from './MyPage';
+import Login from './Login';
 
 function Layout() {
   const location = useLocation();
@@ -23,6 +26,8 @@ function Layout() {
       <Route path="/shop/:productId" element={<Product />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/mypage" element={<MyPage />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/return-policy" element={<ReturnPolicy />} />
@@ -35,13 +40,13 @@ function Layout() {
 function App() {
   return (
     <ProductProvider>
-      <BrowserRouter>
-        <Layout />
-      </BrowserRouter>
+      <UserProvider>
+        <BrowserRouter>
+          <Layout />
+        </BrowserRouter>
+      </UserProvider>
     </ProductProvider>
   );
 }
 
 export default App;
-
-// <Route path="/" element={<Home />} />
