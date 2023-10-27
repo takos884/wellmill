@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './App.css';
 import styles from './login.module.css'
 import Header from './Header';
+import Footer from './Footer';
 
 const useRealData = false
 
@@ -71,9 +72,7 @@ const Login = () => {
     }
   };
 
-  const handleLogout = async () => {
-    setUser(null);
-  }
+  const handleLogout = async () => { setUser(null); }
 
   return (
     <>
@@ -82,16 +81,16 @@ const Login = () => {
       <span className="topHeader">ログイン</span>
       <div className={styles.loginWrapper}>
         <span className={styles.loginSubheader}>メールアドレス</span>
-        <input className={styles.loginInput} type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input className="formField" type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
         <span className={styles.loginSubheader}>パスワード</span>
-        <input className={styles.loginInput} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className={styles.loginButton} onClick={handleLogin}>ログイン</button>
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={() => navigate('/signup')}>新規登録はこちら</button>
       </div>
 
       {user && <span>You are already signed in {user.kaiin_first_name}. Go to <Link to='/mypage'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
-
+      <Footer />
     </>
   );
 };

@@ -146,10 +146,10 @@ function Signup() {
   )
 
   const agreeCheckbox = (
-    <div className={styles.customCheckbox}>
-      <label className={styles.customCheckbox}>
-        <input type="checkbox" id="customCheckbox" onChange={HandleInputChange} name="agreement" checked={inputs.agreement}/>
-        <span className={`${styles.customCheckbox} ${inputErrors.agreement ? styles.inputError : ''}`}>✓</span>
+    <div className="customCheckbox">
+    <label className="customCheckbox">
+      <input type="checkbox" id="customCheckbox" onChange={HandleInputChange} name="agreement" checked={inputs.agreement}/>
+        <span className={`customCheckbox ${inputErrors.agreement ? styles.inputError : ''}`}>✓</span>
         利用規約とプライバシーポリシーに同意する
       </label>
     </div>
@@ -160,26 +160,28 @@ function Signup() {
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">新規会員登録</span>
-      <div className={styles.wrapper}>
-        <span className={styles.subheader}>名前を入力してください<span className={styles.red}>必須</span></span>
-        <div className={styles.doubleInput}>
-          <input type="text" placeholder="姓" onChange={HandleInputChange} name="lastName" value={inputs.lastName} className={`${styles.signup} ${inputErrors.lastName ? styles.inputError : ''}`}></input>
-          <input type="text" placeholder="名" onChange={HandleInputChange} name="firstName" value={inputs.firstName} className={`${styles.signup} ${inputErrors.firstName ? styles.inputError : ''}`}></input>
+      <div className={styles.content}>
+        <div className={styles.form}>
+          <span className={styles.subheader}>名前を入力してください<span className={styles.red}>必須</span></span>
+          <div className={styles.doubleInput}>
+            <input type="text" placeholder="姓" onChange={HandleInputChange} name="lastName" value={inputs.lastName} className={`${styles.signup} ${inputErrors.lastName ? styles.inputError : ''}`}></input>
+            <input type="text" placeholder="名" onChange={HandleInputChange} name="firstName" value={inputs.firstName} className={`${styles.signup} ${inputErrors.firstName ? styles.inputError : ''}`}></input>
+          </div>
+          <span className={styles.subheader}>フリガナを入力してください<span className={styles.red}>必須</span></span>
+          <div className={styles.doubleInput}>
+            <input type="text" placeholder="セイ" onChange={HandleInputChange} name="lastNameKana" value={inputs.lastNameKana} className={`${styles.signup} ${inputErrors.lastNameKana ? styles.inputError : ''}`}></input>
+            <input type="text" placeholder="メイ" onChange={HandleInputChange} name="firstNameKana" value={inputs.firstNameKana} className={`${styles.signup} ${inputErrors.firstNameKana ? styles.inputError : ''}`}></input>
+          </div>
+          <span className={styles.subheader}>性別<span className={styles.red}>必須</span></span>
+          {genderRadio}
+          <span className={styles.subheader}>生年月日<span className={styles.red}>必須</span></span>
+          <input type="date" id="datePicker" onChange={HandleInputChange} onClick={HandleDateClick} name="birthday" value={inputs.birthday} className={`${styles.signup} ${inputErrors.birthday ? styles.inputError : ''}`}/>
+          <span className={styles.subheader}>メールアドレス<span className={styles.red}>必須</span></span>
+          <input type="text" placeholder="name@example.com" onChange={HandleInputChange} name="email" value={inputs.email} className={`${styles.signup} ${inputErrors.email ? styles.inputError : ''}`}></input>
+          <span className={styles.subheader}>パスワード<span className={styles.red}>必須</span></span>
+          <input type="password" onChange={HandleInputChange} name="password" value={inputs.password} className={`${styles.signup} ${inputErrors.password ? styles.inputError : ''}`}></input>
+          <span className={styles.passwordInfo}>※8文字以上、半角英数字で入力してください</span>
         </div>
-        <span className={styles.subheader}>フリガナを入力してください<span className={styles.red}>必須</span></span>
-        <div className={styles.doubleInput}>
-          <input type="text" placeholder="セイ" onChange={HandleInputChange} name="lastNameKana" value={inputs.lastNameKana} className={`${styles.signup} ${inputErrors.lastNameKana ? styles.inputError : ''}`}></input>
-          <input type="text" placeholder="メイ" onChange={HandleInputChange} name="firstNameKana" value={inputs.firstNameKana} className={`${styles.signup} ${inputErrors.firstNameKana ? styles.inputError : ''}`}></input>
-        </div>
-        <span className={styles.subheader}>性別<span className={styles.red}>必須</span></span>
-        {genderRadio}
-        <span className={styles.subheader}>生年月日<span className={styles.red}>必須</span></span>
-        <input type="date" id="datePicker" onChange={HandleInputChange} onClick={HandleDateClick} name="birthday" value={inputs.birthday} className={`${styles.signup} ${inputErrors.birthday ? styles.inputError : ''}`}/>
-        <span className={styles.subheader}>メールアドレス<span className={styles.red}>必須</span></span>
-        <input type="text" placeholder="name@example.com" onChange={HandleInputChange} name="email" value={inputs.email} className={`${styles.signup} ${inputErrors.email ? styles.inputError : ''}`}></input>
-        <span className={styles.subheader}>パスワード<span className={styles.red}>必須</span></span>
-        <input type="password" onChange={HandleInputChange} name="password" value={inputs.password} className={`${styles.signup} ${inputErrors.password ? styles.inputError : ''}`}></input>
-        <span className={styles.passwordInfo}>※8文字以上、半角英数字で入力してください</span>
         {agreeCheckbox}
         <button className={styles.register} onClick={HandleRegistrationClick}>登録</button>
       </div>

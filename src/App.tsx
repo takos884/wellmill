@@ -14,6 +14,7 @@ import { UserProvider } from './useUserData';
 import MyPage from './MyPage';
 import Login from './Login';
 import Signup from './Signup';
+import Contact from './Contact';
 
 function Layout() {
   const location = useLocation();
@@ -34,6 +35,7 @@ function Layout() {
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/return-policy" element={<ReturnPolicy />} />
       <Route path="/remote" element={<Remote />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/" element={<Home />} />
     </Routes>
   )

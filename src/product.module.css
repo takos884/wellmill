@@ -53,7 +53,7 @@ span.productPrice {
 
 div.quantityComponent {
     margin: 1rem 0;
-    padding: 0.5rem 0;
+    padding: 0;
     border-radius: 1rem;
     border: 1px solid #000;
     display: flex;
@@ -66,9 +66,11 @@ button.quantityButton {
     font-size: 2.5rem;
     padding: 0 1rem;
     margin: 0;
+    width: unset;
+    color: #000;
 }
 
-input.quantityInput {
+input[type="text"].quantityInput {
     border: 0;
     font-size: 2rem;
     margin: 0 1rem;
@@ -137,6 +139,7 @@ button.infoLink {
     font-weight: bold;
     width: 18rem;
     padding: 1rem 0;
+    border-radius: 0;
     background-color: transparent;
     border: 1px solid #bbb;
     color: #af3e92;

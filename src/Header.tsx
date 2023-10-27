@@ -26,12 +26,12 @@ function Header({ breadcrumbs }: HeaderProps) {
     return (
         <>
             <div className={styles.header}>
-                <div className={styles.headerLogo}><Link to="/"><img src="logo.png" alt="Logo" /></Link>
+                <div className={styles.headerLogo}><Link to="/"><img src="logo.svg" alt="Logo" /></Link>
                 </div>
                 <div className={styles.navItems}>
                     <div className={styles.navItem}><Link to="/remote">モータリング検索は?</Link></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><Link to="/shop">SHOP</Link></div>
-                    <div className={styles.navItem}>お問い合わせ</div>
+                    <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
                     <div className={[styles.navItem, styles.loginButton].join(' ')}>{headerButtonLink}</div>
                     <div className={[styles.navItem, styles.cart].join(' ')}>
                         <img src="cart.png" alt="Cart" />

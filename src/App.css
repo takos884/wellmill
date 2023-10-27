@@ -49,3 +49,54 @@ button {
   font-weight: bold;
   border: 0;
 }
+
+div.customCheckbox {
+  display: flex;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #444;
+}
+
+label.customCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+div.customCheckbox input[type="checkbox"] {
+  display: none; /* Hide the default checkbox */
+}
+
+span.customCheckbox {
+  font-size: var(--checkboxSize);
+  color: transparent;
+  display: inline-block;
+  width: var(--checkboxSize);
+  height: var(--checkboxSize);
+  border: 1px solid #000;
+  border-radius: 0.25rem;
+  text-align: center;
+  line-height: var(--checkboxSize);
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+
+div.customCheckbox input[type="checkbox"]:checked + span.customCheckbox {
+  background-color: #2f80ed;
+  color: #fff;
+}
+
+input[type="text"].formField,
+input[type="password"].formField,
+select.formField {
+  display: flex;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 1.25rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  box-sizing: border-box;
+}

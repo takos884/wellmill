@@ -3,11 +3,18 @@
   --checkboxSize: 1.75rem;
 }
 
-div.wrapper {
+div.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10rem;
+}
+
+div.form {
   display: flex;
   flex-direction: column;
   width: 40rem;
-  padding-bottom: 10rem;
+  padding-bottom: 5rem;
 }
 
 span.subheader {
@@ -104,44 +111,6 @@ span.passwordInfo {
   font-weight: bold;
 }
 
-
-div.customCheckbox {
-  display: flex;
-  justify-content: center;
-  margin-top: 3rem;
-  font-size: 1.25rem;
-  color: #444;
-}
-
-label.customCheckbox {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-div.customCheckbox input[type="checkbox"] {
-  display: none; /* Hide the default checkbox */
-}
-
-span.customCheckbox {
-  font-size: var(--checkboxSize);
-  color: transparent;
-  display: inline-block;
-  width: var(--checkboxSize);
-  height: var(--checkboxSize);
-  border: 1px solid #000;
-  border-radius: 0.25rem;
-  text-align: center;
-  line-height: var(--checkboxSize);
-  cursor: pointer;
-  transition: background-color 0.25s;
-}
-
-
-div.customCheckbox input[type="checkbox"]:checked + span.customCheckbox {
-  background-color: #2f80ed;
-  color: #fff;
-}
 
 button.register {
   width: 30rem;

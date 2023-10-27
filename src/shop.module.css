@@ -5,6 +5,7 @@ div.shopRoot {
     flex-direction: column;
     align-items: center;
     margin-bottom: 10rem;
+    width: 100%;
 }
 
 span.shoppingDescription {

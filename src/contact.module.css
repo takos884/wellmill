@@ -1,0 +1,108 @@
+div.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60rem;
+  margin-bottom: 8rem;
+}
+
+span.notice {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+button {
+  width: 25rem;
+  background-color: #fba800;
+  color: #fff;
+  margin: 2rem 0;
+}
+
+span.finePrint {
+  font-size: 1rem;
+  color: #666;
+}
+
+div.formGrid {
+  display: grid;
+  width: 40rem;
+  grid-template-columns: 100%;
+  padding: 2rem 0;
+}
+
+div.field {
+  margin: 1rem 0;
+}
+
+span.fieldHeader {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+span.red {
+  color: #f00;
+  margin: 0 1rem;
+}
+
+input[type="text"],
+select {
+  display: flex;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 1.25rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  box-sizing: border-box;
+}
+
+span.fieldInfo {
+  display: flex;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+select {
+  appearance: none;
+}
+
+div.selectWrapper {
+  position: relative;
+}
+
+span.selectChevron {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  font-size: 1.25rem;
+  pointer-events: none;
+}
+
+textarea {
+  display: flex;
+  width: 100%;
+  height: 16rem;
+  margin: 1.5rem 0;
+  border: 1px solid #666;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+button {
+  transition: all 0.25s;
+  border: 1px solid #fba800;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: transparent;
+  color: #fba800;
+  border: 1px solid #fba800;
+}
