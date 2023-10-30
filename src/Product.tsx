@@ -105,6 +105,7 @@ function Product() {
     )
 
     return (
+      <>
       <div className={styles.productRoot}>
         <div className={styles.topDots} />
         <Header breadcrumbs={breadcrumbs} />
@@ -128,8 +129,9 @@ function Product() {
         <div>
           {otherProductsList}
         </div>
-        <Footer />
       </div>
+      <Footer />
+      </>
     );
 }
 

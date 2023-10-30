@@ -70,6 +70,11 @@ button.quantityButton {
     color: #000;
 }
 
+button.quantityButton:hover {
+    border: 0;
+    color: #000;
+}
+
 input[type="text"].quantityInput {
     border: 0;
     font-size: 2rem;
