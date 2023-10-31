@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "./ProductContext";
@@ -8,32 +8,61 @@ import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
 import ProductTile from "./ProductTile";
+import useShopify from "./useShopify";
 
 function Product() {
     const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
-    const { products } = useProducts();
+    const { products, setProducts } = useProducts();
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<Error | string | ReactNode | null>(null);
+    //const { data, loading, error } = useShopify<any>('products');
     console.log("Products in Product component:", products);
 
     const [productQuantity, setProductQuantity] = useState(1);
 
     // eslint-disable-next-line
-    const product = products?.find(p => p.id == productId);
+    const currentProduct = products?.find(p => p.id == productId);
 
     // eslint-disable-next-line
     const otherProducts = products?.filter(p => p.id != productId);
 
+    useEffect(() => {
+      async function fetchProducts() {
+        try {
+          const response = await fetch('/wellmill/products.json');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products. HTTP Status: ${response.status}`);
+          }
+          const fetchedProducts = await response.json();
+          if (Array.isArray(fetchedProducts)) {
+            setProducts(fetchedProducts);
+          } else if (fetchedProducts.products && Array.isArray(fetchedProducts.products)) {
+            setProducts(fetchedProducts.products);
+          } else {
+            console.error("Unrecognized data structure received in Shop");
+          }
+          //setProducts(fetchedProducts);
+          setLoading(false);
+        } catch (err) {
+          setLoading(false);
+          setError(err instanceof Error ? err.message : 'An error occurred while fetching products.');
+        }
+      }
+      fetchProducts();
+    }, [setProducts]);
+  
     const breadcrumbs = [
       { text: "ホーム", url: "/" },
       { text: "SHOP", url: "/shop" },
-      { text: product ? product.title : "", url: `/shop/${product?.id}` },
+      { text: currentProduct ? currentProduct.title : "", url: `/shop/${currentProduct?.id}` },
     ];
 
-    const taxIncludedPrice = product ? Math.round(product.variants[0].full_price) : 0;
+    const taxIncludedPrice = currentProduct ? Math.round(currentProduct.variants[0].price) : 0;
 
-    const productImages = product?.images.map((spotifyImage, index) => (
+    const productImages = currentProduct?.images.map((spotifyImage, index) => (
       <img
-        key={spotifyImage.id} // using imageUrl as a key assuming URLs are unique
+        key={spotifyImage.id}
         src={spotifyImage.src.replace(/\\/g, "")}
         className={styles.productImage}
         alt={`Product ${index}`}
@@ -105,11 +134,11 @@ function Product() {
         <div className={styles.productGrid}>
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>
-            <span className={styles.productDescription}>{product?.title}</span>
+            <span className={styles.productDescription}>{currentProduct?.title}</span>
             <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
             <button className={styles.addToCart}>カートに入れる</button>
-            <span className={styles.productLongDescription}>{product?.body_html}</span>
+            <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.body_html || '' }} />
             {questionsNode}
           </div>
         </div>

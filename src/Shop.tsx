@@ -31,7 +31,14 @@ function Shop() {
           throw new Error(`Failed to fetch products. HTTP Status: ${response.status}`);
         }
         const fetchedProducts = await response.json();
-        setProducts(fetchedProducts);
+        if (Array.isArray(fetchedProducts)) {
+          setProducts(fetchedProducts);
+        } else if (fetchedProducts.products && Array.isArray(fetchedProducts.products)) {
+          setProducts(fetchedProducts.products);
+        } else {
+          console.error("Unrecognized data structure received in Shop");
+        }
+        //setProducts(fetchedProducts);
         setLoading(false);
       } catch (err) {
         setLoading(false);

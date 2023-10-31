@@ -15,7 +15,7 @@ export type Variants = {
     product_id: string,
     id: string,
     title: string,
-    full_price: number,
+    price: number,
     requires_shipping: boolean,
 }
 
