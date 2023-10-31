@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import useWPData from './useWPData';
+//import useWPData from './useWPData';
 import { Product } from './types';
 
 type ProductContextType = {
@@ -24,14 +24,16 @@ type ProductProviderProps = {
 
 export function ProductProvider({ children }: ProductProviderProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [, , , fetchData] = useWPData('fake_products_list');
+  //const [, , , fetchData] = useWPData('fake_products_list');
 
+  /*
   useEffect(() => {
     fetchData().then((newData: Product[]) => {
       console.log("Setting products in ProductProvider:", newData);
       setProducts(newData);
     });
   }, [fetchData]);
+  */
 
   return (
     <ProductContext.Provider value={{ products, setProducts }}>

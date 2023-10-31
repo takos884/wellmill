@@ -5,13 +5,14 @@ import { Product } from "./types";
 
 interface ProductTileProps { Product: Product; }
 
-function ProductTile({ Product }: ProductTileProps) {
-    const taxIncludedPrice = Math.round(Product.variants[0].full_price)
+function ProductTile({ Product: product }: ProductTileProps) {
+    if(!product) { return null; }
+    const taxIncludedPrice = product.variants ? Math.round(product.variants[0].full_price) : 0
     return(
-        <Link to={`/shop/${Product.id}`}>
+        <Link to={`/shop/${product.id}`}>
             <div className={styles.product}>
-                <img className={styles.productImage} src={Product.images[0].src} alt={`Product #${Product.id}`} />
-                <span className={styles.productDescription}>{Product.body_html}</span>
+                <img className={styles.productImage} src={product.images[0].src} alt={`Product #${product.id}`} />
+                <span className={styles.productDescription}>{product.body_html}</span>
                 <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
             </div>
         </Link>

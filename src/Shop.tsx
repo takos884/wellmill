@@ -26,7 +26,7 @@ function Shop() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const response = await fetch('/products.json');
+        const response = await fetch('/wellmill/products.json');
         if (!response.ok) {
           throw new Error(`Failed to fetch products. HTTP Status: ${response.status}`);
         }
