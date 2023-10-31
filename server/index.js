@@ -4,7 +4,58 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
+const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
+
+const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/products.json';
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const JSON_FILE_PATH = path.join(__dirname, '../products.json');
+
+async function fetchShopifyData() {
+  try {
+    const response = await fetch(SHOPIFY_API_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(data));
+    console.log(`[${new Date().toISOString()}] Updated products.json`);
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] Error fetching Shopify data:`, err);
+  }
+}
+
+// Call the function initially
+fetchShopifyData();
+
+// Then set it to be called every minute
+const fetchInterval = setInterval(fetchShopifyData, 60 * 1000);
+
+// Handle clean exit
+function exitHandler() {
+  clearInterval(fetchInterval);
+  console.log('Clearing Shopify data fetch interval.');
+  process.exit();
+}
+
+process.on('exit', exitHandler);
+process.on('SIGINT', exitHandler);
+process.on('SIGUSR1', exitHandler);
+process.on('SIGUSR2', exitHandler);
+
+
+
 
 app.use(cors());  // Enable CORS for all routes
 app.use(bodyParser.json());

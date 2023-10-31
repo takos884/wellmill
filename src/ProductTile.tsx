@@ -1,27 +1,17 @@
 import React from "react";
 import styles from './productTile.module.css'
 import { Link } from "react-router-dom";
+import { Product } from "./types";
 
-type Product = {
-    id: string;
-    description: string;
-    long_description: string;
-    base_price: number;
-    tax_rate: number;
-    images: string[];
-};
+interface ProductTileProps { Product: Product; }
 
-interface ProductProps {
-    Product: Product;
-}
-
-function ProductTile({Product}: ProductProps) {
-    const taxIncludedPrice = Math.round(Product.base_price * (1+ Product.tax_rate))
+function ProductTile({ Product }: ProductTileProps) {
+    const taxIncludedPrice = Math.round(Product.variants[0].full_price)
     return(
         <Link to={`/shop/${Product.id}`}>
             <div className={styles.product}>
-                <img className={styles.productImage} src={Product.images[0]} alt={`Product #${Product.id}`} />
-                <span className={styles.productDescription}>{Product.description}</span>
+                <img className={styles.productImage} src={Product.images[0].src} alt={`Product #${Product.id}`} />
+                <span className={styles.productDescription}>{Product.body_html}</span>
                 <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
             </div>
         </Link>

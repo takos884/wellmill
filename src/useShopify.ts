@@ -59,7 +59,7 @@ function useShopify<T>(intent: ShopifyIntent, id?: string): FetchState<T> {
     }
 
     fetchData();
-  }, [intent, id]);
+  }, [intent, endpoint, id]);
 
   return { data, loading, error };
 }

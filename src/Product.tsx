@@ -26,15 +26,15 @@ function Product() {
     const breadcrumbs = [
       { text: "ホーム", url: "/" },
       { text: "SHOP", url: "/shop" },
-      { text: product ? product.description : "", url: `/shop/${product?.id}` },
+      { text: product ? product.title : "", url: `/shop/${product?.id}` },
     ];
 
-    const taxIncludedPrice = product ? Math.round(product.base_price * (1+ product.tax_rate)) : 0;
+    const taxIncludedPrice = product ? Math.round(product.variants[0].full_price) : 0;
 
-    const productImages = product?.images.map((imageUrl, index) => (
+    const productImages = product?.images.map((spotifyImage, index) => (
       <img
-        key={imageUrl} // using imageUrl as a key assuming URLs are unique
-        src={imageUrl}
+        key={spotifyImage.id} // using imageUrl as a key assuming URLs are unique
+        src={spotifyImage.src.replace(/\\/g, "")}
         className={styles.productImage}
         alt={`Product ${index}`}
         style={index === 0 ? { gridColumn: 'span 2' } : {}}
@@ -91,14 +91,7 @@ function Product() {
       <div className={styles.otherProductsGrid}>
         {otherProducts?.map(product => (
           <div key={product.id}>
-            <ProductTile Product={{
-              id: product.id,
-              description: product.description,
-              long_description: product.description,
-              base_price: product.base_price,
-              tax_rate: product.tax_rate,
-              images: product.images,
-            }} />
+            <ProductTile Product={product} />
           </div>
         ))}
       </div>
@@ -112,12 +105,12 @@ function Product() {
         <div className={styles.productGrid}>
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>
-            <span className={styles.productDescription}>{product?.description}</span>
+            <span className={styles.productDescription}>{product?.title}</span>
             <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
             <button className={styles.addToCart}>カートに入れる</button>
-            <span className={styles.productLongDescription}>{product?.long_description}</span>
-            {product?.bloodTest ? questionsNode : null}
+            <span className={styles.productLongDescription}>{product?.body_html}</span>
+            {questionsNode}
           </div>
         </div>
         <div className={styles.infoLinks}>
