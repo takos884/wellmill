@@ -17,7 +17,7 @@ interface HeaderProps {
 }
 
 function Header({ breadcrumbs }: HeaderProps) {
-    const [user] = useUserData();
+    const {user} = useUserData();
 
     const headerButtonLink = (
         user === null ? <Link to="/login">ログイン</Link> : <Link to="/mypage">マイページ</Link>

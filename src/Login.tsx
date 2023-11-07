@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useUserData } from './useUserData';
 import { Link, useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 
 import './App.css';
 import styles from './login.module.css'
 import Header from './Header';
 import Footer from './Footer';
 
-const useRealData = false
+const useRealData = true;
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -17,34 +18,42 @@ const breadcrumbs = [
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [user, setUser] = useUserData();
+  const {user, setUser, saveShopifyData} = useUserData();
 
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     if(useRealData) {
         try {
-            // Assume this is the endpoint and method to get user data.
-            const response = await fetch('https://yourwordpresssite.com/api/login', {
+            const requestBody = JSON.stringify({email: username, password: password})
+            console.log("requestBody before fetch:", requestBody);
+            const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ username, password })
+              body: requestBody
             });
-      
+
+            console.log(response)
             const data = await response.json();
-      
-            if (data && data.firstName) {
-              setUser(data);
+            console.log(data)
+
+            if (data && data.customerAccessToken) {
+              Cookies.set('shopifyToken', data.customerAccessToken);
+              saveShopifyData(data);
+
               setTimeout(() => {
                 navigate('/mypage');
               }, 500);
+            } else if (data && data.customerUserErrors && data.customerUserErrors.length) {
+              alert(data.customerUserErrors[0].message);  // Displaying the first error message
             } else {
-              // Handle login error
+              // Handle other types of errors
             }
           } catch (error) {
             // Handle fetch or other runtime errors
+            console.error(error);
           }
     } else {
         const fakeUserData = {
@@ -72,7 +81,10 @@ const Login = () => {
     }
   };
 
-  const handleLogout = async () => { setUser(null); }
+  const handleLogout = async () => {
+    Cookies.remove('shopifyToken');
+    setUser(null);
+  }
 
   return (
     <>

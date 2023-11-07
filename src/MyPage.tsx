@@ -11,7 +11,7 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const [user, setUser] = useUserData();
+  const {user, setUser} = useUserData();
   const navigate = useNavigate();
 
   const handleLogout = async () => {

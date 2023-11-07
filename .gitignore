@@ -25,4 +25,6 @@ yarn-error.log*
 .env
 
 commands.txt
-/public/products.json
+products.json
+customers.json
+storefront_access_token.json

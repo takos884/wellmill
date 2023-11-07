@@ -41,7 +41,7 @@ interface InputErrors {
 
 function Signup() {
   const navigate = useNavigate();
-  const [, setUser] = useUserData();
+  const {setUser} = useUserData();
   const [inputs, setInputs] = useState<InputFields>({
     lastName: '',
     firstName: '',

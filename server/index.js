@@ -10,9 +10,17 @@ const path = require('path');
 
 const app = express();
 
-const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/products.json';
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const JSON_FILE_PATH = path.join(__dirname, '../products.json');
+const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/products.json';
+//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers.json';
+//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers/207119551/orders.json';
+//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers/7778170732836/orders.json?status=any';
+//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/orders.json?ids=5558159016228';
+//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/storefront_access_tokens.json';
+
+const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
+const JSON_FILE_PATH = path.join(__dirname, '../tokens.json');
 
 async function fetchShopifyData() {
   try {
@@ -85,6 +93,108 @@ app.post('/sendEmail', async (req, res) => {
         res.status(500).send(errorMessage);
     }
 });
+
+app.post('/login', async (req, res) => {
+  console.log(`Received ${req.method} request on ${req.url}`);
+  //console.log('Body:', req.body);
+
+  const query = `
+  mutation customerAccessTokenCreate {
+    customerAccessTokenCreate(input: {email: "${req.body.email}", password: "${req.body.password}"}) {
+      customerAccessToken {
+        accessToken
+      }
+      customerUserErrors {
+        message
+      }
+    }
+  }
+  `
+
+  try {
+    const requestBody = JSON.stringify({ query: query });
+    //console.log("Endpoint: " + SHOPIFY_GRAPHQL_ENDPOINT)
+    //console.log("Token: " + SHOPIFY_STOREFRONT_ACCESS_TOKEN)
+
+    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
+      },
+      body: requestBody
+    });
+
+    //console.log(`response:`)
+    //console.log(response)
+    //console.log(`response.statusText: ${response.statusText}`); // 'Unauthorized'
+    //console.log(`response.status: ${response.status}`);     // 401
+
+    const responseData = await response.json();
+    if (responseData.data.customerAccessTokenCreate.customerAccessToken) {
+      const customerAccessToken = responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken
+      console.log("Customer token:")
+      console.log(customerAccessToken)
+      const customerData = await GetCustomerDataFromToken(customerAccessToken)
+      console.log("Customer data:")
+      console.log(customerData)
+      customerData.customerAccessToken = customerAccessToken;
+      res.send(customerData);
+    } else {
+      res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
+    }
+  } catch (error) {
+    console.error(`Error during login: ${error.message}`, error);
+    res.status(500).send(error);
+  }
+});
+
+async function GetCustomerDataFromToken(token) {
+  const query = `
+  query {
+    customer(customerAccessToken: "${token}") {
+      id
+      firstName
+      lastName
+      acceptsMarketing
+      email
+      phone
+    }
+  }
+  `
+
+  try {
+    const requestBody = JSON.stringify({ query: query });
+
+    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
+      },
+      body: requestBody
+    });
+
+    //console.log(`response:`)
+    //console.log(response)
+
+    const responseData = await response.json();
+    //console.log(`responseData:`)
+    //console.log(responseData)
+    return responseData.data.customer;
+
+    //if (responseData.data.customerAccessTokenCreate.customerAccessToken) {
+    //  console.log("Hopefully the customer token:")
+    //  console.log(responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken)
+    //  res.send(responseData.data.customerAccessTokenCreate.customerAccessToken);
+    //} else {
+    //  res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
+    //}
+  } catch (error) {
+    console.error(`Error during login: ${error.message}`, error);
+    res.status(500).send(error);
+  }
+}
 
 app.use((err, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Error:`, err.stack);
