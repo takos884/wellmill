@@ -150,7 +150,7 @@ type UserProviderProps = {
 
 const UserContext = createContext<[User | null, React.Dispatch<React.SetStateAction<User | null>>] | undefined>(undefined);
 
-async function fetchUserDataFromShopify(token: string): Promise<User | null> {
+async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | null> {
   const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -232,10 +232,7 @@ export const useUserData = () => {
         if (!user) {
           const token = Cookies.get('shopifyToken');
           if (token) {
-            const userData = await fetchUserDataFromShopify(token);
-            if (userData) {
-              setUser(userData);
-            }
+            await loadUserDataFromShopify(token);
           }
         }  
       }
@@ -247,13 +244,32 @@ export const useUserData = () => {
     };
 
     initializeUserData();
-  }, [user, setUser]);
+  }, [user, setUser, loadUserDataFromShopify]);
+
+  async function loadUserDataFromShopify(token: string): Promise<User | null> {
+    const requestBody = JSON.stringify({customerAccessToken: token})
+  
+    const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: requestBody
+    });
+  
+    if (!response.ok) { return null; }
+  
+    const jsonResponse = await response.json();
+    if (jsonResponse && jsonResponse.customerAccessToken) {
+      Cookies.set('shopifyToken', jsonResponse.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+    }
+    saveShopifyData(jsonResponse);
+    return null;
+  }
 
   function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
     const userData = transformShopifyDataToUser(shopifyCustomerData);
     const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
-    console.log("cartData:")
-    console.log(cartData);
     userData.cart = cartData;
     setUser(userData);
   }

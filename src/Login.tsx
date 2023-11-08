@@ -23,62 +23,37 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if(useRealData) {
-        try {
-            const requestBody = JSON.stringify({email: username, password: password})
-            //console.log("requestBody before fetch:", requestBody);
-            const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: requestBody
-            });
+    try {
+      const requestBody = JSON.stringify({email: username, password: password})
+      //console.log("requestBody before fetch:", requestBody);
+      const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: requestBody
+      });
 
-            //console.log(response)
-            const data = await response.json();
-            //console.log(data)
+      //console.log(response)
+      const data = await response.json();
+      //console.log(data)
 
-            if (data && data.customerAccessToken) {
-              Cookies.set('shopifyToken', data.customerAccessToken, { expires: 31, sameSite: 'Lax' });
-              console.log(data);
-              saveShopifyData(data);
+      if (data && data.customerAccessToken) {
+        Cookies.set('shopifyToken', data.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+        //console.log(data);
+        saveShopifyData(data);
 
-              setTimeout(() => {
-                navigate('/mypage');
-              }, 500);
-            } else if (data && data.customerUserErrors && data.customerUserErrors.length) {
-              alert(data.customerUserErrors[0].message);  // Displaying the first error message
-            } else {
-              // Handle other types of errors
-            }
-          } catch (error) {
-            // Handle fetch or other runtime errors
-            console.error(error);
-          }
-    } else {
-        const fakeUserData = {
-            kaiin_code: 'NV001',
-            kaiin_last_name: "デハーン",
-            kaiin_first_name: "クリス",
-            touroku_kbn: 0,
-            kaiin_last_name_kana: "デハーン",
-            kaiin_first_name_kana: "クリス",
-            post_code: "1234567",
-            pref_code: "JPHYG",
-            pref: "Hyogo",
-            city: "Kobe",
-            address1: "Chuoku",
-            address2: "Building 1",
-            renrakusaki: "Building 1",
-            mail_address: "Building 1",
-            seibetsu: 1,
-            seinengappi: "2023/10/24",
-        }
-        setUser(fakeUserData);
         setTimeout(() => {
-            navigate('/mypage');
+          navigate('/mypage');
         }, 500);
+      } else if (data && data.customerUserErrors && data.customerUserErrors.length) {
+        alert(data.customerUserErrors[0].message);  // Displaying the first error message
+      } else {
+        // Other reply errors
+      }
+    } catch (error) {
+      // Fetch or other runtime errors
+      console.error(error);
     }
   };
 

@@ -52,11 +52,28 @@ div.loginButton {
 }
 
 .cart {
+  position: relative;
   margin-top: 10px;
 }
 
 .cart img {
   height: 2rem;
+}
+
+span.cartQuantity {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 0.9rem;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 1rem;
+  background: #f66;
 }
 
 div.breadcrumbs {

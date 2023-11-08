@@ -99,9 +99,40 @@ app.post('/login', async (req, res) => {
   console.log(`Received ${req.method} request on ${req.url}`);
   //console.log('Body:', req.body);
 
+  let customerAccessToken;
+
+  if(req.body.email && req.body.password) {
+    customerAccessToken = await GetCustomerTokenFromCredentials(req.body.email, req.body.password);
+  } else if (req.body.customerAccessToken) {
+    customerAccessToken = req.body.customerAccessToken;
+  } else {
+    res.status(401).send("No customerAccessToken given");
+  }
+
+  console.log("Customer token:")
+  console.log(customerAccessToken)
+
+  const customerData = await GetCustomerDataFromToken(customerAccessToken)
+  console.log("Customer data:")
+  console.log(customerData)
+
+  const cartId = await getCartIdFromCustomerId(customerData.id, customerAccessToken)
+  console.log("Cart ID:")
+  console.log(cartId)
+
+  const cartData = await GetCartDataFromCartId(cartId)
+  console.log("Cart Data:")
+  console.log(cartData)
+
+  customerData.customerAccessToken = customerAccessToken;
+  customerData.cart = cartData;
+  res.send(customerData);
+});
+
+async function GetCustomerTokenFromCredentials(email, password) {
   const query = `
   mutation customerAccessTokenCreate {
-    customerAccessTokenCreate(input: {email: "${req.body.email}", password: "${req.body.password}"}) {
+    customerAccessTokenCreate(input: {email: "${email}", password: "${password}"}) {
       customerAccessToken {
         accessToken
       }
@@ -132,26 +163,8 @@ app.post('/login', async (req, res) => {
     //console.log(`response.status: ${response.status}`);     // 200
 
     const responseData = await response.json();
-    if (responseData.data.customerAccessTokenCreate.customerAccessToken) {
-      const customerAccessToken = responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken
-      console.log("Customer token:")
-      console.log(customerAccessToken)
-
-      const customerData = await GetCustomerDataFromToken(customerAccessToken)
-      console.log("Customer data:")
-      console.log(customerData)
-
-      const cartId = await getCartIdFromCustomerId(customerData.id, customerAccessToken)
-      console.log("Cart ID:")
-      console.log(cartId)
-
-      const cartData = await GetCartDataFromCartId(cartId)
-      console.log("Cart Data:")
-      console.log(cartData)
-
-      customerData.customerAccessToken = customerAccessToken;
-      customerData.cart = cartData;
-      res.send(customerData);
+    if (responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken) {
+      return responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken;
     } else {
       res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
     }
@@ -159,7 +172,7 @@ app.post('/login', async (req, res) => {
     console.error(`Error during login: ${error.message}`, error);
     res.status(500).send(error);
   }
-});
+}
 
 async function GetCustomerDataFromToken(token) {
   const query = `
