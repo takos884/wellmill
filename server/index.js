@@ -20,7 +20,8 @@ const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/
 
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
-const JSON_FILE_PATH = path.join(__dirname, '../tokens.json');
+const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
+const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
 async function fetchShopifyData() {
   try {
@@ -37,7 +38,7 @@ async function fetchShopifyData() {
     }
 
     const data = await response.json();
-    fs.writeFileSync(JSON_FILE_PATH, JSON.stringify(data));
+    fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(data));
     console.log(`[${new Date().toISOString()}] Updated products.json`);
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Error fetching Shopify data:`, err);
@@ -135,10 +136,17 @@ app.post('/login', async (req, res) => {
       const customerAccessToken = responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken
       console.log("Customer token:")
       console.log(customerAccessToken)
+
       const customerData = await GetCustomerDataFromToken(customerAccessToken)
       console.log("Customer data:")
       console.log(customerData)
+
+      const cartData = await getCartDataFromCustomerId(customerData.id, customerAccessToken)
+      console.log("Cart data:")
+      console.log(cartData)
+
       customerData.customerAccessToken = customerAccessToken;
+      customerData.cart = cartData;
       res.send(customerData);
     } else {
       res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
@@ -194,6 +202,74 @@ async function GetCustomerDataFromToken(token) {
     console.error(`Error during login: ${error.message}`, error);
     res.status(500).send(error);
   }
+}
+
+async function getCartDataFromCustomerId(customerId, customerAccessToken) {
+  const cartsData = readCartsFile();
+  const cartEntry = cartsData.find(entry => entry.customerId === customerId);
+
+  if (cartEntry && cartEntry.cartId) {
+    console.log('Cart ID for customer:', cartEntry.cartId);
+    return cartEntry.cartId;
+  } else {
+    // Cart does not exist, create a new one and store it
+    const newCartId = await createCart(customerAccessToken);
+    cartsData.push({ customerId, cartId: newCartId });
+    writeCartsFile(cartsData);
+    return newCartId;
+  }
+}
+
+function readCartsFile() {
+  if (!fs.existsSync(CARTS_FILE_PATH)) {
+    fs.writeFileSync(CARTS_FILE_PATH, JSON.stringify([]), 'utf8');
+  }
+  return JSON.parse(fs.readFileSync(CARTS_FILE_PATH, 'utf8'));
+}
+
+function writeCartsFile(cartsData) {
+  fs.writeFileSync(CARTS_FILE_PATH, JSON.stringify(cartsData), 'utf8');
+}
+
+async function createCart(customerAccessToken) {
+  const mutation = `mutation cartCreate($buyerIdentity: CartBuyerIdentityInput) {
+    cartCreate(input: {buyerIdentity: $buyerIdentity}) {
+      cart {
+        id
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }`;
+
+  const variables = {
+    buyerIdentity: {
+      countryCode: 'JP',
+      customerAccessToken: customerAccessToken
+    }
+  };
+
+  const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
+    },
+    body: JSON.stringify({ query: mutation, variables: variables })
+  });
+
+  const responseData = await response.json();
+  if (responseData.errors) {
+    console.error('Error creating cart:', responseData.errors);
+    return null;
+    //throw new Error('Error creating cart');
+  }
+
+  const cartId = responseData.data.cartCreate.cart.id;
+  console.log('Created new cart with ID:', cartId);
+  return cartId;
 }
 
 app.use((err, req, res, next) => {

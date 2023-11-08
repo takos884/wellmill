@@ -1,5 +1,8 @@
-import { type } from 'os';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
+
+const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
+const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
 
 type User = {
     kaiin_code: string,
@@ -29,6 +32,7 @@ type shopifyCustomerData = {
   acceptsMarketing: boolean,
 }
 
+/*
 type shopifyCustomerDataFull = {
   "id": number,
   "email": string,
@@ -67,7 +71,9 @@ type shopifyCustomerDataFull = {
   "admin_graphql_api_id": string,
   "default_address": address
 }
+*/
 
+/*
 type address = {
   "id": number,
   "customer_id": number,
@@ -87,12 +93,43 @@ type address = {
   "country_name": string,
   "default": boolean
 }
+*/
 
 type UserProviderProps = {
     children: React.ReactNode;
 };
 
 const UserContext = createContext<[User | null, React.Dispatch<React.SetStateAction<User | null>>] | undefined>(undefined);
+
+async function fetchUserDataFromShopify(token: string): Promise<User | null> {
+  // Replace with the actual query and fetch call
+  const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+    },
+    body: JSON.stringify({
+      query: `query {
+        customer(customerAccessToken: "${token}") {
+          acceptsMarketing
+          email
+          firstName
+          id
+          lastName
+          phone
+        }
+      }`
+    }),
+  });
+
+  if (response.ok) {
+    const jsonResponse = await response.json();
+    return transformShopifyDataToUser(jsonResponse.data.customer);
+  }
+
+  return null;
+}
 
 function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData) {
 
@@ -119,11 +156,36 @@ export const useUserData = () => {
   }
 
   const [user, setUser] = context;
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // This effect runs once on mount to check for existing user data
+    const initializeUserData = async () => {
+      try{
+        if (!user) {
+          const token = Cookies.get('shopifyToken');
+          if (token) {
+            const userData = await fetchUserDataFromShopify(token);
+            if (userData) {
+              setUser(userData);
+            }
+          }
+        }  
+      }
+      catch(error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setLoading(false); // Stop loading regardless of the outcome
+      }
+    };
+
+    initializeUserData();
+  }, [user, setUser]);
 
   function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
     const userData = transformShopifyDataToUser(shopifyCustomerData);
     setUser(userData);
   }
 
-  return {user, setUser, saveShopifyData};
+  return {user, setUser, saveShopifyData, loading};
 };

@@ -26,7 +26,7 @@ const Login = () => {
     if(useRealData) {
         try {
             const requestBody = JSON.stringify({email: username, password: password})
-            console.log("requestBody before fetch:", requestBody);
+            //console.log("requestBody before fetch:", requestBody);
             const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
               method: 'POST',
               headers: {
@@ -35,12 +35,12 @@ const Login = () => {
               body: requestBody
             });
 
-            console.log(response)
+            //console.log(response)
             const data = await response.json();
-            console.log(data)
+            //console.log(data)
 
             if (data && data.customerAccessToken) {
-              Cookies.set('shopifyToken', data.customerAccessToken);
+              Cookies.set('shopifyToken', data.customerAccessToken, { expires: 31, sameSite: 'Lax' });
               saveShopifyData(data);
 
               setTimeout(() => {

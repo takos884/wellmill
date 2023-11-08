@@ -4,6 +4,7 @@ import './App.css';
 import styles from './mypage.module.css'
 import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -11,13 +12,16 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const {user, setUser} = useUserData();
+  const {user, setUser, loading} = useUserData();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     setUser(null);
+    Cookies.remove('shopifyToken');
     navigate('/login');
   }
+
+  if(loading) return <span>Loading...</span>
 
   if (!user) return <p>Please <Link to='/login'>log in</Link> first.</p>;
 
