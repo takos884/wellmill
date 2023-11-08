@@ -19,6 +19,9 @@ interface HeaderProps {
 function Header({ breadcrumbs }: HeaderProps) {
     const {user} = useUserData();
 
+    const cartQuantity = user?.cart?.totalQuantity;
+    console.log("user:")
+    console.log(user)
     const headerButtonLink = (
         user === null ? <Link to="/login">ログイン</Link> : <Link to="/mypage">マイページ</Link>
     )
@@ -34,7 +37,7 @@ function Header({ breadcrumbs }: HeaderProps) {
                     <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
                     <div className={[styles.navItem, styles.loginButton].join(' ')}>{headerButtonLink}</div>
                     <div className={[styles.navItem, styles.cart].join(' ')}>
-                        <img src="cart.png" alt="Cart" />
+                        <img src="cart.png" alt="Cart" />{cartQuantity}
                     </div>
                 </div>
             </div>

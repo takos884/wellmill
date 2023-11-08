@@ -128,8 +128,8 @@ app.post('/login', async (req, res) => {
 
     //console.log(`response:`)
     //console.log(response)
-    //console.log(`response.statusText: ${response.statusText}`); // 'Unauthorized'
-    //console.log(`response.status: ${response.status}`);     // 401
+    //console.log(`response.statusText: ${response.statusText}`); // 'ok'
+    //console.log(`response.status: ${response.status}`);     // 200
 
     const responseData = await response.json();
     if (responseData.data.customerAccessTokenCreate.customerAccessToken) {
@@ -141,8 +141,12 @@ app.post('/login', async (req, res) => {
       console.log("Customer data:")
       console.log(customerData)
 
-      const cartData = await getCartDataFromCustomerId(customerData.id, customerAccessToken)
-      console.log("Cart data:")
+      const cartId = await getCartIdFromCustomerId(customerData.id, customerAccessToken)
+      console.log("Cart ID:")
+      console.log(cartId)
+
+      const cartData = await GetCartDataFromCartId(cartId)
+      console.log("Cart Data:")
       console.log(cartData)
 
       customerData.customerAccessToken = customerAccessToken;
@@ -204,7 +208,7 @@ async function GetCustomerDataFromToken(token) {
   }
 }
 
-async function getCartDataFromCustomerId(customerId, customerAccessToken) {
+async function getCartIdFromCustomerId(customerId, customerAccessToken) {
   const cartsData = readCartsFile();
   const cartEntry = cartsData.find(entry => entry.customerId === customerId);
 
@@ -270,6 +274,99 @@ async function createCart(customerAccessToken) {
   const cartId = responseData.data.cartCreate.cart.id;
   console.log('Created new cart with ID:', cartId);
   return cartId;
+}
+
+async function GetCartDataFromCartId(cartId) {
+  const query = `
+  query GetCart($cartId: ID!) {
+    cart(id: $cartId) {
+      id
+      lines(first: 250) {
+        edges {
+          node {
+            id
+            quantity
+            merchandise {
+              ... on ProductVariant {
+                id
+                title
+                priceV2 {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+            cost {
+              subtotalAmount {
+                amount
+                currencyCode
+              }
+              totalAmount {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+      cost {
+        subtotalAmount {
+          amount
+          currencyCode
+        }
+        totalTaxAmount {
+          amount
+          currencyCode
+        }
+        totalAmount {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+  `;
+
+  const variables = {
+    cartId: cartId
+  };
+
+  try {
+    const requestBody = JSON.stringify({
+      query: query,
+      variables: variables
+    });
+
+    console.log("requestBody:")
+    console.log(requestBody)
+
+    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
+      },
+      body: requestBody
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseData = await response.json();
+    console.log("responseData:");
+    console.log(responseData);
+
+    if (responseData.errors) {
+      console.error('GraphQL errors:', responseData.errors);
+      throw new Error('GraphQL errors occurred');
+    }
+
+    return responseData.data.cart;
+  } catch (error) {
+    console.error(`Error fetching cart data: ${error.message}`, error);
+    throw error;
+  }
 }
 
 app.use((err, req, res, next) => {

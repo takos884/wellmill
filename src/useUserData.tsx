@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { type } from 'os';
 
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
@@ -20,7 +21,8 @@ type User = {
     mail_address?: string,
     seibetsu?: number,
     seinengappi?: string,
-};
+    cart?: cartData,
+  };
 
 type shopifyCustomerData = {
   customerAccessToken: string,
@@ -30,6 +32,53 @@ type shopifyCustomerData = {
   lastName: string,
   phone: string | null,
   acceptsMarketing: boolean,
+  cart: ShopifyResponseCartData,
+}
+
+type cartData = {
+  id: string,
+  totalQuantity: number,
+  lines: cartLine[],
+  totalCost: number,
+}
+
+type cartLine = {
+  id: string,
+  merchandise: string,
+  cost: number,
+  quantity: number,
+}
+
+type ShopifyResponseCartData = {
+  id: string,
+  lines: {
+    edges: Array<{
+      node: {
+        id: string,
+        quantity: number,
+        merchandise: {
+          __typename: string,
+          id: string,
+          priceV2: {
+            amount: string,
+            currencyCode: string,
+          }
+        },
+        cost: {
+          subtotalAmount: {
+            amount: string,
+            currencyCode: string,
+          }
+        }
+      }
+    }>
+  },
+  cost: {
+    subtotalAmount: {
+      amount: string,
+      currencyCode: string,
+    }
+  }
 }
 
 /*
@@ -102,7 +151,6 @@ type UserProviderProps = {
 const UserContext = createContext<[User | null, React.Dispatch<React.SetStateAction<User | null>>] | undefined>(undefined);
 
 async function fetchUserDataFromShopify(token: string): Promise<User | null> {
-  // Replace with the actual query and fetch call
   const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -131,7 +179,7 @@ async function fetchUserDataFromShopify(token: string): Promise<User | null> {
   return null;
 }
 
-function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData) {
+function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData):User {
 
   // start with: 'gid://shopify/Customer/7503719465252'
   const id = shopifyCustomerData.id.split("/")[shopifyCustomerData.id.split("/").length - 1]
@@ -141,6 +189,25 @@ function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData) {
     kaiin_last_name: shopifyCustomerData.lastName,
     kaiin_first_name: shopifyCustomerData.firstName,
     mail_address: shopifyCustomerData.email,
+  };
+}
+
+const transformShopifyCartToCart = (shopifyCart: ShopifyResponseCartData): cartData => {
+  const transformedCartLines: cartLine[] = shopifyCart.lines.edges.map(edge => ({
+    id: edge.node.id,
+    merchandise: edge.node.merchandise.id,
+    cost: parseFloat(edge.node.cost.subtotalAmount.amount),
+    quantity: edge.node.quantity,
+  }));
+
+  const totalCost = parseFloat(shopifyCart.cost.subtotalAmount.amount);
+  const totalQuantity = transformedCartLines.reduce((sum, item) => sum + item.quantity, 0);
+
+  return {
+    id: shopifyCart.id,
+    totalQuantity,
+    lines: transformedCartLines,
+    totalCost,
   };
 }
 
@@ -184,6 +251,10 @@ export const useUserData = () => {
 
   function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
     const userData = transformShopifyDataToUser(shopifyCustomerData);
+    const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
+    console.log("cartData:")
+    console.log(cartData);
+    userData.cart = cartData;
     setUser(userData);
   }
 

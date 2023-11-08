@@ -41,6 +41,7 @@ const Login = () => {
 
             if (data && data.customerAccessToken) {
               Cookies.set('shopifyToken', data.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+              console.log(data);
               saveShopifyData(data);
 
               setTimeout(() => {
