@@ -15,6 +15,7 @@ import MyPage from './MyPage';
 import Login from './Login';
 import Signup from './Signup';
 import Contact from './Contact';
+import Cart from './Cart';
 
 function Layout() {
   const location = useLocation();
@@ -27,6 +28,7 @@ function Layout() {
     <Routes>
       <Route path="/shop/:productId" element={<Product />} />
       <Route path="/shop" element={<Shop />} />
+      <Route path="/cart" element={<Cart />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />

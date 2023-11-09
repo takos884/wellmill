@@ -1,9 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { type } from 'os';
 
-const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
+//const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
+//const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
 
 type User = {
     kaiin_code: string,
@@ -57,7 +56,6 @@ type ShopifyResponseCartData = {
         id: string,
         quantity: number,
         merchandise: {
-          __typename: string,
           id: string,
           priceV2: {
             amount: string,
@@ -150,6 +148,7 @@ type UserProviderProps = {
 
 const UserContext = createContext<[User | null, React.Dispatch<React.SetStateAction<User | null>>] | undefined>(undefined);
 
+/*
 async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | null> {
   const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
     method: 'POST',
@@ -178,6 +177,7 @@ async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | nu
 
   return null;
 }
+*/
 
 function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData):User {
 
@@ -225,9 +225,24 @@ export const useUserData = () => {
   const [user, setUser] = context;
   const [loading, setLoading] = useState(true)
 
+  const saveShopifyData = useCallback((shopifyCustomerData: shopifyCustomerData) => {
+    const userData = transformShopifyDataToUser(shopifyCustomerData);
+    const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
+    userData.cart = cartData;
+    setUser(userData);
+  }, [setUser]);
+
   useEffect(() => {
     // This effect runs once on mount to check for existing user data
     const initializeUserData = async () => {
+
+      // Pull mock data for local development
+      if (process.env.NODE_ENV === 'development' && !user) {
+        const devUserData = {"id":"gid://shopify/Customer/7503719465252","firstName":"クリス","lastName":"デハーン","acceptsMarketing":true,"email":"chris@nextvision.co.jp","phone":null,"customerAccessToken":"0700f9f550f63d8a62cf36ed02285eca","cart":{"id":"gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36","lines":{"edges":[{"node":{"id":"gid://shopify/CartLine/f610d779-65d4-4fb9-a105-9b298372fc4d?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":3,"merchandise":{"id":"gid://shopify/ProductVariant/44859100594468","title":"選べる３項目モニタリング検査","priceV2":{"amount":"13200.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"39600.0","currencyCode":"JPY"},"totalAmount":{"amount":"39600.0","currencyCode":"JPY"}}}},{"node":{"id":"gid://shopify/CartLine/1d2300a3-8a3e-4810-a458-ed267dac76f0?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":1,"merchandise":{"id":"gid://shopify/ProductVariant/44859090796836","title":"選べる１項目モニタリング検査","priceV2":{"amount":"6600.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"6600.0","currencyCode":"JPY"},"totalAmount":{"amount":"6600.0","currencyCode":"JPY"}}}}]},"cost":{"subtotalAmount":{"amount":"46200.0","currencyCode":"JPY"},"totalTaxAmount":null,"totalAmount":{"amount":"46200.0","currencyCode":"JPY"}}}};
+        console.log("Pulling mock data");
+        saveShopifyData(devUserData);
+      }
+    
       try{
         if (!user) {
           const token = Cookies.get('shopifyToken');
@@ -243,36 +258,38 @@ export const useUserData = () => {
       }
     };
 
+    async function loadUserDataFromShopify(token: string): Promise<User | null> {
+      const requestBody = JSON.stringify({customerAccessToken: token})
+      const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: requestBody
+      });
+    
+      if (!response.ok) { return null; }
+    
+      const jsonResponse = await response.json();
+      if (jsonResponse && jsonResponse.customerAccessToken) {
+        Cookies.set('shopifyToken', jsonResponse.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+      }
+      console.log(JSON.stringify(jsonResponse))
+      saveShopifyData(jsonResponse);
+      return null;
+    }  
+
     initializeUserData();
-  }, [user, setUser, loadUserDataFromShopify]);
+  }, [user, setUser, saveShopifyData]);
 
-  async function loadUserDataFromShopify(token: string): Promise<User | null> {
-    const requestBody = JSON.stringify({customerAccessToken: token})
-  
-    const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: requestBody
-    });
-  
-    if (!response.ok) { return null; }
-  
-    const jsonResponse = await response.json();
-    if (jsonResponse && jsonResponse.customerAccessToken) {
-      Cookies.set('shopifyToken', jsonResponse.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+  /*
+    function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
+      const userData = transformShopifyDataToUser(shopifyCustomerData);
+      const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
+      userData.cart = cartData;
+      setUser(userData);
     }
-    saveShopifyData(jsonResponse);
-    return null;
-  }
-
-  function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
-    const userData = transformShopifyDataToUser(shopifyCustomerData);
-    const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
-    userData.cart = cartData;
-    setUser(userData);
-  }
+  */
 
   return {user, setUser, saveShopifyData, loading};
 };

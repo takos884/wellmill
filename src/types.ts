@@ -17,6 +17,7 @@ export type Variants = {
     title: string,
     price: number,
     requires_shipping: boolean,
+    admin_graphql_api_id: string,
 }
 
 export type ShopifyImage = {
@@ -35,6 +36,7 @@ export type Product = {
     body_html: string;
     vendor: string;
     status: number;
+    image: ShopifyImage,
     images: ShopifyImage[];
     variants: Variants[];
 };

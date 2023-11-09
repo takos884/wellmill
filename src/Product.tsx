@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "./ProductContext";
@@ -8,34 +8,20 @@ import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
 import ProductTile from "./ProductTile";
+import { useUserData } from "./useUserData";
 
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = "22e838d1749ac7fb42ebbb9a8b605663" // Ok to make public
 const GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
 
-// Define the types for better TypeScript support
-type CartLineInput = {
-  merchandiseId: string;
-  quantity: number;
-};
-
-type UserError = {
-  field: string[] | null;
-  message: string;
-};
-
-type CartResponse = {
-  cart: any; // Define this type based on what fields you need from the cart
-  userErrors: UserError[];
-};
-
-
-
 function Product() {
     const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
-    const { products, setProducts } = useProducts();
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<Error | string | ReactNode | null>(null);
+    //const { products, setProducts } = useProducts();
+    const { products, isLoading: productsLoading, error: productsError } = useProducts();
+
+    const { user } = useUserData();
+    //const [loading, setLoading] = useState<boolean>(true);
+    //const [error, setError] = useState<Error | string | ReactNode | null>(null);
 
     const [productQuantity, setProductQuantity] = useState(1);
 
@@ -45,10 +31,18 @@ function Product() {
     // eslint-disable-next-line
     const otherProducts = products?.filter(p => p.id != productId);
 
-    const cartId = "gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36";
-    const variantId = "gid://shopify/ProductVariant/44859100594468";
+    //const cartId = "gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36";
+    const cartId = user?.cart?.id;
+
+    //const variantId = "gid://shopify/ProductVariant/44859100594468";
+    const variantId = currentProduct?.variants[0].admin_graphql_api_id;
 
     async function addToCart() {
+      if(!cartId || !variantId) {
+        console.log(`addToCart called without either cartId (${cartId}) or variantId (${variantId})`);
+        return;
+      }
+
       const mutation = `
         mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
           cartLinesAdd(cartId: $cartId, lines: $lines) {
@@ -95,6 +89,7 @@ function Product() {
       }
     };
 
+    /*
     useEffect(() => {
       async function fetchProducts() {
         try {
@@ -119,7 +114,8 @@ function Product() {
       }
       fetchProducts();
     }, [setProducts]);
-  
+    */
+
     const breadcrumbs = [
       { text: "ホーム", url: "/" },
       { text: "SHOP", url: "/shop" },
@@ -199,6 +195,8 @@ function Product() {
       <div className={styles.productRoot}>
         <div className={styles.topDots} />
         <Header breadcrumbs={breadcrumbs} />
+        {productsLoading && (<span>Loading Product...</span>)}
+        {productsError && (<span>Loading Product Error</span>)}
         <div className={styles.productGrid}>
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>

@@ -8,8 +8,6 @@ import styles from './login.module.css'
 import Header from './Header';
 import Footer from './Footer';
 
-const useRealData = true;
-
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
   { text: "ログイン", url: "/login" },
