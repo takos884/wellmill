@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from './types';
+import { Product, Variant } from './types';
 
 type ProductContextType = {
   products: Product[] | undefined;
@@ -41,6 +41,18 @@ export function ProductProvider({ children }: ProductProviderProps) {
           throw new Error(`HTTP Status: ${response.status}`);
         }
         const fetchedProducts = await response.json();
+
+        // Shopify returns price as a string! This seems like an error on their side
+        fetchedProducts.products.forEach((product: Product) => {
+          if(product.variants) {
+            product.variants.forEach((variant: Variant) => {
+              if(variant.price) {
+                variant.price = parseInt(variant.price.toString())
+              }
+            });
+          }
+        });
+        console.log(fetchedProducts)
         if (isMounted) {
           if (Array.isArray(fetchedProducts)) {
             setProducts(fetchedProducts);

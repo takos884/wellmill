@@ -11,7 +11,7 @@ export type FakeProduct = {
 
 
 
-export type Variants = {
+export type Variant = {
     product_id: string,
     id: string,
     title: string,
@@ -38,5 +38,5 @@ export type Product = {
     status: number;
     image: ShopifyImage,
     images: ShopifyImage[];
-    variants: Variants[];
+    variants: Variant[];
 };
