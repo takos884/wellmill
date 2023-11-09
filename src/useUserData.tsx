@@ -1,27 +1,27 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 
-//const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
-//const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
+const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
+const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
 
 type User = {
-    kaiin_code: string,
-    kaiin_last_name: string,
-    kaiin_first_name: string,
-    kaiin_last_name_kana?: string,
-    kaiin_first_name_kana?: string,
-    post_code?: string,
-    pref_code?: string,
-    pref?: string,
-    city?: string,
-    address1?: string,
-    address2?: string,
-    renrakusaki?: string,
-    mail_address?: string,
-    seibetsu?: number,
-    seinengappi?: string,
-    cart?: cartData,
-  };
+  kaiin_code: string,
+  kaiin_last_name: string,
+  kaiin_first_name: string,
+  kaiin_last_name_kana?: string,
+  kaiin_first_name_kana?: string,
+  post_code?: string,
+  pref_code?: string,
+  pref?: string,
+  city?: string,
+  address1?: string,
+  address2?: string,
+  renrakusaki?: string,
+  mail_address?: string,
+  seibetsu?: number,
+  seinengappi?: string,
+  cart?: cartData,
+};
 
 type shopifyCustomerData = {
   customerAccessToken: string,
@@ -232,6 +232,97 @@ export const useUserData = () => {
     setUser(userData);
   }, [setUser]);
 
+  async function CallGraphQL(query: string, variables: any) {
+    try {
+      const requestBody = JSON.stringify({ query: query, variables: variables});
+      //console.log({ query: query, variables: variables});
+      const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+        },
+        body: requestBody,
+      });
+  
+      const responseBody = await response.json();
+      //console.log(responseBody)
+
+      if(!responseBody) {
+        console.error('Unknown GraphQL error:');
+        return undefined;
+      }
+
+      if (responseBody.errors) {
+        console.error('GraphQL errors:', responseBody.errors);
+        return undefined;
+      }
+  
+      if (responseBody.data) {
+        return responseBody.data;
+      }
+  
+      return responseBody;
+    } catch (error) {
+      console.error('Network error adding item to cart:', error);
+      return undefined;
+    }
+  }
+
+  const addToCart = useCallback(async (cartId: string, merchandiseId: string, quantity: number) => {
+    const mutation = `
+      mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+        cartLinesAdd(cartId: $cartId, lines: $lines) {
+          cart {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      cartId: cartId,
+      lines: [
+        {
+          quantity: quantity,
+          merchandiseId: merchandiseId,
+        },
+      ],
+    };
+
+    const graphQlReturnData = await CallGraphQL(mutation, variables);
+    const newCartId = graphQlReturnData.cartLinesAdd.cart.id;
+    console.log('Cart ID after adding item:', newCartId);
+    return newCartId;
+  }, [])
+
+  const updateCart = useCallback(async (cartId: string, lineId: string, quantity: number) => {
+    const mutation = `
+      mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+        cartLinesUpdate(cartId: $cartId, lines: $lines) {
+          cart {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      cartId: cartId,
+      lines: [
+        {
+          id: lineId,
+          quantity: quantity,
+        },
+      ],
+    };
+
+    const graphQlReturnData = await CallGraphQL(mutation, variables);
+    const newCartId = graphQlReturnData.cartLinesUpdate.cart.id;
+    //console.log('Cart ID after updating item:', newCartId);
+    return newCartId;
+  }, [])
+
   useEffect(() => {
     // This effect runs once on mount to check for existing user data
     const initializeUserData = async () => {
@@ -242,7 +333,7 @@ export const useUserData = () => {
         console.log("Pulling mock data");
         saveShopifyData(devUserData);
       }
-    
+
       try{
         if (!user) {
           const token = Cookies.get('shopifyToken');
@@ -274,7 +365,7 @@ export const useUserData = () => {
       if (jsonResponse && jsonResponse.customerAccessToken) {
         Cookies.set('shopifyToken', jsonResponse.customerAccessToken, { expires: 31, sameSite: 'Lax' });
       }
-      console.log(JSON.stringify(jsonResponse))
+      //console.log(JSON.stringify(jsonResponse))
       saveShopifyData(jsonResponse);
       return null;
     }  
@@ -282,14 +373,5 @@ export const useUserData = () => {
     initializeUserData();
   }, [user, setUser, saveShopifyData]);
 
-  /*
-    function saveShopifyData(shopifyCustomerData: shopifyCustomerData) {
-      const userData = transformShopifyDataToUser(shopifyCustomerData);
-      const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
-      userData.cart = cartData;
-      setUser(userData);
-    }
-  */
-
-  return {user, setUser, saveShopifyData, loading};
+  return {user, setUser, saveShopifyData, addToCart, updateCart, loading};
 };

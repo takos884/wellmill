@@ -163,6 +163,9 @@ async function GetCustomerTokenFromCredentials(email, password) {
     //console.log(`response.status: ${response.status}`);     // 200
 
     const responseData = await response.json();
+    if(!responseData) {
+      res.status(401).send("No response from server");
+    }
     if (responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken) {
       return responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken;
     } else {

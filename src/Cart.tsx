@@ -13,13 +13,18 @@ const breadcrumbs = [
 ];
 
 function Cart() {
-  const { user, loading: userLoading } = useUserData();
+  const { user, loading: userLoading, addToCart, updateCart } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
   if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
-  const cart = user?.cart ? user?.cart : {lines: [], totalQuantity: 0, totalCost: 0}
+  const cart = user?.cart ? user?.cart : {lines: [], id: "", totalQuantity: 0, totalCost: 0}
+
+  async function HandleMinusClick(event: React.SyntheticEvent, cartId: string, merchandiseId: string, quantity: number) {
+    const newCartId = await updateCart(cartId, merchandiseId, quantity);
+    console.log(newCartId)
+  }
 
   const headings = (cart.totalQuantity > 0) ? (
     <div className={styles.headings}>
@@ -31,14 +36,16 @@ function Cart() {
 
   const cartLineElements = cart.lines.map((line) => {
     // Extracting the variant ID number from the merchandise string
-    const variantId = line.merchandise.split('/').pop();
+    const variantId = line.merchandise;
+    const variantNumber = variantId.split('/').pop();
 
     // Find the corresponding product and variant
     const product = products ? products.find((product) => {
-      return product.variants.some(variant => variant.id.toString() === variantId);
+      return product.variants.some(variant => variant.id.toString() === variantNumber);
     }) : null;
 
-    const variant = product?.variants.find(variant => variant.id.toString() === variantId);
+    const variant = product?.variants.find(variant => variant.id.toString() === variantNumber);
+    if(!variant) return null;
 
     // If product is found, return the div with image and title, otherwise null
     return product ? (
@@ -46,15 +53,15 @@ function Cart() {
         <div className={styles.lineItemLeft}>
           <img src={product.image.src} alt={product.title} style={{ width: '100px' }} />
           <div className={styles.description}>
-            <span className={styles.title}>{variant ? variant.title : product.title}</span>
-            <span className={styles.descriptionPrice}>{variant ? variant.price.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' }) : null}（税込）</span>
+            <span className={styles.title}>{variant.title}</span>
+            <span className={styles.descriptionPrice}>{variant.price.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}（税込）</span>
           </div>
         </div>
         <div className={styles.quantityWrapper}>
           <div className={styles.quantityChanger}>
-            <span className={styles.quantityButton}><img className={styles.quantityImg} src="minus.svg" /></span>
+            <span className={styles.quantityButton}><img className={styles.quantityImg} src="minus.svg" alt="minus" onClick={(event) => HandleMinusClick(event, cart.id, line.id, 2)} /></span>
             <span className={styles.quantityValue}>{line.quantity}</span>
-            <span className={styles.quantityButton}><img className={styles.quantityImg} src="plus.svg" /></span>
+            <span className={styles.quantityButton}><img className={styles.quantityImg} src="plus.svg" alt="plus" /></span>
           </div>
           <span className={styles.quantityTrash}>🗑</span>
         </div>

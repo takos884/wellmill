@@ -52,7 +52,9 @@ export function ProductProvider({ children }: ProductProviderProps) {
             });
           }
         });
-        console.log(fetchedProducts)
+
+        //console.log(fetchedProducts)
+
         if (isMounted) {
           if (Array.isArray(fetchedProducts)) {
             setProducts(fetchedProducts);
