@@ -16,16 +16,15 @@ div.cartWrapper {
 div.headings {
   display: grid;
   width: 100%;
-  grid-template-columns: 60% 20% 20%;
+  grid-template-columns: 60% 25% 15%;
   padding: 1rem 0;
   margin: 1rem 0;
   border-bottom: 1px solid #000;
-  justify-items: center;
 }
 
 div.lineItem {
   display: grid;
-  grid-template-columns: 60% 20% 20%;
+  grid-template-columns: 60% 25% 15%;
   margin: 2rem 0;
   padding-bottom: 3rem;
   border-bottom: 1px solid #bbb;
@@ -60,6 +59,7 @@ div.quantityWrapper {
 
 div.quantityChanger {
   display: flex;
+  overflow: hidden;
   margin-right: 0.5rem;
   height: 3rem;
   border: 1px solid #000;
@@ -74,6 +74,11 @@ span.quantityButton {
   width: 3rem;
   height: 100%;
   font-size: 2rem;
+  background-color: #fff;
+}
+
+span.quantityButtonDisabled {
+  filter: invert(40%) brightness(150%);
 }
 
 img.quantityImg {
@@ -91,6 +96,7 @@ span.quantityValue {
 
 span.quantityTrash {
   font-size: 1.5rem;
+  width: 3rem;
 }
 
 span.lineCost {

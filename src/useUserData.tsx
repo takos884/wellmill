@@ -4,6 +4,51 @@ import Cookies from 'js-cookie';
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
 
+const cartReturnFields = `
+id
+lines(first: 250) {
+  edges {
+    node {
+      id
+      quantity
+      merchandise {
+        ... on ProductVariant {
+          id
+          title
+          priceV2 {
+            amount
+            currencyCode
+          }
+        }
+      }
+      cost {
+        subtotalAmount {
+          amount
+          currencyCode
+        }
+        totalAmount {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+}
+cost {
+  subtotalAmount {
+    amount
+    currencyCode
+  }
+  totalTaxAmount {
+    amount
+    currencyCode
+  }
+  totalAmount {
+    amount
+    currencyCode
+  }
+}`;
+
 type User = {
   kaiin_code: string,
   kaiin_last_name: string,
@@ -274,7 +319,7 @@ export const useUserData = () => {
       mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
         cartLinesAdd(cartId: $cartId, lines: $lines) {
           cart {
-            id
+            ${cartReturnFields}
           }
         }
       }
@@ -291,8 +336,11 @@ export const useUserData = () => {
     };
 
     const graphQlReturnData = await CallGraphQL(mutation, variables);
+    const shopifyCartData = graphQlReturnData.cartLinesAdd.cart;
+    const cartData = transformShopifyCartToCart(shopifyCartData);
+    UpdateCart(cartData);
+
     const newCartId = graphQlReturnData.cartLinesAdd.cart.id;
-    console.log('Cart ID after adding item:', newCartId);
     return newCartId;
   }, [])
 
@@ -301,7 +349,7 @@ export const useUserData = () => {
       mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
         cartLinesUpdate(cartId: $cartId, lines: $lines) {
           cart {
-            id
+            ${cartReturnFields}
           }
         }
       }
@@ -318,10 +366,57 @@ export const useUserData = () => {
     };
 
     const graphQlReturnData = await CallGraphQL(mutation, variables);
+    const shopifyCartData = graphQlReturnData.cartLinesUpdate.cart;
+    const cartData = transformShopifyCartToCart(shopifyCartData);
+    UpdateCart(cartData);
+
     const newCartId = graphQlReturnData.cartLinesUpdate.cart.id;
-    //console.log('Cart ID after updating item:', newCartId);
     return newCartId;
   }, [])
+
+  const removeFromCart = useCallback(async (cartId: string, lineId: string) => {
+    const mutation = `
+
+    mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+      cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+        cart {
+          ${cartReturnFields}
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+
+    const variables = {
+      cartId: cartId,
+      lineIds: [lineId],
+    };
+
+    console.log(variables)
+
+    const graphQlReturnData = await CallGraphQL(mutation, variables);
+    const shopifyCartData = graphQlReturnData.cartLinesRemove.cart;
+    const cartData = transformShopifyCartToCart(shopifyCartData);
+    UpdateCart(cartData);
+
+    const newCartId = graphQlReturnData.cartLinesRemove.cart.id;
+    return newCartId;
+  }, [])
+
+  function UpdateCart(cartData: cartData) {
+    setUser((previousUser) => {
+      if (!previousUser) return null;
+
+      const updatedUser = {
+        ...previousUser,
+        cart: cartData
+      };
+    
+      return updatedUser;
+    });
+  }
 
   useEffect(() => {
     // This effect runs once on mount to check for existing user data
@@ -373,5 +468,5 @@ export const useUserData = () => {
     initializeUserData();
   }, [user, setUser, saveShopifyData]);
 
-  return {user, setUser, saveShopifyData, addToCart, updateCart, loading};
+  return {user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, loading};
 };

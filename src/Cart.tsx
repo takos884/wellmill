@@ -1,10 +1,10 @@
 import React from "react";
 import { useUserData } from "./useUserData";
+import { useProducts } from "./ProductContext";
 
 import './App.css';
 import styles from './cart.module.css'
 import Header from "./Header";
-import { useProducts } from "./ProductContext";
 import Footer from "./Footer";
 
 const breadcrumbs = [
@@ -13,7 +13,7 @@ const breadcrumbs = [
 ];
 
 function Cart() {
-  const { user, loading: userLoading, addToCart, updateCart } = useUserData();
+  const { user, loading: userLoading, updateCart, removeFromCart } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
@@ -21,16 +21,22 @@ function Cart() {
   if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
   const cart = user?.cart ? user?.cart : {lines: [], id: "", totalQuantity: 0, totalCost: 0}
 
-  async function HandleMinusClick(event: React.SyntheticEvent, cartId: string, merchandiseId: string, quantity: number) {
+  async function HandleQuantityClick(cartId: string, merchandiseId: string, quantity: number) {
+    if(quantity < 1 || quantity > 10) return;
     const newCartId = await updateCart(cartId, merchandiseId, quantity);
     console.log(newCartId)
+  }
+
+  async function HandleRemoveClick(cartId: string, lineId: string) {
+    const newCartId = await removeFromCart(cartId, lineId);
+    console.log(newCartId)    
   }
 
   const headings = (cart.totalQuantity > 0) ? (
     <div className={styles.headings}>
       <span>商品</span>
       <span>数量</span>
-      <span>合計</span>
+      <span style={{textAlign: "center"}}>合計</span>
     </div>
   ) : null;
 
@@ -59,11 +65,11 @@ function Cart() {
         </div>
         <div className={styles.quantityWrapper}>
           <div className={styles.quantityChanger}>
-            <span className={styles.quantityButton}><img className={styles.quantityImg} src="minus.svg" alt="minus" onClick={(event) => HandleMinusClick(event, cart.id, line.id, 2)} /></span>
+            <span className={`${styles.quantityButton} ${line.quantity <= 1 ? styles.quantityButtonDisabled : ""} `}><img className={styles.quantityImg} src="minus.svg" alt="minus" onClick={() => HandleQuantityClick(cart.id, line.id, line.quantity-1)} /></span>
             <span className={styles.quantityValue}>{line.quantity}</span>
-            <span className={styles.quantityButton}><img className={styles.quantityImg} src="plus.svg" alt="plus" /></span>
+            <span className={`${styles.quantityButton} ${line.quantity >= 10 ? styles.quantityButtonDisabled : ""} `}><img className={styles.quantityImg} src="plus.svg"  alt="plus"  onClick={() => HandleQuantityClick(cart.id, line.id, line.quantity+1)} /></span>
           </div>
-          <span className={styles.quantityTrash}>🗑</span>
+          <span className={styles.quantityTrash} onClick={() => {HandleRemoveClick(cart.id, line.id)}}>🗑</span>
         </div>
         <span className={styles.lineCost}>{line.cost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
       </div>
