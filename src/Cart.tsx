@@ -13,13 +13,14 @@ const breadcrumbs = [
 ];
 
 function Cart() {
-  const { user, loading: userLoading, updateCart, removeFromCart } = useUserData();
+  const { user, userLoading, cartLoading, updateCart, removeFromCart } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
   if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
-  const cart = user?.cart ? user?.cart : {lines: [], id: "", totalQuantity: 0, totalCost: 0}
+  //const cart = user?.cart ? user?.cart : {lines: [], id: "", totalQuantity: 0, totalCost: 0}
+  const cart = user ? user?.cart : undefined;
 
   async function HandleQuantityClick(cartId: string, merchandiseId: string, quantity: number) {
     if(quantity < 1 || quantity > 10) return;
@@ -32,7 +33,7 @@ function Cart() {
     console.log(newCartId)    
   }
 
-  const headings = (cart.totalQuantity > 0) ? (
+  const headings = (cart && cart.totalQuantity > 0) ? (
     <div className={styles.headings}>
       <span>商品</span>
       <span>数量</span>
@@ -40,7 +41,7 @@ function Cart() {
     </div>
   ) : null;
 
-  const cartLineElements = cart.lines.map((line) => {
+  const cartLineElements = cart ? cart.lines.map((line) => {
     // Extracting the variant ID number from the merchandise string
     const variantId = line.merchandise;
     const variantNumber = variantId.split('/').pop();
@@ -74,15 +75,17 @@ function Cart() {
         <span className={styles.lineCost}>{line.cost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
       </div>
     ) : null;
-  })
+  }) : null;
 
-  const checkoutButton = (
-    <button className={styles.checkout}>ご購入手続きへ</button>
-  )
+  const subTotal = (cart && cart.totalQuantity > 0) ? (
+    <>
+      <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cart.totalCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
+      <button className={styles.checkout}>ご購入手続きへ</button>
+    </>
+  ) : null;
 
-  const subTotal = (
-    <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cart.totalCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-  )
+  const loggedOutMessage = <span>Please login</span>
+  const emptyCartMessage = <span>Cart is empty</span>
 
 return(<>
     <div className="topDots" />
@@ -92,7 +95,8 @@ return(<>
       {headings}
       {cartLineElements}
       {subTotal}
-      {checkoutButton}
+      {!user && loggedOutMessage}
+      {cart?.totalQuantity === 0 && emptyCartMessage}
     </div>
     <Footer />
   </>

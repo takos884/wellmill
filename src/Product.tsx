@@ -10,16 +10,13 @@ import Footer from "./Footer";
 import ProductTile from "./ProductTile";
 import { useUserData } from "./useUserData";
 
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = "22e838d1749ac7fb42ebbb9a8b605663" // Ok to make public
-const GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
-
 function Product() {
     const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
     //const { products, setProducts } = useProducts();
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
-    const { user } = useUserData();
+    const { user, addToCart } = useUserData();
     //const [loading, setLoading] = useState<boolean>(true);
     //const [error, setError] = useState<Error | string | ReactNode | null>(null);
 
@@ -37,56 +34,14 @@ function Product() {
     //const variantId = "gid://shopify/ProductVariant/44859100594468";
     const variantId = currentProduct?.variants[0].admin_graphql_api_id;
 
-    async function addToCart() {
+    async function handleAddToCart() {
       if(!cartId || !variantId) {
         console.log(`addToCart called without either cartId (${cartId}) or variantId (${variantId})`);
         return;
       }
 
-      const mutation = `
-        mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-          cartLinesAdd(cartId: $cartId, lines: $lines) {
-            cart {
-              id
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        cartId: cartId,
-        lines: [
-          {
-            quantity: productQuantity,
-            merchandiseId: variantId,
-          },
-        ],
-      };
-
-      try {
-        const response = await fetch(GRAPHQL_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-          },
-          body: JSON.stringify({
-            query: mutation,
-            variables: variables,
-          }),
-        });
-    
-        const responseBody = await response.json();
-        console.log(responseBody)
-
-        if (responseBody.errors) {
-          console.error('GraphQL errors:', responseBody.errors);
-        } else if (responseBody.data) {
-          console.log('Cart ID after adding item:', responseBody.data.cartLinesAdd.cart.id);
-        }
-      } catch (error) {
-        console.error('Network error adding item to cart:', error);
-      }
+      const returnedCartId = addToCart(cartId, variantId, productQuantity);
+      console.log(`Cart ID returned after adding to cart: ${returnedCartId}`);
     };
 
     /*
@@ -203,7 +158,7 @@ function Product() {
             <span className={styles.productDescription}>{currentProduct?.title}</span>
             <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
-            <button className={styles.addToCart} onClick={addToCart}>カートに入れる</button>
+            <button className={styles.addToCart} onClick={handleAddToCart}>カートに入れる</button>
             <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.body_html || '' }} />
             {questionsNode}
           </div>

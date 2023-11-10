@@ -60,7 +60,7 @@ div.loginButton {
   height: 2rem;
 }
 
-span.cartQuantity {
+span.cartDot {
   position: absolute;
   top: -0.5rem;
   right: -0.5rem;
@@ -71,6 +71,7 @@ span.cartQuantity {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 
   border-radius: 1rem;
   background: #f66;

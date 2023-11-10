@@ -268,7 +268,8 @@ export const useUserData = () => {
   }
 
   const [user, setUser] = context;
-  const [loading, setLoading] = useState(true)
+  const [userLoading, setUserLoading] = useState(false)
+  const [cartLoading, setCartLoading] = useState(false)
 
   const saveShopifyData = useCallback((shopifyCustomerData: shopifyCustomerData) => {
     const userData = transformShopifyDataToUser(shopifyCustomerData);
@@ -279,6 +280,8 @@ export const useUserData = () => {
 
   async function CallGraphQL(query: string, variables: any) {
     try {
+      setCartLoading(() => {console.log("cartLoading is now true"); return true});
+      console.log("setCartLoading to true");
       const requestBody = JSON.stringify({ query: query, variables: variables});
       //console.log({ query: query, variables: variables});
       const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
@@ -292,6 +295,8 @@ export const useUserData = () => {
   
       const responseBody = await response.json();
       //console.log(responseBody)
+      setCartLoading(false);
+      console.log("setCartLoading to false");
 
       if(!responseBody) {
         console.error('Unknown GraphQL error:');
@@ -310,7 +315,10 @@ export const useUserData = () => {
       return responseBody;
     } catch (error) {
       console.error('Network error adding item to cart:', error);
+      setCartLoading(false);
+      console.log("setCartLoading to false after error");
       return undefined;
+    } finally {
     }
   }
 
@@ -418,8 +426,8 @@ export const useUserData = () => {
     });
   }
 
+  // This effect runs once on mount to check for existing user data
   useEffect(() => {
-    // This effect runs once on mount to check for existing user data
     const initializeUserData = async () => {
 
       // Pull mock data for local development
@@ -429,6 +437,7 @@ export const useUserData = () => {
         saveShopifyData(devUserData);
       }
 
+      setUserLoading(true);
       try{
         if (!user) {
           const token = Cookies.get('shopifyToken');
@@ -440,7 +449,7 @@ export const useUserData = () => {
       catch(error) {
         console.error("Failed to fetch user data:", error);
       } finally {
-        setLoading(false); // Stop loading regardless of the outcome
+        setUserLoading(false); // Stop loading regardless of the outcome
       }
     };
 
@@ -468,5 +477,5 @@ export const useUserData = () => {
     initializeUserData();
   }, [user, setUser, saveShopifyData]);
 
-  return {user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, loading};
+  return {user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, userLoading, cartLoading};
 };

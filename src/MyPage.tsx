@@ -12,7 +12,7 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const {user, setUser, loading} = useUserData();
+  const {user, setUser, userLoading} = useUserData();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -21,7 +21,7 @@ const MyPage = () => {
     navigate('/login');
   }
 
-  if(loading) return <span>Loading...</span>
+  if(userLoading) return <span>Loading...</span>
 
   if (!user) return <p>Please <Link to='/login'>log in</Link> first.</p>;
 
