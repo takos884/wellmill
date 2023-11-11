@@ -1,5 +1,17 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
+import { User, UserCredentials } from './types';
+
+
+
+type APIResponse = {
+  data: any | null;
+  error: string | null;
+};
+
+
+
+
 
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
@@ -49,8 +61,8 @@ cost {
   }
 }`;
 
-type User = {
-  kaiin_code: string,
+type BackupUser = {
+  kaiin_code: string | undefined,
   kaiin_last_name: string,
   kaiin_first_name: string,
   kaiin_last_name_kana?: string,
@@ -224,7 +236,7 @@ async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | nu
 }
 */
 
-function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData):User {
+function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData):BackupUser {
 
   // start with: 'gid://shopify/Customer/7503719465252'
   const id = shopifyCustomerData.id.split("/")[shopifyCustomerData.id.split("/").length - 1]
@@ -271,12 +283,79 @@ export const useUserData = () => {
   const [userLoading, setUserLoading] = useState(false)
   const [cartLoading, setCartLoading] = useState(false)
 
-  const saveShopifyData = useCallback((shopifyCustomerData: shopifyCustomerData) => {
-    const userData = transformShopifyDataToUser(shopifyCustomerData);
-    const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
-    userData.cart = cartData;
+
+
+
+  const createUser = async (userData: User): Promise<APIResponse> => {
+    const APIResponse = await CallAPI(userData, "createUser");
+    //console.log("APIResponse after create API call:");
+    //console.log(APIResponse);
+
+    if(APIResponse.error) {
+      console.log(APIResponse.error);
+      return { data: null, error: APIResponse.error };
+    }
+
+    if(!APIResponse.data.token) {
+      console.log("No token returned on user create");
+      return { data: null, error: "No token returned on user create" };
+    }
+    
+    userData.token = APIResponse.data.token;
+    delete userData.password;
     setUser(userData);
+
+    return { data: APIResponse.data.token, error: null };  
+  };
+
+  const loginUser = async (credentials: UserCredentials): Promise<APIResponse> => {
+    const APIResponse = await CallAPI(credentials, "login");
+    //console.log(`APIResponse after login API call with credentials ${credentials}:`);
+    //console.log(APIResponse);
+
+    if(APIResponse.error) {
+      console.log(APIResponse.error);
+      return { data: null, error: APIResponse.error };
+    }
+
+    //console.log("Set user after login:");
+    //console.log(APIResponse.data.customerData);
+    setUser(APIResponse.data.customerData);
+    return{ data: APIResponse.data.customerData, error: null };
+
+  }
+
+
+  const saveShopifyData = useCallback((shopifyCustomerData: shopifyCustomerData) => {
+    //const userData = transformShopifyDataToUser(shopifyCustomerData);
+    //const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
+    //userData.cart = cartData;
+    //setUser(userData);
   }, [setUser]);
+
+  async function CallAPI(data:object, endpoint: string) {
+    const requestBody = JSON.stringify({data: data});
+    try {
+      const response = await fetch(`https://cdehaan.ca/wellmill/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody,
+      });
+
+      if (!response.ok) {
+        return { data: null, error: `HTTP error! Status: ${response.status}` };
+      }
+
+      const data = await response.json();
+      return { data: data, error: null };
+
+    } catch (error: any) {
+      return { data: null, error: error.message };
+    }
+
+  }
 
   async function CallGraphQL(query: string, variables: any) {
     try {
@@ -440,9 +519,9 @@ export const useUserData = () => {
       setUserLoading(true);
       try{
         if (!user) {
-          const token = Cookies.get('shopifyToken');
+          const token = Cookies.get('WellMillToken');
           if (token) {
-            await loadUserDataFromShopify(token);
+            await loginUserFromToken(token);
           }
         }  
       }
@@ -453,29 +532,23 @@ export const useUserData = () => {
       }
     };
 
-    async function loadUserDataFromShopify(token: string): Promise<User | null> {
-      const requestBody = JSON.stringify({customerAccessToken: token})
-      const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: requestBody
-      });
-    
-      if (!response.ok) { return null; }
-    
-      const jsonResponse = await response.json();
-      if (jsonResponse && jsonResponse.customerAccessToken) {
-        Cookies.set('shopifyToken', jsonResponse.customerAccessToken, { expires: 31, sameSite: 'Lax' });
+    async function loginUserFromToken(token: string): Promise<User | null> {
+      const APIResponse = await CallAPI({token: token}, "login");
+      //console.log(`APIResponse after login API call with token ${token}:`);
+      //console.log(APIResponse);
+
+      if (APIResponse.data && APIResponse.data.token) {
+        Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
+
+      setUser(APIResponse.data.customerData)
       //console.log(JSON.stringify(jsonResponse))
-      saveShopifyData(jsonResponse);
+      //saveShopifyData(jsonResponse);
       return null;
     }  
 
     initializeUserData();
   }, [user, setUser, saveShopifyData]);
 
-  return {user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, userLoading, cartLoading};
+  return {createUser, loginUser, user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, userLoading, cartLoading};
 };

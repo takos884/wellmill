@@ -16,47 +16,28 @@ const breadcrumbs = [
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const {user, setUser, saveShopifyData} = useUserData();
+  const {user, setUser, loginUser, saveShopifyData} = useUserData();
 
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    try {
-      const requestBody = JSON.stringify({email: username, password: password})
-      //console.log("requestBody before fetch:", requestBody);
-      const response = await fetch('https://cdehaan.ca/wellmill/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: requestBody
-      });
+    const response = await loginUser({email: username, password: password});
 
-      //console.log(response)
-      const data = await response.json();
-      //console.log(data)
+    if(response.error) { console.log(`Login error: ${response.error}`); }
 
-      if (data && data.customerAccessToken) {
-        Cookies.set('shopifyToken', data.customerAccessToken, { expires: 31, sameSite: 'Lax' });
-        //console.log(data);
-        saveShopifyData(data);
+    const data = response.data;
 
-        setTimeout(() => {
-          navigate('/mypage');
-        }, 500);
-      } else if (data && data.customerUserErrors && data.customerUserErrors.length) {
-        alert(data.customerUserErrors[0].message);  // Displaying the first error message
-      } else {
-        // Other reply errors
-      }
-    } catch (error) {
-      // Fetch or other runtime errors
-      console.error(error);
+    if (data && data.token) {
+      Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
+
+      setTimeout(() => {
+        navigate('/mypage');
+      }, 500);
     }
   };
 
   const handleLogout = async () => {
-    Cookies.remove('shopifyToken');
+    Cookies.remove('WellMillToken');
     setUser(null);
   }
 
@@ -75,7 +56,7 @@ const Login = () => {
         <button className={styles.loginSignup} onClick={() => navigate('/signup')}>新規登録はこちら</button>
       </div>
 
-      {user && <span>You are already signed in {user.kaiin_first_name}. Go to <Link to='/mypage'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
+      {user && <span>You are already signed in {user.firstName}. Go to <Link to='/mypage'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
       <Footer />
     </>
   );

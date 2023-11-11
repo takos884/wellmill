@@ -1,3 +1,5 @@
+import { type } from "os";
+
 // types.ts
 export type FakeProduct = {
     id: string;
@@ -30,7 +32,7 @@ export type ShopifyImage = {
     src: string,
 }
 
-export type Product = {
+export type ShopifyProduct = {
     id: string;
     title: string;
     body_html: string;
@@ -40,3 +42,55 @@ export type Product = {
     images: ShopifyImage[];
     variants: Variant[];
 };
+
+export type Product = {
+    productKey: number,
+    title: string,
+    description: string,
+    available: boolean,
+    stock: number,
+    price: number,
+    taxRate: number,
+    type: number,
+}
+
+
+
+export type User = {
+    email: string,
+    lastName: string,
+    firstName: string,
+    lastNameKana?: string,
+    firstNameKana?: string,
+    gender?: string,
+    birthday?: string 
+    password?: string,
+    token?: string,
+    cart?: Cart,
+}
+
+type Cart = {
+    id: string,
+    totalQuantity: number,
+    lines: CartLine[],
+    totalCost: number,    
+}
+
+type CartLine = {
+    id: string,
+    merchandise: string,
+    cost: number,
+    quantity: number,  
+}
+
+interface CredentialsWithEmail {
+    email: string;
+    password: string;
+    token?: string; // Optional, as having all three is allowed
+}
+
+interface CredentialsWithToken {
+    token: string;
+}
+
+export type UserCredentials = CredentialsWithEmail | CredentialsWithToken;

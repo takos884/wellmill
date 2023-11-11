@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Product, Variant } from './types';
+import { ShopifyProduct, Variant } from './types';
 
 type ProductContextType = {
-  products: Product[] | undefined;
-  setProducts: React.Dispatch<React.SetStateAction<Product[] | undefined>>;
+  products: ShopifyProduct[] | undefined;
+  setProducts: React.Dispatch<React.SetStateAction<ShopifyProduct[] | undefined>>;
   isLoading: boolean;
   error: string | null;
 };
@@ -24,7 +24,7 @@ type ProductProviderProps = {
 };
 
 export function ProductProvider({ children }: ProductProviderProps) {
-  const [products, setProducts] = useState<Product[] | undefined>(undefined);
+  const [products, setProducts] = useState<ShopifyProduct[] | undefined>(undefined);
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export function ProductProvider({ children }: ProductProviderProps) {
         const fetchedProducts = await response.json();
 
         // Shopify returns price as a string! This seems like an error on their side
-        fetchedProducts.products.forEach((product: Product) => {
+        fetchedProducts.products.forEach((product: ShopifyProduct) => {
           if(product.variants) {
             product.variants.forEach((variant: Variant) => {
               if(variant.price) {

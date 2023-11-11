@@ -17,9 +17,9 @@ interface HeaderProps {
 
 function Header({ breadcrumbs }: HeaderProps) {
     const {user, cartLoading} = useUserData();
-    console.log('Header rendering, cartLoading:', cartLoading);
+    //console.log('Header rendering, cartLoading:', cartLoading);
 
-    const spinner = <img className={styles.spinner} src="spinner.svg"/>;
+    const spinner = <img className={styles.spinner} src="spinner.svg" alt="Spinner"/>;
     const cartQuantity = (user?.cart?.totalQuantity) ? user?.cart?.totalQuantity : 0;
     const cartDotContent = cartLoading ? spinner : cartQuantity;
     const cartDot = (cartQuantity && cartQuantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null

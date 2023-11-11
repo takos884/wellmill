@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useState } from "react";
 import { useUserData } from './useUserData';
 import Header from "./Header";
+import { User } from "./types";
 
 import styles from './signup.module.css'
 import Footer from "./Footer";
@@ -11,6 +12,10 @@ const breadcrumbs = [
   { text: "新規会員登録", url: "/signup" },
 ];
 
+type CreateUserResponse = {
+  data: any | null;
+  error: string | null;
+};
 
 // Define a type/interface for your input fields
 interface InputFields {
@@ -41,7 +46,9 @@ interface InputErrors {
 
 function Signup() {
   const navigate = useNavigate();
-  const {setUser} = useUserData();
+  const { createUser, setUser } = useUserData();
+  const [createUserResponse, setCreateUserResponse] = useState<CreateUserResponse | null>(null);
+
   const [inputs, setInputs] = useState<InputFields>({
     lastName: '',
     firstName: '',
@@ -87,7 +94,7 @@ function Signup() {
     }
   }
 
-  function HandleRegistrationClick() {
+  async function HandleRegistrationClick() {
     const requiredFields = ['lastName', 'firstName', 'lastNameKana', 'firstNameKana', 'gender', 'birthday', 'email'];
     let hasError = false;
 
@@ -112,23 +119,24 @@ function Signup() {
     if (hasError) {
       alert('Please fill in all required fields.');
     } else {
-      alert('Registration successful!');
-      const newUser = {
-        kaiin_code: inputs.email,
-        kaiin_last_name: inputs.lastName,
-        kaiin_first_name: inputs.firstName,
-        kaiin_last_name_kana: inputs.lastNameKana,
-        kaiin_first_name_kana: inputs.firstNameKana,
-        kaiin_gender: inputs.gender,
-        kaiin_birthday: inputs.birthday,
-        kaiin_email: inputs.email,
-        // For security reasons, avoid storing the password in the front-end context.
-        // Instead, a backend service should handle authentication and provide a session/token.
+      const userData: User = {
+        email: inputs.email,
+        lastName: inputs.lastName,
+        firstName: inputs.firstName,
+        lastNameKana: inputs.lastNameKana,
+        firstNameKana: inputs.firstNameKana,
+        gender: inputs.gender,
+        birthday: inputs.birthday, 
+        password: inputs.password,
       };
-      setUser(newUser);
-      setTimeout(() => {
-        navigate('/mypage');
-      }, 500);
+
+      const response = await createUser(userData);
+      if(response.error) {
+        console.log(`Create User Error: ${response.error}`);
+        return;
+      }
+
+      //setTimeout(() => { navigate('/mypage'); }, 500);
     }
   }
 
@@ -184,6 +192,9 @@ function Signup() {
         </div>
         {agreeCheckbox}
         <button className={styles.register} onClick={HandleRegistrationClick}>登録</button>
+        {createUserResponse?.data && <p>User created: {JSON.stringify(createUserResponse.data)}</p>}
+        {createUserResponse?.error && <p>Error: {createUserResponse.error}</p>}
+
       </div>
       <Footer />
       <div className={styles.success}>Registration Successful - Loading MyPage</div>

@@ -30,3 +30,4 @@ customers.json
 storefront_access_token.json
 cart.json
 user.json
+INSERT products.sql

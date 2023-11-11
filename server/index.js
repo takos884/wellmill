@@ -8,6 +8,10 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
+const mysql = require('mysql');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 const app = express();
 
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
@@ -67,7 +71,55 @@ process.on('SIGUSR2', exitHandler);
 
 
 app.use(cors());  // Enable CORS for all routes
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
+});
+
+connection.connect(error => {
+  if (error) {
+    console.log(error);
+    throw error;
+  }
+  console.log("Successfully connected to the database.");
+});
+
+const hashPassword = async (password) => {
+  const saltRounds = 10;
+  const hash = await bcrypt.hash(password, saltRounds);
+  return hash;
+};
+
+app.post('/createUser', async (req, res) => {
+  try {
+    const userData = req.body.data;
+    let firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    let lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    let firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    let lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    let email = userData.email?.replace(/[^\w.@-]/g, '');
+    let password = userData.password?.replace(/[^\x20-\x7E]/g, '');
+
+    const hashedPassword = await hashPassword(password);
+    const token = crypto.randomBytes(48).toString('hex');
+
+    const query = `INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, email, passwordHash, token) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
+
+    connection.query(query, values, (error, results, fields) => {
+      if (error) throw error;
+      console.log(`Created user with token: ${token}`);
+      res.json({ token: token });
+    });
+  } catch (error) {
+    res.status(500).send('Error creating user: ' + error);
+  }
+});
 
 app.post('/sendEmail', async (req, res) => {
     let transporter = nodemailer.createTransport({
@@ -95,14 +147,14 @@ app.post('/sendEmail', async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/loginShopify', async (req, res) => {
   console.log(`Received ${req.method} request on ${req.url}`);
   //console.log('Body:', req.body);
 
   let customerAccessToken;
 
   if(req.body.email && req.body.password) {
-    customerAccessToken = await GetCustomerTokenFromCredentials(req.body.email, req.body.password);
+    customerAccessToken = await GetCustomerDataFromCredentials(req.body.email, req.body.password);
   } else if (req.body.customerAccessToken) {
     customerAccessToken = req.body.customerAccessToken;
   } else {
@@ -129,7 +181,44 @@ app.post('/login', async (req, res) => {
   res.send(customerData);
 });
 
-async function GetCustomerTokenFromCredentials(email, password) {
+app.post('/login', async (req, res) => {
+  console.log("Hit login");
+  console.log("req.body");
+  console.log(req.body);
+  const userCredentials = req.body.data;
+  const email = userCredentials.email;
+  const password = userCredentials.password;
+  const token = userCredentials.token;
+
+  let customerData;
+
+  if(email && password) {
+    console.log("Email/password login");
+    customerData = await GetCustomerDataFromCredentials(email, password);
+  } else if(token) {
+    console.log("token login");
+    customerData = await GetCustomerDataFromToken(token);
+  } else {
+    res.status(401).send("No customer credentials given");
+  }
+
+  console.log("Customer data:")
+  console.log(customerData)
+
+  //const cartId = await getCartIdFromCustomerId(customerData.id, customerData)
+  //console.log("Cart ID:")
+  //console.log(cartId)
+
+  //const cartData = await GetCartDataFromCartId(cartId)
+  //console.log("Cart Data:")
+  //console.log(cartData)
+
+  //customerData.customerAccessToken = customerData;
+  //customerData.cart = cartData;
+  res.json({customerData: customerData});
+});
+
+async function GetCustomerTokenFromCredentialsShopify(email, password) {
   const query = `
   mutation customerAccessTokenCreate {
     customerAccessTokenCreate(input: {email: "${email}", password: "${password}"}) {
@@ -177,51 +266,63 @@ async function GetCustomerTokenFromCredentials(email, password) {
   }
 }
 
+async function GetCustomerDataFromCredentials(email, password) {
+  return new Promise((resolve, reject) => {
+      // Prepare the SQL query to find the user by email
+      const query = `SELECT * FROM customer WHERE email = ?`;
+
+      // Execute the query
+      connection.query(query, [email], async (error, results) => {
+          if (error) {
+              return reject(error);
+          }
+
+          // If no results, the email is not registered
+          if (results.length === 0) {
+              return resolve(null);
+          }
+
+          const user = results[0];
+          console.log("In GetCustomerDataFromCredentials with user:");
+          console.log(user);
+
+          // Compare the provided password with the stored hash
+          const match = await bcrypt.compare(password, user.passwordHash);
+
+          if (match) {
+              // Passwords match, return user data
+              console.log("Found user, correct password");
+              console.log(user);
+              delete user.passwordHash;
+              resolve(user);
+          } else {
+              // Passwords do not match
+              resolve(null);
+          }
+      });
+  });
+}
+
 async function GetCustomerDataFromToken(token) {
-  const query = `
-  query {
-    customer(customerAccessToken: "${token}") {
-      id
-      firstName
-      lastName
-      acceptsMarketing
-      email
-      phone
-    }
-  }
-  `
+  return new Promise((resolve, reject) => {
+    // Prepare the SQL query to find the user by email
+    const query = `SELECT * FROM customer WHERE token = ?`;
 
-  try {
-    const requestBody = JSON.stringify({ query: query });
+    // Execute the query
+    connection.query(query, [token], async (error, results) => {
 
-    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
-      },
-      body: requestBody
+      // Database error
+      if (error) { return reject(error); }
+
+      // If no results, the token does not exist
+      if (results.length === 0) { return resolve(null); }
+
+      // If a token exists, user is authenticated
+      const user = results[0];
+      delete user.password_hash;
+      resolve(user);
     });
-
-    //console.log(`response:`)
-    //console.log(response)
-
-    const responseData = await response.json();
-    //console.log(`responseData:`)
-    //console.log(responseData)
-    return responseData.data.customer;
-
-    //if (responseData.data.customerAccessTokenCreate.customerAccessToken) {
-    //  console.log("Hopefully the customer token:")
-    //  console.log(responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken)
-    //  res.send(responseData.data.customerAccessTokenCreate.customerAccessToken);
-    //} else {
-    //  res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
-    //}
-  } catch (error) {
-    console.error(`Error during login: ${error.message}`, error);
-    res.status(500).send(error);
-  }
+  });
 }
 
 async function getCartIdFromCustomerId(customerId, customerAccessToken) {
@@ -390,8 +491,9 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-app.listen(3001, () => {
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
   const current = new Date();
   const timestamp = `${current.getFullYear()}/${String(current.getMonth() + 1).padStart(2, '0')}/${String(current.getDate()).padStart(2, '0')} ${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}:${String(current.getSeconds()).padStart(2, '0')}`;
-  console.log(`Server started on port 3001 at ${timestamp}`);
+  console.log(`Server started on ${PORT} 3001 at ${timestamp}`);
 });

@@ -17,7 +17,7 @@ const MyPage = () => {
 
   const handleLogout = async () => {
     setUser(null);
-    Cookies.remove('shopifyToken');
+    Cookies.remove('WellMillToken');
     navigate('/login');
   }
 
@@ -31,7 +31,7 @@ const MyPage = () => {
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">マイページ</span>
       <div className={styles.content}>
-        <span className={styles.header}>{user.kaiin_last_name} {user.kaiin_first_name}様のマイページ</span>
+        <span className={styles.header}>{user.lastName} {user.firstName}様のマイページ</span>
         <div className={styles.linksGrid}>
           <span className={styles.link}>検体IDの登録 / 問診</span>
           <span className={styles.link}>検査結果の一覧</span>
