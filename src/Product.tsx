@@ -13,6 +13,7 @@ import { useUserData } from "./useUserData";
 function Product() {
     const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
+    const productIdNum = productId ? parseInt(productId) : undefined;
     //const { products, setProducts } = useProducts();
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
@@ -22,67 +23,45 @@ function Product() {
 
     const [productQuantity, setProductQuantity] = useState(1);
 
-    // eslint-disable-next-line
-    const currentProduct = products?.find(p => p.id == productId);
-
-    // eslint-disable-next-line
-    const otherProducts = products?.filter(p => p.id != productId);
+    const currentProduct = products?.find(p => p.productKey === productIdNum);
+    const otherProducts = products?.filter(p => p.productKey !== productIdNum);
 
     //const cartId = "gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36";
-    const cartId = user?.cart?.id;
+    //const cartId = user?.cart?.id;
 
     //const variantId = "gid://shopify/ProductVariant/44859100594468";
-    const variantId = currentProduct?.variants[0].admin_graphql_api_id;
+    //const variantId = currentProduct?.variants[0].admin_graphql_api_id;
 
     async function handleAddToCart() {
-      if(!cartId || !variantId) {
-        console.log(`addToCart called without either cartId (${cartId}) or variantId (${variantId})`);
+      if(!currentProduct || !user || !user.customerKey) {
+        console.log(`addToCart called without either currentProduct (${currentProduct}), user (${user}), or customerKey (see user).`);
         return;
       }
 
-      const returnedCartId = addToCart(cartId, variantId, productQuantity);
-      console.log(`Cart ID returned after adding to cart: ${returnedCartId}`);
+      console.log("Adding Product to cart:");
+      const returnedCart = await addToCart(currentProduct.productKey, user.customerKey, productQuantity);
+      console.log("Cart returned after adding to cart:");
+      console.log(returnedCart);
     };
-
-    /*
-    useEffect(() => {
-      async function fetchProducts() {
-        try {
-          const response = await fetch('/wellmill/products.json');
-          if (!response.ok) {
-            throw new Error(`Failed to fetch products. HTTP Status: ${response.status}`);
-          }
-          const fetchedProducts = await response.json();
-          if (Array.isArray(fetchedProducts)) {
-            setProducts(fetchedProducts);
-          } else if (fetchedProducts.products && Array.isArray(fetchedProducts.products)) {
-            setProducts(fetchedProducts.products);
-          } else {
-            console.error("Unrecognized data structure received in Shop");
-          }
-          //setProducts(fetchedProducts);
-          setLoading(false);
-        } catch (err) {
-          setLoading(false);
-          setError(err instanceof Error ? err.message : 'An error occurred while fetching products.');
-        }
-      }
-      fetchProducts();
-    }, [setProducts]);
-    */
 
     const breadcrumbs = [
       { text: "ホーム", url: "/" },
       { text: "SHOP", url: "/shop" },
-      { text: currentProduct ? currentProduct.title : "", url: `/shop/${currentProduct?.id}` },
+      { text: currentProduct ? currentProduct.title : "", url: `/shop/${currentProduct?.productKey}` },
     ];
 
-    const taxIncludedPrice = currentProduct ? Math.round(currentProduct.variants[0].price) : 0;
+    const taxIncludedPrice = currentProduct ? Math.round(currentProduct.price * (1+currentProduct.taxRate)) : 0;
 
-    const productImages = currentProduct?.images.map((spotifyImage, index) => (
+    // Sort images, then make image elements
+    if(currentProduct) {
+      console.log(currentProduct.images);
+      currentProduct.images = currentProduct.images.sort((a, b) => a.displayOrder - b.displayOrder);
+      console.log(currentProduct.images);
+    }
+    const productImages = currentProduct?.images.map((image, index) => (
       <img
-        key={spotifyImage.id}
-        src={spotifyImage.src.replace(/\\/g, "")}
+        key={image.imageKey}
+        src={image.url.replace(/\\/g, "")}
         className={styles.productImage}
         alt={`Product ${index}`}
         style={index === 0 ? { gridColumn: 'span 2' } : {}}
@@ -159,7 +138,7 @@ function Product() {
             <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
             <button className={styles.addToCart} onClick={handleAddToCart}>カートに入れる</button>
-            <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.body_html || '' }} />
+            <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.description || '' }} />
             {questionsNode}
           </div>
         </div>

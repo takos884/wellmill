@@ -16,7 +16,7 @@ const breadcrumbs = [
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const {user, setUser, loginUser, saveShopifyData} = useUserData();
+  const {user, setUser, loginUser} = useUserData();
 
   const navigate = useNavigate();
 

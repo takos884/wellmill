@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useState } from "react";
 import { useUserData } from './useUserData';
 import Header from "./Header";
-import { User } from "./types";
+import { Customer } from "./types";
 
 import styles from './signup.module.css'
 import Footer from "./Footer";
@@ -119,7 +119,7 @@ function Signup() {
     if (hasError) {
       alert('Please fill in all required fields.');
     } else {
-      const userData: User = {
+      const userData: Customer = {
         email: inputs.email,
         lastName: inputs.lastName,
         firstName: inputs.firstName,

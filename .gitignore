@@ -31,3 +31,4 @@ storefront_access_token.json
 cart.json
 user.json
 INSERT products.sql
+ShopifyProducts.json

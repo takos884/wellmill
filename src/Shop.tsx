@@ -1,6 +1,4 @@
 import React from 'react';
-//import useWPData from './useWPData';
-//import useShopify from './useShopify';
 import './App.css';
 import styles from './shop.module.css'
 
@@ -15,9 +13,9 @@ const breadcrumbs = [
 ];
 
 function Shop() {
-  //const { products, setProducts } = useProducts();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
-  
+  //console.log(products);
+
   return (
     <>
       <div className={styles.shopRoot}>
@@ -29,7 +27,7 @@ function Shop() {
         {productsError && <p>Error: {productsError}</p>}
         <div className={styles.productGrid}>
           {products?.map(product => (
-            <div key={product.id}>
+            <div key={product.productKey}>
               <ProductTile Product={product} />
             </div>
           ))}

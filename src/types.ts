@@ -43,8 +43,14 @@ export type ShopifyProduct = {
     variants: Variant[];
 };
 
+
+
+
+
+
 export type Product = {
     productKey: number,
+    id: string,
     title: string,
     description: string,
     available: boolean,
@@ -52,11 +58,19 @@ export type Product = {
     price: number,
     taxRate: number,
     type: number,
+    images: image[]
 }
 
+type image = {
+    imageKey: number,
+    productKey: number,
+    url: string,
+    displayOrder: number,
+    altText: string,
+}
 
-
-export type User = {
+export type Customer = {
+    customerKey?: number,
     email: string,
     lastName: string,
     firstName: string,

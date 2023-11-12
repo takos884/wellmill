@@ -14,6 +14,7 @@ const crypto = require('crypto');
 
 const app = express();
 
+/*
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/products.json';
 //const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers.json';
@@ -24,9 +25,12 @@ const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/
 
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
+*/
+
 const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
 const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
+/*
 async function fetchShopifyData() {
   try {
     const response = await fetch(SHOPIFY_API_ENDPOINT, {
@@ -48,17 +52,18 @@ async function fetchShopifyData() {
     console.error(`[${new Date().toISOString()}] Error fetching Shopify data:`, err);
   }
 }
+*/
 
 // Call the function initially
-fetchShopifyData();
+//fetchShopifyData();
 
 // Then set it to be called every minute
-const fetchInterval = setInterval(fetchShopifyData, 60 * 1000);
-
+//const fetchInterval = setInterval(fetchShopifyData, 60 * 1000);
+/*
 // Handle clean exit
 function exitHandler() {
-  clearInterval(fetchInterval);
-  console.log('Clearing Shopify data fetch interval.');
+//  clearInterval(fetchInterval);
+//  console.log('Clearing Shopify data fetch interval.');
   process.exit();
 }
 
@@ -66,9 +71,7 @@ process.on('exit', exitHandler);
 process.on('SIGINT', exitHandler);
 process.on('SIGUSR1', exitHandler);
 process.on('SIGUSR2', exitHandler);
-
-
-
+*/
 
 app.use(cors());  // Enable CORS for all routes
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -88,6 +91,70 @@ connection.connect(error => {
   }
   console.log("Successfully connected to the database.");
 });
+
+
+async function fetchProducts() {
+  return new Promise((resolve, reject) => {
+    console.log("Hit fetchProducts");
+    const query = `
+      SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
+      FROM product p
+      LEFT JOIN image i ON p.productKey = i.productKey
+    `;
+    console.log("Query: " + query);
+
+    connection.query(query, async (error, results) => {
+      if (error) {
+        console.log("Query Error: " + error);
+        return reject(error);
+      }
+
+      if (!results) {
+        console.log("Products not found");
+        return reject("Products not found");
+      }
+
+      // Create an object to hold products and their images
+      const products = {};
+
+      results.forEach(row => {
+        // If the product is not already in the products object, add it
+        if (!products[row.productKey]) {
+          products[row.productKey] = {
+            productKey: row.productKey,
+            title: row.title,
+            description: row.description,
+            available: row.available,
+            stock: row.stock,
+            price: row.price,
+            taxRate: row.taxRate,
+            type: row.type,
+            images: []
+          };
+        }
+
+        // Add the image to the product's images array, if image data exists
+        if (row.imageKey) {
+          products[row.productKey].images.push({
+            imageKey: row.imageKey,
+            url: row.url,
+            displayOrder: row.displayOrder,
+            altText: row.altText
+          });
+        }
+      });
+
+      // Write the products to a file
+      fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
+      console.log(`[${new Date().toISOString()}] Updated modern products.json`);
+
+      resolve(true);
+    });
+  });
+}
+
+fetchProducts();
+
 
 const hashPassword = async (password) => {
   const saltRounds = 10;
@@ -218,6 +285,51 @@ app.post('/login', async (req, res) => {
   res.json({customerData: customerData});
 });
 
+app.post('/addToCart', async (req, res) => {
+  console.log("Hit addToCart");
+  //console.log("req.body");
+  //console.log(req.body);
+  const cartData = req.body.data;
+  //console.log("cartData");
+  //console.log(cartData);
+  const { productKey, customerKey, quantity } = cartData;
+
+  // Sanitize input
+  if (!Number.isInteger(productKey) || productKey.toString().length > 10 ||
+      !Number.isInteger(customerKey) || customerKey.toString().length > 10 ||
+      !Number.isInteger(quantity) || quantity.toString().length > 10) {
+      return res.status(400).send('Invalid input');
+  }
+
+  try {
+    // Insert data into the database
+    const insertQuery = `INSERT INTO lineItem (productKey, customerKey, quantity) VALUES (?, ?, ?)`;
+    await new Promise((resolve, reject) => {
+        connection.query(insertQuery, [productKey, customerKey, quantity], (error, results) => {
+            if (error) reject(error);
+            resolve(results);
+        });
+    });
+
+    // Fetch the updated cart
+    const selectQuery = `
+        SELECT * FROM lineItem
+        WHERE customerKey = ? AND purchaseKey IS NULL`;
+    const updatedCart = await new Promise((resolve, reject) => {
+        connection.query(selectQuery, [customerKey], (error, results) => {
+            if (error) reject(error);
+            resolve(results);
+        });
+    });
+
+    // Return the updated cart
+    res.json(updatedCart);
+  } catch (error) {
+      console.error('Error in addToCart:', error);
+      res.status(500).send('An error occurred');
+  }
+});
+
 async function GetCustomerTokenFromCredentialsShopify(email, password) {
   const query = `
   mutation customerAccessTokenCreate {
@@ -268,38 +380,40 @@ async function GetCustomerTokenFromCredentialsShopify(email, password) {
 
 async function GetCustomerDataFromCredentials(email, password) {
   return new Promise((resolve, reject) => {
-      // Prepare the SQL query to find the user by email
-      const query = `SELECT * FROM customer WHERE email = ?`;
+    // Prepare the SQL query to find the user by email
+    const query = `SELECT * FROM customer WHERE email = ?`;
 
-      // Execute the query
-      connection.query(query, [email], async (error, results) => {
-          if (error) {
-              return reject(error);
-          }
+    // Execute the query
+    connection.query(query, [email], async (error, results) => {
+    
+      // MySQL query error
+      if (error) { return reject(error); }
 
-          // If no results, the email is not registered
-          if (results.length === 0) {
-              return resolve(null);
-          }
+      // If no results, the email is not registered
+      if (results.length === 0) { return resolve(null); }
 
-          const user = results[0];
-          console.log("In GetCustomerDataFromCredentials with user:");
-          console.log(user);
+      const customer = results[0];
+      console.log("In GetCustomerDataFromCredentials with following customer:");
+      console.log(customer);
 
-          // Compare the provided password with the stored hash
-          const match = await bcrypt.compare(password, user.passwordHash);
+      // Compare the provided password with the stored hash
+      const match = await bcrypt.compare(password, customer.passwordHash);
 
-          if (match) {
-              // Passwords match, return user data
-              console.log("Found user, correct password");
-              console.log(user);
-              delete user.passwordHash;
-              resolve(user);
-          } else {
-              // Passwords do not match
-              resolve(null);
-          }
-      });
+      // Passwords do not match
+      if (!match) { return resolve(null); }
+
+      // Passwords match, now fetch the customer's cart
+      console.log("Found user, correct password");
+      console.log(customer);
+
+      // Pull customer's cart
+      const cartData = GetCartDataFromCustomerKey(customer.customerKey);
+      customer.cart = cartData;
+
+      // Remove sensitive data before sending the customer object
+      delete customer.passwordHash;
+      resolve(customer);
+    });
   });
 }
 
@@ -318,10 +432,38 @@ async function GetCustomerDataFromToken(token) {
       if (results.length === 0) { return resolve(null); }
 
       // If a token exists, user is authenticated
-      const user = results[0];
-      delete user.password_hash;
-      resolve(user);
+      const customer = results[0];
+
+      // Pull customer's cart
+      const cartData = GetCartDataFromCustomerKey(customer.customerKey);
+      if(cartData.error) { return reject("Cart query error: " + cartData.error); }
+      customer.cart = cartData;
+
+      delete customer.password_hash;
+      resolve(customer);
     });
+  });
+}
+
+async function GetCartDataFromCustomerKey(customerKey) {
+  const cartQuery = `
+    SELECT li.lineItemKey, li.productKey, li.quantity, li.addedAt
+    FROM lineItem li
+    WHERE li.customerKey = ? AND li.purchaseKey IS NULL
+  `;
+
+  connection.query(cartQuery, [customerKey], (cartError, cartResults) => {
+    if (cartError) { return {error: cartError}; }
+    if (cartResults.length === 0) { return([]); }
+
+    // Create cart data full of line items
+    const cartData = cartResults.map(item => ({
+      lineItemKey: item.lineItemKey,
+      productKey: item.productKey,
+      quantity: item.quantity,
+      addedAt: item.addedAt,
+    }));
+    return cartData;
   });
 }
 

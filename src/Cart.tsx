@@ -13,7 +13,7 @@ const breadcrumbs = [
 ];
 
 function Cart() {
-  const { user, userLoading, cartLoading, updateCart, removeFromCart } = useUserData();
+  const { user, userLoading, cartLoading, updateShopifyCart, removeFromShopifyCart } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
@@ -24,13 +24,13 @@ function Cart() {
 
   async function HandleQuantityClick(cartId: string, merchandiseId: string, quantity: number) {
     if(quantity < 1 || quantity > 10) return;
-    const newCartId = await updateCart(cartId, merchandiseId, quantity);
-    console.log(newCartId)
+    //const newCartId = await updateCart(cartId, merchandiseId, quantity);
+    //console.log(newCartId)
   }
 
   async function HandleRemoveClick(cartId: string, lineId: string) {
-    const newCartId = await removeFromCart(cartId, lineId);
-    console.log(newCartId)    
+    //const newCartId = await removeFromCart(cartId, lineId);
+    //console.log(newCartId)    
   }
 
   const headings = (cart && cart.totalQuantity > 0) ? (
@@ -42,6 +42,7 @@ function Cart() {
   ) : null;
 
   const cartLineElements = cart ? cart.lines.map((line) => {
+    /*
     // Extracting the variant ID number from the merchandise string
     const variantId = line.merchandise;
     const variantNumber = variantId.split('/').pop();
@@ -53,15 +54,18 @@ function Cart() {
 
     const variant = product?.variants.find(variant => variant.id.toString() === variantNumber);
     if(!variant) return null;
+    */
+
+    const product = products?.find(product => {return product.productKey === 1});
 
     // If product is found, return the div with image and title, otherwise null
     return product ? (
       <div key={line.id} className={styles.lineItem}>
         <div className={styles.lineItemLeft}>
-          <img src={product.image.src} alt={product.title} style={{ width: '100px' }} />
+          <img src={product.images[0].url} alt={product.title} style={{ width: '100px' }} />
           <div className={styles.description}>
-            <span className={styles.title}>{variant.title}</span>
-            <span className={styles.descriptionPrice}>{variant.price.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}（税込）</span>
+            <span className={styles.title}>{product.title}</span>
+            <span className={styles.descriptionPrice}>{product.price.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}（税込）</span>
           </div>
         </div>
         <div className={styles.quantityWrapper}>

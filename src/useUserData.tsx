@@ -1,17 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { User, UserCredentials } from './types';
-
-
+import { Customer, UserCredentials } from './types';
 
 type APIResponse = {
   data: any | null;
   error: string | null;
 };
-
-
-
-
 
 const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
 const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '22e838d1749ac7fb42ebbb9a8b605663'; // ok to make public: https://community.shopify.com/c/hydrogen-headless-and-storefront/storefront-api-private-app-security-concern/td-p/1151016
@@ -80,17 +74,6 @@ type BackupUser = {
   cart?: cartData,
 };
 
-type shopifyCustomerData = {
-  customerAccessToken: string,
-  id: string,
-  email: string,
-  firstName: string,
-  lastName: string,
-  phone: string | null,
-  acceptsMarketing: boolean,
-  cart: ShopifyResponseCartData,
-}
-
 type cartData = {
   id: string,
   totalQuantity: number,
@@ -136,74 +119,11 @@ type ShopifyResponseCartData = {
   }
 }
 
-/*
-type shopifyCustomerDataFull = {
-  "id": number,
-  "email": string,
-  "accepts_marketing": boolean,
-  "created_at": string,
-  "updated_at": string,
-  "first_name": string,
-  "last_name": string,
-  "orders_count": number,
-  "state": string,
-  "total_spent": string,
-  "last_order_id": number,
-  "note": string,
-  "verified_email": boolean,
-  "multipass_identifier": string,
-  "tax_exempt": boolean,
-  "tags": string,
-  "last_order_name": string,
-  "currency": string,
-  "phone": string,
-  "addresses": address[],
-  "accepts_marketing_updated_at": string,
-  "marketing_opt_in_level": string,
-  "tax_exemptions": [],
-  "email_marketing_consent": {
-    "state": string,
-    "opt_in_level": string,
-    "consent_updated_at": string
-  },
-  "sms_marketing_consent": {
-    "state": string,
-    "opt_in_level": string,
-    "consent_updated_at": string,
-    "consent_collected_from": string
-  },
-  "admin_graphql_api_id": string,
-  "default_address": address
-}
-*/
-
-/*
-type address = {
-  "id": number,
-  "customer_id": number,
-  "first_name": string,
-  "last_name": string,
-  "company": string,
-  "address1": string,
-  "address2": string,
-  "city": string,
-  "province": string,
-  "country": string,
-  "zip": string,
-  "phone": string,
-  "name": string,
-  "province_code": string,
-  "country_code": string,
-  "country_name": string,
-  "default": boolean
-}
-*/
-
 type UserProviderProps = {
     children: React.ReactNode;
 };
 
-const UserContext = createContext<[User | null, React.Dispatch<React.SetStateAction<User | null>>] | undefined>(undefined);
+const UserContext = createContext<[Customer | null, React.Dispatch<React.SetStateAction<Customer | null>>] | undefined>(undefined);
 
 /*
 async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | null> {
@@ -236,19 +156,6 @@ async function fetchUserDataFromShopifyGraphQL(token: string): Promise<User | nu
 }
 */
 
-function transformShopifyDataToUser(shopifyCustomerData: shopifyCustomerData):BackupUser {
-
-  // start with: 'gid://shopify/Customer/7503719465252'
-  const id = shopifyCustomerData.id.split("/")[shopifyCustomerData.id.split("/").length - 1]
-
-  return {
-    kaiin_code: id,
-    kaiin_last_name: shopifyCustomerData.lastName,
-    kaiin_first_name: shopifyCustomerData.firstName,
-    mail_address: shopifyCustomerData.email,
-  };
-}
-
 const transformShopifyCartToCart = (shopifyCart: ShopifyResponseCartData): cartData => {
   const transformedCartLines: cartLine[] = shopifyCart.lines.edges.map(edge => ({
     id: edge.node.id,
@@ -269,7 +176,7 @@ const transformShopifyCartToCart = (shopifyCart: ShopifyResponseCartData): cartD
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Customer | null>(null);
   return <UserContext.Provider value={[user, setUser]}>{children}</UserContext.Provider>;
 };
 
@@ -286,7 +193,7 @@ export const useUserData = () => {
 
 
 
-  const createUser = async (userData: User): Promise<APIResponse> => {
+  const createUser = async (userData: Customer): Promise<APIResponse> => {
     const APIResponse = await CallAPI(userData, "createUser");
     //console.log("APIResponse after create API call:");
     //console.log(APIResponse);
@@ -325,13 +232,15 @@ export const useUserData = () => {
 
   }
 
-
-  const saveShopifyData = useCallback((shopifyCustomerData: shopifyCustomerData) => {
-    //const userData = transformShopifyDataToUser(shopifyCustomerData);
-    //const cartData = shopifyCustomerData.cart ? transformShopifyCartToCart(shopifyCustomerData.cart) : undefined;
-    //userData.cart = cartData;
-    //setUser(userData);
-  }, [setUser]);
+  const addToCart = useCallback(async (productKey: number, customerKey: number, quantity: number) => {
+    const requestBody = {productKey: productKey, customerKey: customerKey, quantity: quantity};
+    console.log("Add to cart with requestBody:");
+    console.log(requestBody);
+    const APIResponse = await CallAPI(requestBody, "addToCart");
+    console.log("APIResponse.data:");
+    console.log(APIResponse.data);
+    return APIResponse.data;
+  }, []);
 
   async function CallAPI(data:object, endpoint: string) {
     const requestBody = JSON.stringify({data: data});
@@ -401,7 +310,8 @@ export const useUserData = () => {
     }
   }
 
-  const addToCart = useCallback(async (cartId: string, merchandiseId: string, quantity: number) => {
+  const addToShopifyCart = useCallback(async (productKey: number, customerKey: number, quantity: number) => {
+    /*
     const mutation = `
       mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
         cartLinesAdd(cartId: $cartId, lines: $lines) {
@@ -429,9 +339,10 @@ export const useUserData = () => {
 
     const newCartId = graphQlReturnData.cartLinesAdd.cart.id;
     return newCartId;
+    */
   }, [])
 
-  const updateCart = useCallback(async (cartId: string, lineId: string, quantity: number) => {
+  const updateShopifyCart = useCallback(async (cartId: string, lineId: string, quantity: number) => {
     const mutation = `
       mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
         cartLinesUpdate(cartId: $cartId, lines: $lines) {
@@ -461,7 +372,7 @@ export const useUserData = () => {
     return newCartId;
   }, [])
 
-  const removeFromCart = useCallback(async (cartId: string, lineId: string) => {
+  const removeFromShopifyCart = useCallback(async (cartId: string, lineId: string) => {
     const mutation = `
 
     mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
@@ -513,7 +424,7 @@ export const useUserData = () => {
       if (process.env.NODE_ENV === 'development' && !user) {
         const devUserData = {"id":"gid://shopify/Customer/7503719465252","firstName":"クリス","lastName":"デハーン","acceptsMarketing":true,"email":"chris@nextvision.co.jp","phone":null,"customerAccessToken":"0700f9f550f63d8a62cf36ed02285eca","cart":{"id":"gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36","lines":{"edges":[{"node":{"id":"gid://shopify/CartLine/f610d779-65d4-4fb9-a105-9b298372fc4d?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":3,"merchandise":{"id":"gid://shopify/ProductVariant/44859100594468","title":"選べる３項目モニタリング検査","priceV2":{"amount":"13200.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"39600.0","currencyCode":"JPY"},"totalAmount":{"amount":"39600.0","currencyCode":"JPY"}}}},{"node":{"id":"gid://shopify/CartLine/1d2300a3-8a3e-4810-a458-ed267dac76f0?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":1,"merchandise":{"id":"gid://shopify/ProductVariant/44859090796836","title":"選べる１項目モニタリング検査","priceV2":{"amount":"6600.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"6600.0","currencyCode":"JPY"},"totalAmount":{"amount":"6600.0","currencyCode":"JPY"}}}}]},"cost":{"subtotalAmount":{"amount":"46200.0","currencyCode":"JPY"},"totalTaxAmount":null,"totalAmount":{"amount":"46200.0","currencyCode":"JPY"}}}};
         console.log("Pulling mock data");
-        saveShopifyData(devUserData);
+        //saveShopifyData(devUserData);
       }
 
       setUserLoading(true);
@@ -532,7 +443,7 @@ export const useUserData = () => {
       }
     };
 
-    async function loginUserFromToken(token: string): Promise<User | null> {
+    async function loginUserFromToken(token: string): Promise<Customer | null> {
       const APIResponse = await CallAPI({token: token}, "login");
       //console.log(`APIResponse after login API call with token ${token}:`);
       //console.log(APIResponse);
@@ -542,13 +453,11 @@ export const useUserData = () => {
       }
 
       setUser(APIResponse.data.customerData)
-      //console.log(JSON.stringify(jsonResponse))
-      //saveShopifyData(jsonResponse);
       return null;
     }  
 
     initializeUserData();
-  }, [user, setUser, saveShopifyData]);
+  }, [user, setUser]);
 
-  return {createUser, loginUser, user, setUser, saveShopifyData, addToCart, updateCart, removeFromCart, userLoading, cartLoading};
+  return {createUser, loginUser, user, setUser, addToCart,   addToShopifyCart, updateShopifyCart, removeFromShopifyCart, userLoading, cartLoading};
 };
