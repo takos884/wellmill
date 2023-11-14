@@ -16,6 +16,12 @@ import Login from './Login';
 import Signup from './Signup';
 import Contact from './Contact';
 import Cart from './Cart';
+import SampleRegistration from './sampleRegistration';
+import Research from './research';
+import ResultList from './ResultList';
+import HowTo from './HowTo';
+import OrderList from './OrderList';
+import Address from './Address';
 
 function Layout() {
   const location = useLocation();
@@ -24,20 +30,29 @@ function Layout() {
       window.scrollTo(0, 0);
   }, [location]);
 
+  // Most specific at the top
   return (
     <Routes>
+      <Route path="/remote" element={<Remote />} />
       <Route path="/shop/:productId" element={<Product />} />
       <Route path="/shop" element={<Shop />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/cart" element={<Cart />} />
-      <Route path="/profile" element={<Profile />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+
       <Route path="/mypage" element={<MyPage />} />
+      <Route path="/sample-registration" element={<SampleRegistration />} />
+      <Route path="/research" element={<Research />} />
+      <Route path="/result-list" element={<ResultList />} />
+      <Route path="/how_to" element={<HowTo />} />
+      <Route path="/order-list" element={<OrderList />} />
+      <Route path="/address" element={<Address />} />
+      <Route path="/profile" element={<Profile />} />
+
       <Route path="/payment" element={<Payment />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/return-policy" element={<ReturnPolicy />} />
-      <Route path="/remote" element={<Remote />} />
-      <Route path="/contact" element={<Contact />} />
       <Route path="/" element={<Home />} />
     </Routes>
   )

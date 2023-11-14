@@ -14,7 +14,6 @@ function Home() {
 
   return(
     <>
-      <div className="topDots" />
       <div style={{
         transform: "translateY(-1.2rem)",
         display: "flex",

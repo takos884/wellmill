@@ -1,0 +1,35 @@
+div.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 60rem;
+  padding-bottom: 10rem;
+}
+
+span.subHeader1 {
+  margin: 0.5rem 0;
+}
+
+span.subHeader2 {
+  margin-bottom: 1.5rem;
+}
+
+span.inputHeader {
+  display: flex;
+  width: 100%;
+  margin-top: 2rem;
+  font-weight: bold;
+}
+
+span.required {
+  color: #f44;
+}
+
+.checkboxTextLink {
+  color: #006;
+  text-decoration: underline;
+}
+
+span.checkboxFooter {
+  font-size: 0.8rem;
+}

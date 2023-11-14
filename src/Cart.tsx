@@ -1,6 +1,7 @@
 import React from "react";
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
+import { Link } from "react-router-dom";
 
 import './App.css';
 import styles from './cart.module.css'
@@ -92,8 +93,21 @@ function Cart() {
     </>
   ) : null;
 
-  const loggedOutMessage = <span>Please login</span>
-  const emptyCartMessage = <span>Cart is empty</span>
+  const loggedOutMessage = (
+    <div className={styles.requestMessage}>
+      <span className={styles.requestMessage}>カートを表示するには、ログインしてください。</span>
+      <Link to="/login"><button className={styles.requestMessage}>ログイン</button></Link>
+    </div>
+  );
+
+  const emptyCartMessage = (
+    <div className={styles.requestMessage}>
+      <span className={styles.requestMessage}>カートは空です</span>
+      <Link to="/shop"><button className={styles.requestMessage}>Shop</button></Link>
+    </div>
+  );
+
+  const requestMessage = (!user) ? loggedOutMessage : (cartQuantity === 0) ? emptyCartMessage : null;
 
 return(<>
     <div className="topDots" />
@@ -103,8 +117,7 @@ return(<>
       {headings}
       {cartLineElements}
       {subTotal}
-      {!user && loggedOutMessage}
-      {cartQuantity === 0 && emptyCartMessage}
+      {requestMessage}
     </div>
     <Footer />
   </>

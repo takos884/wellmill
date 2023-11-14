@@ -1,0 +1,9 @@
+span.noData {
+  margin: 3rem 0;
+  font-weight: bold;
+  color: #444;
+}
+
+button {
+  margin-bottom: 5rem;
+}

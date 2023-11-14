@@ -1,0 +1,13 @@
+div.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 55rem;
+  line-height: 2rem;
+  color: #444;
+  padding-bottom: 10rem;
+}
+
+span.content {
+  margin-bottom: 2rem;
+}

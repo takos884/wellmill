@@ -33,7 +33,7 @@ const MyPage = () => {
       <div className={styles.content}>
         <span className={styles.header}>{user.lastName} {user.firstName}様のマイページ</span>
         <div className={styles.linksGrid}>
-          <span className={styles.link}>検体IDの登録 / 問診</span>
+          <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span></Link>
           <span className={styles.link}>検査結果の一覧</span>
           <span className={styles.link}>採血の方法</span>
           <span className={styles.link}>購入履歴</span>

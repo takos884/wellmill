@@ -53,7 +53,7 @@ div.loginButton {
 
 .cart {
   position: relative;
-  margin-top: 10px;
+  margin-top: 0.2rem;
 }
 
 img.cart {
@@ -62,7 +62,7 @@ img.cart {
 
 span.cartDot {
   position: absolute;
-  top: 0rem;
+  top: -0.25rem;
   right: -0.5rem;
   width: 1.2rem;
   height: 1.2rem;
