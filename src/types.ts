@@ -83,17 +83,15 @@ export type Customer = {
     cart?: Cart,
 }
 
-type Cart = {
-    id: string,
-    totalQuantity: number,
+export type Cart = {
     lines: CartLine[],
-    totalCost: number,    
 }
 
-type CartLine = {
-    id: string,
-    merchandise: string,
-    cost: number,
+export type CartLine = {
+    lineItemKey: number,
+    productKey: number,
+    unitPrice: number,
+    taxRate: number,
     quantity: number,  
 }
 
@@ -108,3 +106,9 @@ interface CredentialsWithToken {
 }
 
 export type UserCredentials = CredentialsWithEmail | CredentialsWithToken;
+
+// Define a TypeScript interface for the breadcrumb object
+export interface Breadcrumb {
+    text: string;
+    url: string;
+}

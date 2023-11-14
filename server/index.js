@@ -287,42 +287,54 @@ app.post('/login', async (req, res) => {
 
 app.post('/addToCart', async (req, res) => {
   console.log("Hit addToCart");
-  //console.log("req.body");
-  //console.log(req.body);
+  console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
   const cartData = req.body.data;
-  //console.log("cartData");
-  //console.log(cartData);
-  const { productKey, customerKey, quantity } = cartData;
+  const { productKey, customerKey, unitPrice, taxRate, quantity } = cartData;
 
   // Sanitize input
-  if (!Number.isInteger(productKey) || productKey.toString().length > 10 ||
-      !Number.isInteger(customerKey) || customerKey.toString().length > 10 ||
-      !Number.isInteger(quantity) || quantity.toString().length > 10) {
+  if (!Number.isInteger(productKey)  || productKey.toString().length > 50  ||
+      !Number.isInteger(customerKey) || customerKey.toString().length > 50 ||
+       Number.isNaN(unitPrice)       || unitPrice > 100000000              || unitPrice < 0 ||
+       Number.isNaN(taxRate)         || taxRate > 10                       || taxRate < 0 ||
+      !Number.isInteger(quantity)    || quantity > 100) {
       return res.status(400).send('Invalid input');
   }
 
+  const roundedUnitPrice = Math.round(unitPrice * 100) / 100;
+  const roundedTaxRate   = Math.round(taxRate * 1000) / 1000;
+
   try {
-    // Insert data into the database
-    const insertQuery = `INSERT INTO lineItem (productKey, customerKey, quantity) VALUES (?, ?, ?)`;
-    await new Promise((resolve, reject) => {
-        connection.query(insertQuery, [productKey, customerKey, quantity], (error, results) => {
+    // Check if the item already exists in the cart
+    const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
+    const existingItem = await new Promise((resolve, reject) => {
+        connection.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate], (error, results) => {
             if (error) reject(error);
             resolve(results);
         });
     });
 
-    // Fetch the updated cart
-    const selectQuery = `
-        SELECT * FROM lineItem
-        WHERE customerKey = ? AND purchaseKey IS NULL`;
-    const updatedCart = await new Promise((resolve, reject) => {
-        connection.query(selectQuery, [customerKey], (error, results) => {
-            if (error) reject(error);
-            resolve(results);
-        });
-    });
+    if (existingItem.length > 0) {
+      // Item exists, update the quantity
+      const newQuantity = existingItem[0].quantity + quantity;
+      const updateQuery = "UPDATE lineItem SET quantity = ? WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
+      await new Promise((resolve, reject) => {
+          connection.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate], (error, results) => {
+              if (error) reject(error);
+              resolve(results);
+          });
+      });
+    } else {
+      // Insert data into the database
+      const insertQuery = "INSERT INTO lineItem (productKey, customerKey, unitPrice, taxRate, quantity) VALUES (?, ?, ?, ?, ?)";
+      await new Promise((resolve, reject) => {
+          connection.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity], (error, results) => {
+              if (error) reject(error);
+              resolve(results);
+          });
+      });
+    }
 
-    // Return the updated cart
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
     res.json(updatedCart);
   } catch (error) {
       console.error('Error in addToCart:', error);
@@ -330,53 +342,95 @@ app.post('/addToCart', async (req, res) => {
   }
 });
 
-async function GetCustomerTokenFromCredentialsShopify(email, password) {
-  const query = `
-  mutation customerAccessTokenCreate {
-    customerAccessTokenCreate(input: {email: "${email}", password: "${password}"}) {
-      customerAccessToken {
-        accessToken
-      }
-      customerUserErrors {
-        message
-      }
-    }
+app.post('/updateCartQuantity', async (req, res) => {
+  console.log("Hit updateCartQuantity");
+  console.log(req.body); //
+  const updateData = req.body.data;
+  const { customerKey, token, lineItemKey, quantity } = updateData;
+
+  // Sanitize input
+  if (!Number.isInteger(customerKey) || customerKey.toString().length > 50 ||
+      !/^[a-zA-Z0-9]+$/.test(token)  || token.length > 200 ||
+      !Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50 ||
+      !Number.isInteger(quantity)    || quantity.toString().length > 50) {
+      return res.status(400).send('Invalid input');
   }
-  `
+
+  const tokenVerification = await verifyToken(customerKey, token);
+  if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
 
   try {
-    const requestBody = JSON.stringify({ query: query });
-    //console.log("Endpoint: " + SHOPIFY_GRAPHQL_ENDPOINT)
-    //console.log("Token: " + SHOPIFY_STOREFRONT_ACCESS_TOKEN)
-
-    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
-      },
-      body: requestBody
+    // Update line quantity in database
+    const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
+    await new Promise((resolve, reject) => {
+      connection.query(updateQuery, [quantity, customerKey, lineItemKey], (error, results) => {
+        if (error) { reject(error); }
+        resolve(results);
+      });
     });
 
-    //console.log(`response:`)
-    //console.log(response)
-    //console.log(`response.statusText: ${response.statusText}`); // 'ok'
-    //console.log(`response.status: ${response.status}`);     // 200
-
-    const responseData = await response.json();
-    if(!responseData) {
-      res.status(401).send("No response from server");
-    }
-    if (responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken) {
-      return responseData.data.customerAccessTokenCreate.customerAccessToken.accessToken;
-    } else {
-      res.status(401).send(responseData.data.customerAccessTokenCreate.userErrors);
-    }
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
+    res.json(updatedCart);
   } catch (error) {
-    console.error(`Error during login: ${error.message}`, error);
-    res.status(500).send(error);
+      console.error('Error in updateCartQuantity:', error);
+      res.status(500).send('An error occurred');
   }
+});
+
+app.post('/deleteFromCart', async (req, res) => {
+  console.log("Hit deleteFromCart");
+  console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
+  const lineItemData = req.body.data;
+  const { customerKey, token, lineItemKey } = lineItemData;
+
+  // Sanitize input
+  if (!Number.isInteger(customerKey) || customerKey.toString().length > 50 ||
+      !/^[a-zA-Z0-9]+$/.test(token)  || token.length > 200 ||
+      !Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50) {
+      return res.status(400).send('Invalid input');
+  }
+
+  const tokenVerification = await verifyToken(customerKey, token);
+  if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
+
+  try {
+    // Delete line from database
+    const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
+    await new Promise((resolve, reject) => {
+      connection.query(deleteQuery, [customerKey, lineItemKey], (error, results) => {
+        if (error) { reject(error); }
+        resolve(results);
+      });
+    });
+
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
+    res.json(updatedCart);
+  } catch (error) {
+      console.error('Error in deleteFromCart:', error);
+      res.status(500).send('An error occurred');
+  }
+
+});
+
+function verifyToken(customerKey, token) {
+  return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
+      
+      connection.query(query, [customerKey, token], (error, results, fields) => {
+          if (error) {
+              resolve({ valid: false, error: error.message });
+          } else {
+              // Check if the query returned a matching record
+              if (results.length > 0) {
+                  resolve({ valid: true, error: null });
+              } else {
+                  resolve({ valid: false, error: 'Invalid token or customer key' });
+              }
+          }
+      });
+  });
 }
+
 
 async function GetCustomerDataFromCredentials(email, password) {
   return new Promise((resolve, reject) => {
@@ -407,8 +461,8 @@ async function GetCustomerDataFromCredentials(email, password) {
       console.log(customer);
 
       // Pull customer's cart
-      const cartData = GetCartDataFromCustomerKey(customer.customerKey);
-      customer.cart = cartData;
+      const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
+      customer.cart = {lines: cartData};
 
       // Remove sensitive data before sending the customer object
       delete customer.passwordHash;
@@ -435,9 +489,9 @@ async function GetCustomerDataFromToken(token) {
       const customer = results[0];
 
       // Pull customer's cart
-      const cartData = GetCartDataFromCustomerKey(customer.customerKey);
+      const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
       if(cartData.error) { return reject("Cart query error: " + cartData.error); }
-      customer.cart = cartData;
+      customer.cart = {lines: cartData};
 
       delete customer.password_hash;
       resolve(customer);
@@ -446,25 +500,16 @@ async function GetCustomerDataFromToken(token) {
 }
 
 async function GetCartDataFromCustomerKey(customerKey) {
-  const cartQuery = `
-    SELECT li.lineItemKey, li.productKey, li.quantity, li.addedAt
-    FROM lineItem li
-    WHERE li.customerKey = ? AND li.purchaseKey IS NULL
-  `;
-
-  connection.query(cartQuery, [customerKey], (cartError, cartResults) => {
-    if (cartError) { return {error: cartError}; }
-    if (cartResults.length === 0) { return([]); }
-
-    // Create cart data full of line items
-    const cartData = cartResults.map(item => ({
-      lineItemKey: item.lineItemKey,
-      productKey: item.productKey,
-      quantity: item.quantity,
-      addedAt: item.addedAt,
-    }));
-    return cartData;
+  const selectQuery = `
+    SELECT * FROM lineItem
+    WHERE customerKey = ? AND purchaseKey IS NULL`;
+  const updatedCart = await new Promise((resolve, reject) => {
+    connection.query(selectQuery, [customerKey], (error, results) => {
+        if (error) reject(error);
+        resolve(results);
+    });
   });
+  return updatedCart;
 }
 
 async function getCartIdFromCustomerId(customerId, customerAccessToken) {

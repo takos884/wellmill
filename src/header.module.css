@@ -6,12 +6,12 @@
   border-radius: 0.75rem;
   overflow: hidden;
   padding: 0;
-  height: 4rem;
+  height: 4.5rem;
   background-color: #fba800;
   margin-top: 3rem;
   margin-bottom: 1rem;
-  width: 85%;
-  max-width: 70rem;
+  width: 98%;
+  max-width: 76rem;
   z-index: 10;
 }
 
@@ -56,13 +56,13 @@ div.loginButton {
   margin-top: 10px;
 }
 
-.cart img {
+img.cart {
   height: 2rem;
 }
 
 span.cartDot {
   position: absolute;
-  top: -0.5rem;
+  top: 0rem;
   right: -0.5rem;
   width: 1.2rem;
   height: 1.2rem;
@@ -75,6 +75,10 @@ span.cartDot {
 
   border-radius: 1rem;
   background: #f66;
+}
+
+img.cartDotSpinnerSpinner {
+  height: 100%;
 }
 
 div.breadcrumbs {

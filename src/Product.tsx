@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "./ProductContext";
@@ -14,34 +14,38 @@ function Product() {
     const navigate = useNavigate();
     const { productId } = useParams<{ productId: string }>();
     const productIdNum = productId ? parseInt(productId) : undefined;
-    //const { products, setProducts } = useProducts();
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
-
-    const { user, addToCart } = useUserData();
-    //const [loading, setLoading] = useState<boolean>(true);
-    //const [error, setError] = useState<Error | string | ReactNode | null>(null);
+    const { user, cartLoading, addToCart } = useUserData();
 
     const [productQuantity, setProductQuantity] = useState(1);
+    const [showModal, setShowModal] = useState(false);
+
 
     const currentProduct = products?.find(p => p.productKey === productIdNum);
     const otherProducts = products?.filter(p => p.productKey !== productIdNum);
+    const taxIncludedPrice = currentProduct ? Math.round(currentProduct.price * (1+currentProduct.taxRate)) : 0;
 
-    //const cartId = "gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36";
-    //const cartId = user?.cart?.id;
-
-    //const variantId = "gid://shopify/ProductVariant/44859100594468";
-    //const variantId = currentProduct?.variants[0].admin_graphql_api_id;
+    // pre-loads spinner so it shows right away
+    useEffect(() => {
+      const image = new Image();
+      image.src = 'spinner.svg';
+    }, []);
 
     async function handleAddToCart() {
-      if(!currentProduct || !user || !user.customerKey) {
+      if(!user) {
+        setShowModal(true);
+        return;
+      }
+
+      if(!currentProduct || !user.customerKey) {
         console.log(`addToCart called without either currentProduct (${currentProduct}), user (${user}), or customerKey (see user).`);
         return;
       }
 
-      console.log("Adding Product to cart:");
-      const returnedCart = await addToCart(currentProduct.productKey, user.customerKey, productQuantity);
-      console.log("Cart returned after adding to cart:");
-      console.log(returnedCart);
+      //console.log("Adding Product to cart:");
+      const returnedCart = await addToCart(currentProduct.productKey, user.customerKey, currentProduct.price, currentProduct.taxRate, productQuantity);
+      //console.log("Cart returned after adding to cart:");
+      //console.log(returnedCart);
     };
 
     const breadcrumbs = [
@@ -50,14 +54,18 @@ function Product() {
       { text: currentProduct ? currentProduct.title : "", url: `/shop/${currentProduct?.productKey}` },
     ];
 
-    const taxIncludedPrice = currentProduct ? Math.round(currentProduct.price * (1+currentProduct.taxRate)) : 0;
+    const loginModal = (
+      <div id="overlay" className={styles.overlay} onClick={() => {setShowModal(false)}}>
+        <div className={styles.modal}>
+          <span className={styles.modal}>カートに商品を追加するにはログインしてください。</span>
+          <button className={styles.modal} onClick={() => {setShowModal(false)}}>Ok</button>
+        </div>
+      </div>
+    );
 
-    // Sort images, then make image elements
-    if(currentProduct) {
-      console.log(currentProduct.images);
-      currentProduct.images = currentProduct.images.sort((a, b) => a.displayOrder - b.displayOrder);
-      console.log(currentProduct.images);
-    }
+    // Sort images by displayOrder
+    if(currentProduct) { currentProduct.images = currentProduct.images.sort((a, b) => a.displayOrder - b.displayOrder); }
+
     const productImages = currentProduct?.images.map((image, index) => (
       <img
         key={image.imageKey}
@@ -79,6 +87,9 @@ function Product() {
       </>
     )
 
+    const spinner = <img className={styles.spinner} src="spinner.svg" alt="Spinner"/>;
+    const checkoutButtonContent = cartLoading ? spinner : "カートに入れる";
+  
     const questionsNode = (
       <div className={styles.productFaq}>
         <details>
@@ -129,6 +140,7 @@ function Product() {
       <div className={styles.productRoot}>
         <div className={styles.topDots} />
         <Header breadcrumbs={breadcrumbs} />
+        {showModal && loginModal}
         {productsLoading && (<span>Loading Product...</span>)}
         {productsError && (<span>Loading Product Error</span>)}
         <div className={styles.productGrid}>
@@ -137,7 +149,7 @@ function Product() {
             <span className={styles.productDescription}>{currentProduct?.title}</span>
             <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
-            <button className={styles.addToCart} onClick={handleAddToCart}>カートに入れる</button>
+            <button className={styles.addToCart} onClick={handleAddToCart}>{checkoutButtonContent}</button>
             <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.description || '' }} />
             {questionsNode}
           </div>

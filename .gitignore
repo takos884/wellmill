@@ -32,3 +32,5 @@ cart.json
 user.json
 INSERT products.sql
 ShopifyProducts.json
+WPPage.json
+scrap/
