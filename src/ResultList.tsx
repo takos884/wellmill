@@ -8,7 +8,7 @@ import Footer from "./Footer";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
-  { text: "マイページ", url: "/mypage" },
+  { text: "マイページ", url: "/account" },
   { text: "検査結果の一覧", url: "/result-list" },
 ];
 
@@ -20,7 +20,7 @@ function ResultList() {
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">検査一覧</span>
       <span className={styles.noData}>該当する検査一覧はありません</span>
-      <Link to="/mypage"><button>マイページTOPへ</button></Link>
+      <Link to="/account"><button>マイページTOPへ</button></Link>
       <Footer />
     </>
   )

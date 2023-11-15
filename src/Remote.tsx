@@ -8,7 +8,7 @@ import Footer from "./Footer";
 function Remote() {
   const breadcrumbs = [
     { text: "ホーム", url: "/" },
-    { text: "モニタリング検査とは？", url: "/remote" },
+    { text: "モニタリング検査とは？", url: "/remote-examination" },
   ];
 
   return(

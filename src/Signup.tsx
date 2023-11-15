@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
-  { text: "新規会員登録", url: "/signup" },
+  { text: "新規会員登録", url: "/sign-up" },
 ];
 
 type CreateUserResponse = {
@@ -46,7 +46,7 @@ interface InputErrors {
 
 function Signup() {
   const navigate = useNavigate();
-  const { createUser, setUser } = useUserData();
+  const { createUser, setUser, loginUser } = useUserData();
   const [createUserResponse, setCreateUserResponse] = useState<CreateUserResponse | null>(null);
 
   const [inputs, setInputs] = useState<InputFields>({
@@ -131,12 +131,16 @@ function Signup() {
       };
 
       const response = await createUser(userData);
+      console.log(response);
+
       if(response.error) {
         console.log(`Create User Error: ${response.error}`);
         return;
       }
 
-      //setTimeout(() => { navigate('/mypage'); }, 500);
+      loginUser({token: response.data});
+
+      setTimeout(() => { navigate('/account'); }, 500);
     }
   }
 

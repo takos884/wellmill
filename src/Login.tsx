@@ -31,7 +31,7 @@ const Login = () => {
       Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
 
       setTimeout(() => {
-        navigate('/mypage');
+        navigate('/account');
       }, 500);
     }
   };
@@ -53,10 +53,10 @@ const Login = () => {
         <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className={styles.loginButton} onClick={handleLogin}>ログイン</button>
         <div className={styles.loginLine}></div>
-        <button className={styles.loginSignup} onClick={() => navigate('/signup')}>新規登録はこちら</button>
+        <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
       </div>
 
-      {user && <span>You are already signed in {user.firstName}. Go to <Link to='/mypage'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
+      {user && <span>You are already signed in {user.firstName}. Go to <Link to='/account'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
       <Footer />
     </>
   );

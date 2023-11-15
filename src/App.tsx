@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import Profile from './Profile';
 import Shop from './Shop';
 import Product from './Product';
 import { ProductProvider } from './ProductContext';
@@ -22,6 +21,7 @@ import ResultList from './ResultList';
 import HowTo from './HowTo';
 import OrderList from './OrderList';
 import Address from './Address';
+import Profile from './Profile';
 
 function Layout() {
   const location = useLocation();
@@ -33,15 +33,15 @@ function Layout() {
   // Most specific at the top
   return (
     <Routes>
-      <Route path="/remote" element={<Remote />} />
+      <Route path="/remote-examination" element={<Remote />} />
       <Route path="/shop/:productId" element={<Product />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/sign-up" element={<Signup />} />
 
-      <Route path="/mypage" element={<MyPage />} />
+      <Route path="/account" element={<MyPage />} />
       <Route path="/sample-registration" element={<SampleRegistration />} />
       <Route path="/research" element={<Research />} />
       <Route path="/result-list" element={<ResultList />} />

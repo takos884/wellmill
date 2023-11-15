@@ -7,7 +7,7 @@ import Footer from "./Footer";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
-  { text: "マイページ", url: "/mypage" },
+  { text: "マイページ", url: "/account" },
   { text: "お届け先住所", url: "/address" },
 ];
 

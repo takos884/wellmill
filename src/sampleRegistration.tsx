@@ -8,7 +8,7 @@ import styles from "./sampleRegistration.module.css"
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
-  { text: "マイページ", url: "/mypage" },
+  { text: "マイページ", url: "/account" },
   { text: "検体IDの登録", url: "/sample-registration" },
 ];
 

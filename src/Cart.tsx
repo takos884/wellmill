@@ -43,6 +43,11 @@ function Cart() {
     //console.log(returnedCart);
   }
 
+  function HandlePurchaseClick() {
+    if(cartLoading) { return; }
+    alert(`Sending payment request for [${cartQuantity}] items at ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} to Stripe. - ${cartQuantity}つのアイテムに対して ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} での支払いリクエストを Stripe に送信します。`)
+  }
+
   const headings = (cart && cartQuantity > 0) ? (
     <div className={styles.headings}>
       <span>商品</span>
@@ -82,14 +87,13 @@ function Cart() {
       </div>
     ) : null;
   }) : null;
-  //<span className={styles.lineCost}>{line.cost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
 
   const spinner = <img className={styles.spinner} src="spinner.svg" alt="Spinner"/>;
   const checkoutButtonContent = cartLoading ? spinner : "ご購入手続きへ";
   const subTotal = (cart && cartQuantity > 0) ? (
     <>
       <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-      <button className={styles.checkout}>{checkoutButtonContent}</button>
+      <button className={styles.checkout} onClick={HandlePurchaseClick}>{checkoutButtonContent}</button>
     </>
   ) : null;
 

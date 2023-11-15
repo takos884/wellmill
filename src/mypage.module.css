@@ -28,6 +28,13 @@ span.link {
   font-size: 1.5rem;
   font-weight: bold;
   color: #af3e92;
+  transition: background-color 0.25s;
+}
+
+span.link:hover {
+  color: #fff;
+  background-color: #af3e92;
+  border: 1px solid #af3e92;
 }
 
 
