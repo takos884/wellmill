@@ -3,164 +3,102 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
-
-const mysql = require('mysql');
+//const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
+
+
+
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+});
+
+
 
 const app = express();
-
-/*
-const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/products.json';
-//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers.json';
-//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers/207119551/orders.json';
-//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/customers/7778170732836/orders.json?status=any';
-//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/orders.json?ids=5558159016228';
-//const SHOPIFY_API_ENDPOINT = 'https://well-mill.myshopify.com/admin/api/2023-10/storefront_access_tokens.json';
-
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-const SHOPIFY_GRAPHQL_ENDPOINT = 'https://well-mill.myshopify.com/api/2023-01/graphql.json';
-*/
-
-const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
-const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
-
-/*
-async function fetchShopifyData() {
-  try {
-    const response = await fetch(SHOPIFY_API_ENDPOINT, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(data));
-    console.log(`[${new Date().toISOString()}] Updated products.json`);
-  } catch (err) {
-    console.error(`[${new Date().toISOString()}] Error fetching Shopify data:`, err);
-  }
-}
-*/
-
-// Call the function initially
-//fetchShopifyData();
-
-// Then set it to be called every minute
-//const fetchInterval = setInterval(fetchShopifyData, 60 * 1000);
-/*
-// Handle clean exit
-function exitHandler() {
-//  clearInterval(fetchInterval);
-//  console.log('Clearing Shopify data fetch interval.');
-  process.exit();
-}
-
-process.on('exit', exitHandler);
-process.on('SIGINT', exitHandler);
-process.on('SIGUSR1', exitHandler);
-process.on('SIGUSR2', exitHandler);
-*/
 
 app.use(cors());  // Enable CORS for all routes
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME
-});
+const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
+const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
-connection.connect(error => {
-  if (error) {
-    console.log(error);
-    throw error;
-  }
-  console.log("Successfully connected to the database.");
-});
 
 
 async function fetchProducts() {
-  return new Promise((resolve, reject) => {
-    console.log("Hit fetchProducts");
-    const query = `
-      SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
-      FROM product p
-      LEFT JOIN image i ON p.productKey = i.productKey
-    `;
-    console.log("Query: " + query);
+  console.log("Hit fetchProducts. Time: " + CurrentTime());
 
-    connection.query(query, async (error, results) => {
-      if (error) {
-        console.log("Query Error: " + error);
-        return reject(error);
+  const query = `
+    SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
+    FROM product p
+    LEFT JOIN image i ON p.productKey = i.productKey
+  `;
+  //console.log("Query: " + query);
+
+  try{
+    const queryResults = await pool.query(query);
+
+    if (!queryResults || !queryResults[0]) {
+      console.log("Products not found");
+      return Promise.reject("Products not found");
+    }
+
+    const results = queryResults[0];
+
+    // Create an object to hold products and their images
+    const products = {};
+
+
+    results.forEach(row => {
+      // If the product is not already in the products object, add it
+      if (!products[row.productKey]) {
+        products[row.productKey] = {
+          productKey: row.productKey,
+          title: row.title,
+          description: row.description,
+          available: row.available,
+          stock: row.stock,
+          price: row.price,
+          taxRate: row.taxRate,
+          type: row.type,
+          images: []
+        };
       }
 
-      if (!results) {
-        console.log("Products not found");
-        return reject("Products not found");
+      // Add the image to the product's images array, if image data exists
+      if (row.imageKey) {
+        products[row.productKey].images.push({
+          imageKey: row.imageKey,
+          url: row.url,
+          displayOrder: row.displayOrder,
+          altText: row.altText
+        });
       }
-
-      // Create an object to hold products and their images
-      const products = {};
-
-      results.forEach(row => {
-        // If the product is not already in the products object, add it
-        if (!products[row.productKey]) {
-          products[row.productKey] = {
-            productKey: row.productKey,
-            title: row.title,
-            description: row.description,
-            available: row.available,
-            stock: row.stock,
-            price: row.price,
-            taxRate: row.taxRate,
-            type: row.type,
-            images: []
-          };
-        }
-
-        // Add the image to the product's images array, if image data exists
-        if (row.imageKey) {
-          products[row.productKey].images.push({
-            imageKey: row.imageKey,
-            url: row.url,
-            displayOrder: row.displayOrder,
-            altText: row.altText
-          });
-        }
-      });
-
-      // Write the products to a file
-      fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
-      console.log(`[${new Date().toISOString()}] Updated modern products.json`);
-
-      resolve(true);
     });
-  });
+
+    // Write the products to a file
+    fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
+    console.log(`[${CurrentTime()}] Updated modern products.json`);
+
+    return Promise.resolve(true);
+  } catch(error) {
+    console.error(`[${CurrentTime()}] Error fetching products:`, error);
+    return Promise.reject(error);
+  }
 }
 
 fetchProducts();
 
-
-const hashPassword = async (password) => {
-  const saltRounds = 10;
-  const hash = await bcrypt.hash(password, saltRounds);
-  return hash;
-};
 
 app.post('/createUser', async (req, res) => {
   try {
@@ -172,18 +110,21 @@ app.post('/createUser', async (req, res) => {
     let email = userData.email?.replace(/[^\w.@-]/g, '');
     let password = userData.password?.replace(/[^\x20-\x7E]/g, '');
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
+  
     const token = crypto.randomBytes(48).toString('hex');
 
-    const query = `INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, email, passwordHash, token) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const query = `
+      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, email, passwordHash, token)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
 
-    connection.query(query, values, (error, results, fields) => {
-      if (error) throw error;
-      console.log(`Created user with token: ${token}`);
-      res.json({ token: token });
-    });
+    pool.query(query, values);
+
+    console.log(`Created user with token: ${token}`);
+    res.json({ token: token });
   } catch (error) {
+    console.error('Error creating user:', error);
     res.status(500).send('Error creating user: ' + error);
   }
 });
@@ -214,6 +155,7 @@ app.post('/sendEmail', async (req, res) => {
     }
 });
 
+/*
 app.post('/loginShopify', async (req, res) => {
   console.log(`Received ${req.method} request on ${req.url}`);
   //console.log('Body:', req.body);
@@ -247,9 +189,10 @@ app.post('/loginShopify', async (req, res) => {
   customerData.cart = cartData;
   res.send(customerData);
 });
+*/
 
 app.post('/login', async (req, res) => {
-  console.log("Hit login");
+  console.log("Hit login. Time:" + CurrentTime());
   console.log("req.body");
   console.log(req.body);
   const userCredentials = req.body.data;
@@ -286,7 +229,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/addToCart', async (req, res) => {
-  console.log("Hit addToCart");
+  console.log("Hit addToCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
   const cartData = req.body.data;
   const { productKey, customerKey, unitPrice, taxRate, quantity } = cartData;
@@ -303,6 +246,7 @@ app.post('/addToCart', async (req, res) => {
   const roundedUnitPrice = Math.round(unitPrice * 100) / 100;
   const roundedTaxRate   = Math.round(taxRate * 1000) / 1000;
 
+  /*
   try {
     // Check if the item already exists in the cart
     const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
@@ -340,10 +284,35 @@ app.post('/addToCart', async (req, res) => {
       console.error('Error in addToCart:', error);
       res.status(500).send('An error occurred');
   }
+  */
+
+  try {
+    // Check if the item already exists in the cart
+    const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
+    const existingItem = await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
+  
+    if (existingItem.length > 0) {
+      // Item exists, update the quantity
+      const newQuantity = existingItem[0].quantity + quantity;
+      const updateQuery = "UPDATE lineItem SET quantity = ? WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
+      await pool.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
+    } else {
+      // Insert data into the database
+      const insertQuery = "INSERT INTO lineItem (productKey, customerKey, unitPrice, taxRate, quantity) VALUES (?, ?, ?, ?, ?)";
+      await pool.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity]);
+    }
+  
+    // Get updated cart data
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    res.json(updatedCart);
+  } catch (error) {
+    console.error('Error in addToCart:', error);
+    res.status(500).send('An error occurred');
+  }
 });
 
 app.post('/updateCartQuantity', async (req, res) => {
-  console.log("Hit updateCartQuantity");
+  console.log("Hit updateCartQuantity. Time: " + CurrentTime());
   console.log(req.body); //
   const updateData = req.body.data;
   const { customerKey, token, lineItemKey, quantity } = updateData;
@@ -359,6 +328,7 @@ app.post('/updateCartQuantity', async (req, res) => {
   const tokenVerification = await verifyToken(customerKey, token);
   if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
 
+  /*
   try {
     // Update line quantity in database
     const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
@@ -375,10 +345,24 @@ app.post('/updateCartQuantity', async (req, res) => {
       console.error('Error in updateCartQuantity:', error);
       res.status(500).send('An error occurred');
   }
+  */
+
+  try {
+    // Update line quantity in the database
+    const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
+    await pool.query(updateQuery, [quantity, customerKey, lineItemKey]);
+  
+    // Get updated cart data
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    res.json(updatedCart);
+  } catch (error) {
+    console.error('Error in updateCartQuantity:', error);
+    res.status(500).send('An error occurred');
+  }
 });
 
 app.post('/deleteFromCart', async (req, res) => {
-  console.log("Hit deleteFromCart");
+  console.log("Hit deleteFromCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
   const lineItemData = req.body.data;
   const { customerKey, token, lineItemKey } = lineItemData;
@@ -393,6 +377,7 @@ app.post('/deleteFromCart', async (req, res) => {
   const tokenVerification = await verifyToken(customerKey, token);
   if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
 
+  /*
   try {
     // Delete line from database
     const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
@@ -409,10 +394,39 @@ app.post('/deleteFromCart', async (req, res) => {
       console.error('Error in deleteFromCart:', error);
       res.status(500).send('An error occurred');
   }
+  */
+
+  try {
+    // Delete line from the database
+    const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
+    await pool.query(deleteQuery, [customerKey, lineItemKey]);
+  
+    // Get updated cart data
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    res.json(updatedCart);
+  } catch (error) {
+    console.error('Error in deleteFromCart:', error);
+    res.status(500).send('An error occurred');
+  }
 
 });
 
-function verifyToken(customerKey, token) {
+async function verifyToken(customerKey, token) {
+  try {
+    const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
+    const results = await pool.query(query, [customerKey, token]);
+
+    if (results.length > 0) {
+      return { valid: true, error: null };
+    } else {
+      return { valid: false, error: 'Invalid token or customer key' };
+    }
+  } catch (error) {
+    return { valid: false, error: error.message };
+  }
+}
+
+function verifyTokenOLD(customerKey, token) {
   return new Promise((resolve, reject) => {
       const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
       
@@ -433,6 +447,48 @@ function verifyToken(customerKey, token) {
 
 
 async function GetCustomerDataFromCredentials(email, password) {
+  try {
+    // Prepare the SQL query to find the user by email
+    const query = `SELECT * FROM customer WHERE email = ?`;
+
+    // Execute the query using the promisified pool.query and wait for the promise to resolve
+    const results = await pool.query(query, [email]);
+
+    // If no results, the email is not registered
+    if (results.length === 0) {
+      return null;
+    }
+
+    const customer = results[0];
+    console.log("In GetCustomerDataFromCredentials with the following customer:");
+    console.log(customer);
+
+    // Compare the provided password with the stored hash
+    const match = await bcrypt.compare(password, customer.passwordHash);
+
+    // Passwords do not match
+    if (!match) {
+      return null;
+    }
+
+    // Passwords match, now fetch the customer's cart
+    console.log("Correct password");
+
+    // Pull customer's cart
+    const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
+    customer.cart = { lines: cartData };
+
+    // Remove sensitive data before sending the customer object
+    delete customer.passwordHash;
+
+    return customer;
+  } catch (error) {
+    console.error('Error in GetCustomerDataFromCredentials:', error);
+    throw error;
+  }
+}
+
+async function GetCustomerDataFromCredentialsOLD(email, password) {
   return new Promise((resolve, reject) => {
     // Prepare the SQL query to find the user by email
     const query = `SELECT * FROM customer WHERE email = ?`;
@@ -472,6 +528,39 @@ async function GetCustomerDataFromCredentials(email, password) {
 }
 
 async function GetCustomerDataFromToken(token) {
+  try {
+    // Prepare the SQL query to find the user by token
+    const query = `SELECT * FROM customer WHERE token = ?`;
+
+    // Execute the query using the promisified pool.query and wait for the promise to resolve
+    const results = await pool.query(query, [token]);
+
+    // If no results, the token does not exist
+    if (results.length === 0) {
+      return null;
+    }
+
+    // If a token exists, the user is authenticated
+    const customer = results[0];
+
+    // Pull customer's cart
+    const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
+    if (cartData.error) {
+      throw new Error("Cart query error: " + cartData.error);
+    }
+    customer.cart = { lines: cartData };
+
+    // Remove sensitive data before sending the customer object
+    delete customer.password_hash;
+
+    return customer;
+  } catch (error) {
+    console.error('Error in GetCustomerDataFromToken:', error);
+    throw error;
+  }
+}
+
+async function GetCustomerDataFromTokenOLD(token) {
   return new Promise((resolve, reject) => {
     // Prepare the SQL query to find the user by email
     const query = `SELECT * FROM customer WHERE token = ?`;
@@ -500,6 +589,23 @@ async function GetCustomerDataFromToken(token) {
 }
 
 async function GetCartDataFromCustomerKey(customerKey) {
+  try {
+    // Prepare the SQL query to get a customer's line items that haven't been purchased
+    const selectQuery = `
+      SELECT * FROM lineItem
+      WHERE customerKey = ? AND purchaseKey IS NULL`;
+
+    // Execute the query using the promisified pool.query and wait for the promise to resolve
+    const updatedCart = await pool.query(selectQuery, [customerKey]);
+
+    return updatedCart;
+  } catch (error) {
+    console.error('Error in GetCartDataFromCustomerKey:', error);
+    throw error;
+  }
+}
+
+async function GetCartDataFromCustomerKeyOLD(customerKey) {
   const selectQuery = `
     SELECT * FROM lineItem
     WHERE customerKey = ? AND purchaseKey IS NULL`;
@@ -512,6 +618,9 @@ async function GetCartDataFromCustomerKey(customerKey) {
   return updatedCart;
 }
 
+
+// These carts were for Shopify
+/*
 async function getCartIdFromCustomerId(customerId, customerAccessToken) {
   const cartsData = readCartsFile();
   const cartEntry = cartsData.find(entry => entry.customerId === customerId);
@@ -672,15 +781,46 @@ async function GetCartDataFromCartId(cartId) {
     throw error;
   }
 }
+*/
+
+
+//#region Stripe
+const calculateOrderAmount = (items) => {
+  // Replace this constant with a calculation of the order's amount
+  // Calculate the order total on the server to prevent
+  // people from directly manipulating the amount on the client
+  return 1400;
+};
+
+app.post("/createPaymentIntent", async (req, res) => {
+  const { items } = req.body;
+
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: calculateOrderAmount(items),
+    currency: "jpy",
+    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+
+//#endregion
 
 app.use((err, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Error:`, err.stack);
-    res.status(500).send('Something broke!');
+    res.status(500).send('Something broke! Time: ' + CurrentTime());
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+function CurrentTime() {
   const current = new Date();
-  const timestamp = `${current.getFullYear()}/${String(current.getMonth() + 1).padStart(2, '0')}/${String(current.getDate()).padStart(2, '0')} ${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}:${String(current.getSeconds()).padStart(2, '0')}`;
-  console.log(`Server started on ${PORT} 3001 at ${timestamp}`);
-});
+  return `${current.getFullYear()}/${String(current.getMonth() + 1).padStart(2, '0')}/${String(current.getDate()).padStart(2, '0')} ${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}:${String(current.getSeconds()).padStart(2, '0')}`;
+}
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
 import { Link } from "react-router-dom";
@@ -7,6 +8,7 @@ import './App.css';
 import styles from './cart.module.css'
 import Header from "./Header";
 import Footer from "./Footer";
+import Checkout from "./Checkout";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -16,6 +18,8 @@ const breadcrumbs = [
 function Cart() {
   const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+
+  const [displayCheckout, setDisplayCheckout] = useState(false);
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
@@ -47,6 +51,10 @@ function Cart() {
     if(cartLoading) { return; }
     alert(`Sending payment request for [${cartQuantity}] items at ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} to Stripe. - ${cartQuantity}つのアイテムに対して ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} での支払いリクエストを Stripe に送信します。`)
   }
+
+  function handleCheckoutClick() {
+    setDisplayCheckout(true);
+  };
 
   const headings = (cart && cartQuantity > 0) ? (
     <div className={styles.headings}>
@@ -93,7 +101,7 @@ function Cart() {
   const subTotal = (cart && cartQuantity > 0) ? (
     <>
       <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-      <button className={styles.checkout} onClick={HandlePurchaseClick}>{checkoutButtonContent}</button>
+      <button className={styles.checkout} onClick={handleCheckoutClick}>{checkoutButtonContent}</button>
     </>
   ) : null;
 
@@ -123,9 +131,11 @@ return(<>
       {subTotal}
       {requestMessage}
     </div>
+    {displayCheckout && <Checkout />}
     <Footer />
   </>
   )
 }
 
 export default Cart
+
