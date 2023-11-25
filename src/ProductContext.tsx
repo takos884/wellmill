@@ -38,18 +38,16 @@ export function ProductProvider({ children }: ProductProviderProps) {
       try {
         const response = await fetch('/wellmill/products.json');
         if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
+        const rawResponse = await response.json();
 
-        const fetchedProducts = await response.json();
+        // Data might come back as a top-level array, or within an object, and the field value is "products"
+        const rawProducts = (Array.isArray(rawResponse) ? rawResponse : (rawResponse.products && Array.isArray(rawResponse.products)) ? rawResponse.products : [])
+
+        // Values within products are all strings, convert to numbers and bools
+        const fetchedProducts = transformProductData(rawProducts);
 
         if (isMounted) {
-          if (Array.isArray(fetchedProducts)) {
-            setProducts(fetchedProducts);
-          } else if (fetchedProducts.products && Array.isArray(fetchedProducts.products)) {
-            setProducts(fetchedProducts.products);
-          } else {
-            setProducts([]);
-            throw new Error("Unrecognized data structure received");
-          }
+          setProducts(fetchedProducts);
         }
       } catch (err) {
         if (isMounted) {
@@ -67,6 +65,25 @@ export function ProductProvider({ children }: ProductProviderProps) {
     // Cleanup function to set isMounted to false when component unmounts
     return () => { isMounted = false; };
   }, [products]); // Only used to check if it already exists. If yes, don't download data again.
+
+  function transformProductData(rawData: any[]): Product[] {
+    return rawData.map((rawProduct) => {
+      const product: Product = {
+        productKey: Number(rawProduct.productKey) || 0,
+        id: String(rawProduct.id),
+        title: String(rawProduct.title),
+        description: String(rawProduct.description),
+        available: Boolean(rawProduct.available),
+        stock: Number(rawProduct.stock) || 0,
+        price: Number(rawProduct.price) || 0,
+        taxRate: Number(rawProduct.taxRate) || 0,
+        type: Number(rawProduct.type) || 0,
+        images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
+      };
+  
+      return product;
+    });
+  }
 
   return (
     <ProductContext.Provider value={{ products, setProducts, isLoading, error }}>

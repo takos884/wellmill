@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
@@ -21,13 +21,26 @@ function Cart() {
 
   const [displayCheckout, setDisplayCheckout] = useState(false);
 
+  // Prevents scrolling while the Checkout modal is open
+  useEffect(() => {
+    function disableBodyScroll() { document.body.classList.add('no-scroll');    };
+    function enableBodyScroll()  { document.body.classList.remove('no-scroll'); };
+
+    if (displayCheckout) { disableBodyScroll(); }
+    else                 { enableBodyScroll(); }
+
+    // Allow scrolling when the component is unmounted
+    return () => { enableBodyScroll(); };
+  }, [displayCheckout]);
+
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
   if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
-  //const cart = user?.cart ? user?.cart : {lines: [], id: "", totalQuantity: 0, totalCost: 0}
+
   const cart = user ? user.cart : undefined;
   const cartQuantity = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0) : 0;
   const cartCost = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0) : 0;
+
 
   async function HandleQuantityClick(lineItemKey: number, quantity: number) {
     if(!user?.customerKey) return;
@@ -67,7 +80,8 @@ function Cart() {
   const cartLineElements = cart?.lines ? cart.lines.map((line) => {
     if(!user) { return null; }
     if(!user.customerKey) { return null; }
-    const unitCost = Math.round(line.unitPrice * (1+line.taxRate));
+    const unitCost = Math.round(line.unitPrice * (1 + line.taxRate));
+    //console.log(`unitPrice: ${line.unitPrice}, taxRate: ${line.taxRate}, calc taxrate: ${1 + line.taxRate}, unitCost: ${unitCost}`)
     const lineCost = Math.round(unitCost * line.quantity);
     const product = products?.find(product => {return product.productKey === line.productKey});
     const topImage = product?.images.sort((a, b) => a.displayOrder - b.displayOrder)[0];

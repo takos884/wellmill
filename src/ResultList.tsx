@@ -20,7 +20,7 @@ function ResultList() {
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">検査一覧</span>
       <span className={styles.noData}>該当する検査一覧はありません</span>
-      <Link to="/account"><button>マイページTOPへ</button></Link>
+      <Link to="/account"><button style={{marginBottom: "5rem"}}>マイページTOPへ</button></Link>
       <Footer />
     </>
   )

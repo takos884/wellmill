@@ -5,7 +5,6 @@ import { Helmet } from 'react-helmet';
 
 import CheckoutForm from "./CheckoutForm";
 
-import './App.css';
 import styles from './checkout.module.css';
 
 // This is our *publishable* test API key.
@@ -36,7 +35,7 @@ function Checkout() {
 
 
   return (
-    <div className="App">
+    <div className={styles.checkoutWrapper}>
       <Helmet>
         <meta
           http-equiv="Content-Security-Policy"
@@ -44,13 +43,16 @@ function Checkout() {
         />
       </Helmet>
       {clientSecret && (
-        <Elements options={options} stripe={stripePromise}>
-          <CheckoutForm />
-        </Elements>
+        <div className={styles.checkoutModal}>
+          <Elements options={options} stripe={stripePromise}>
+            <CheckoutForm />
+          </Elements>
+        </div>
       )}
-      <span>Client secret: {clientSecret}</span>
     </div>
   );
 }
 
 export default Checkout;
+
+//      <span>Client secret: {clientSecret}</span>

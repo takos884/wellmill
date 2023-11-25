@@ -9,6 +9,10 @@
   align-items: center;
 }
 
+body.no-scroll {
+  overflow: hidden;
+}
+
 .App {
   text-align: center;
 }

@@ -6,25 +6,27 @@ import {
 } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
+import { useUserData } from "./useUserData";
+import { useProducts } from "./ProductContext";
+
+import styles from './checkoutForm.module.css';
+
 export default function CheckoutForm() {
   const stripe = useStripe();
   const elements = useElements();
+
+  const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
+  const { products, isLoading: productsLoading, error: productsError } = useProducts();
+
+  const cart = user ? user.cart : undefined;
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!stripe) {
-      return;
-    }
-
-    const clientSecret = new URLSearchParams(window.location.search).get(
-      "payment_intent_client_secret"
-    );
-
-    if (!clientSecret) {
-      return;
-    }
+    if (!stripe) { return; }
+    const clientSecret = new URLSearchParams(window.location.search).get( "payment_intent_client_secret" );
+    if (!clientSecret) { return; }
 
     stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
       switch (paymentIntent?.status) {
@@ -47,11 +49,8 @@ export default function CheckoutForm() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!stripe || !elements) {
-      // Stripe.js hasn't yet loaded.
-      // Make sure to disable form submission until Stripe.js has loaded.
-      return;
-    }
+    // Stripe.js hasn't yet loaded. Disable form submission until Stripe.js has loaded.
+    if (!stripe || !elements) { return; }
 
     setIsLoading(true);
 
@@ -82,16 +81,23 @@ export default function CheckoutForm() {
   }
 
   return (
-    <form id="payment-form" onSubmit={handleSubmit}>
+    <div className={styles.checkoutFormWrapper}>
+      <img src="logo.svg" alt="Logo" />
+      <div className={styles.checkoutFormContent}>
+        <form id="payment-form" onSubmit={handleSubmit}>
+          <PaymentElement id="payment-element" options={paymentElementOptions} />
+          <button disabled={isLoading || !stripe || !elements} id="submit">
+            <span id="button-text">
+              {isLoading ? <div className="spinner" id="spinner"></div> : "今すぐ払う"}
+            </span>
+          </button>
+          {/* Show any error or success messages */}
+          {message && <div id="payment-message">{message}</div>}
+        </form>
+        <div className={styles.checkoutFormProducts}>
 
-      <PaymentElement id="payment-element" options={paymentElementOptions} />
-      <button disabled={isLoading || !stripe || !elements} id="submit">
-        <span id="button-text">
-          {isLoading ? <div className="spinner" id="spinner"></div> : "Pay now"}
-        </span>
-      </button>
-      {/* Show any error or success messages */}
-      {message && <div id="payment-message">{message}</div>}
-    </form>
+        </div>
+      </div>
+    </div>
   );
 }

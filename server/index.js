@@ -13,6 +13,12 @@ const crypto = require('crypto');
 const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
 
 
+const app = express();
+app.use(cors());  // Enable CORS for all routes
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+
 
 const pool = mysql.createPool({
   connectionLimit: 10,
@@ -23,12 +29,6 @@ const pool = mysql.createPool({
 });
 
 
-
-const app = express();
-
-app.use(cors());  // Enable CORS for all routes
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 
 const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
 const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
@@ -46,14 +46,12 @@ async function fetchProducts() {
   //console.log("Query: " + query);
 
   try{
-    const queryResults = await pool.query(query);
+    const results = (await pool.query(query))[0];
 
-    if (!queryResults || !queryResults[0]) {
+    if (!results) {
       console.log("Products not found");
       return Promise.reject("Products not found");
     }
-
-    const results = queryResults[0];
 
     // Create an object to hold products and their images
     const products = {};
@@ -289,7 +287,7 @@ app.post('/addToCart', async (req, res) => {
   try {
     // Check if the item already exists in the cart
     const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-    const existingItem = await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
+    const existingItem = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]))[0];
   
     if (existingItem.length > 0) {
       // Item exists, update the quantity
@@ -414,7 +412,7 @@ app.post('/deleteFromCart', async (req, res) => {
 async function verifyToken(customerKey, token) {
   try {
     const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
-    const results = await pool.query(query, [customerKey, token]);
+    const results = (await pool.query(query, [customerKey, token]))[0];
 
     if (results.length > 0) {
       return { valid: true, error: null };
@@ -422,7 +420,7 @@ async function verifyToken(customerKey, token) {
       return { valid: false, error: 'Invalid token or customer key' };
     }
   } catch (error) {
-    return { valid: false, error: error.message };
+    return { valid: false, error: `Verify Token error: ${error.message}` };
   }
 }
 
@@ -452,7 +450,7 @@ async function GetCustomerDataFromCredentials(email, password) {
     const query = `SELECT * FROM customer WHERE email = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const results = await pool.query(query, [email]);
+    const results = (await pool.query(query, [email]))[0];
 
     // If no results, the email is not registered
     if (results.length === 0) {
@@ -460,19 +458,24 @@ async function GetCustomerDataFromCredentials(email, password) {
     }
 
     const customer = results[0];
-    console.log("In GetCustomerDataFromCredentials with the following customer:");
-    console.log(customer);
+    //console.log("In GetCustomerDataFromCredentials with the following customer:");
+    //console.log(customer);
+    //console.log("Password:");
+    //console.log(password);
+    //console.log("Hash:");
+    //console.log(customer.passwordHash);
 
     // Compare the provided password with the stored hash
     const match = await bcrypt.compare(password, customer.passwordHash);
 
     // Passwords do not match
     if (!match) {
+      // TODO think about some login attempt limit
       return null;
     }
 
     // Passwords match, now fetch the customer's cart
-    console.log("Correct password");
+    //console.log("Correct password");
 
     // Pull customer's cart
     const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
@@ -533,7 +536,7 @@ async function GetCustomerDataFromToken(token) {
     const query = `SELECT * FROM customer WHERE token = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const results = await pool.query(query, [token]);
+    const results = (await pool.query(query, [token]))[0];
 
     // If no results, the token does not exist
     if (results.length === 0) {
@@ -596,7 +599,7 @@ async function GetCartDataFromCustomerKey(customerKey) {
       WHERE customerKey = ? AND purchaseKey IS NULL`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const updatedCart = await pool.query(selectQuery, [customerKey]);
+    const updatedCart = (await pool.query(selectQuery, [customerKey]))[0];
 
     return updatedCart;
   } catch (error) {

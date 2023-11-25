@@ -1,0 +1,10 @@
+div.checkoutFormWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+div.checkoutFormContent {
+  display: grid;
+  grid-template-columns: 50% 50%;
+}

@@ -63,7 +63,7 @@ export const useUserData = () => {
       console.log("No token returned on user create");
       return { data: null, error: "No token returned on user create" };
     }
-    
+
     userData.token = APIResponse.data.token;
     delete userData.password;
     setUser(userData);
@@ -84,10 +84,14 @@ export const useUserData = () => {
 
     //console.log("Set user after login:");
     //console.log(APIResponse.data.customerData);
-    setUser(APIResponse.data.customerData);
+
+    // Returned values are all strings, so convert numbers to actual numbers
+    APIResponse.data.customerData.cart.lines = CartLineValuesToNumbers(APIResponse.data.customerData.cart.lines);
+
+    UpdateUser(APIResponse.data.customerData)
+    //setUser(APIResponse.data.customerData);
     setUserLoading(false);
     return{ data: APIResponse.data.customerData, error: null };
-
   }
 
   const addToCart = useCallback(async (productKey: number, customerKey: number, unitPrice: number, taxRate: number, quantity: number) => {
@@ -98,7 +102,7 @@ export const useUserData = () => {
     const APIResponse = await CallAPI(requestBody, "addToCart");
     //console.log("APIResponse.data:");
     //console.log(APIResponse.data);
-    UpdateCart(APIResponse.data);
+    UpdateUser(undefined, APIResponse.data);
     setCartLoading(false);
     return APIResponse.data;
   }, []);
@@ -107,7 +111,7 @@ export const useUserData = () => {
     setCartLoading(true);
     const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey, quantity: quantity};
     const APIResponse = await CallAPI(requestBody, "updateCartQuantity");
-    UpdateCart(APIResponse.data);
+    UpdateUser(undefined, APIResponse.data);
     setCartLoading(false);
     return APIResponse.data;
   }, [])
@@ -117,7 +121,7 @@ export const useUserData = () => {
     const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey};
     //console.log(requestBody); // Object { customerKey: 1, token: "e667da5e811ec9383c3e34f8282707b6e520e75975bad95f96a37f4abacdcf835a9a440e31d2685541efec86b50c44c6", lineItemKey: 1 }
     const APIResponse = await CallAPI(requestBody, "deleteFromCart");
-    UpdateCart(APIResponse.data);
+    UpdateUser(undefined, APIResponse.data);
     setCartLoading(false);
     return APIResponse.data;
   }, [])
@@ -142,23 +146,63 @@ export const useUserData = () => {
   }
 
 
-  function UpdateCart(cartLines: CartLine[]) {
-    setUser((previousUser: Customer | null) => {
-      if (!previousUser) return null;
+  function UpdateUser(newUser?:Customer, cartLines?: CartLine[]) {
 
+    // If nothing is passed to the function, leave
+    if(!newUser && !cartLines) return;
+
+    setUser((previousUser: Customer | null) => {
+
+      // If there's no existing user and no new user, we need to quit (cart data needs a user)
+      if(!previousUser && !newUser) return null;
+
+      // User data is what was passed in, or what existed already as a fallback
+      const currentUser = newUser || previousUser;
+      if(!currentUser) return null;
+
+      // If new cart lines aren't passed in (e.g. during login), use existing cart lines if they exist
+      if (!cartLines) { cartLines = currentUser.cart?.lines || []; }
+
+      // Cart needs strings converted to numbers, and calculate some metadata
+      const updatedCartLines = CartLineValuesToNumbers(cartLines);
+      const cartQuantity = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0);
+      const cartCost = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0);
+
+      // Make the object that will be the new user
       const updatedUser = {
-        ...previousUser,
+        ...currentUser,
         cart: {
-          totalQuantity: 1,
-          totalCost: 100,
-          lines: cartLines
+          quantity: cartQuantity,
+          cost: cartCost,
+          lines: updatedCartLines
         }
       };
-    
+
       return updatedUser;
     });
   }
 
+  function CartLineValuesToNumbers(cartLines: CartLine[]) {
+    const updatedCartLines = cartLines.map((line) => {
+      // Cast then validate relevant values to numbers
+      const quantity = parseInt(line.quantity.toString());
+      const unitPrice = parseFloat(line.unitPrice.toString());
+      const taxRate = parseFloat(line.taxRate.toString());
+
+      if (isNaN(quantity) || isNaN(unitPrice) || isNaN(taxRate)) {
+        throw new Error(`Invalid quantity (${quantity}), unit price (${unitPrice}), or tax rate (${taxRate})`);
+      }
+
+      return {
+        ...line,
+        quantity: quantity,
+        unitPrice: unitPrice,
+        taxRate: taxRate,
+      };
+    });
+
+    return updatedCartLines;
+  }
   // This effect runs once on mount to check for existing user data
   useEffect(() => {
     const initializeUserData = async () => {
@@ -195,6 +239,9 @@ export const useUserData = () => {
         Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
 
+      // Returned values are all strings, so convert numbers to actual numbers
+      APIResponse.data.customerData.cart.lines = CartLineValuesToNumbers(APIResponse.data.customerData.cart.lines);
+  
       setUser(APIResponse.data.customerData)
       return null;
     }  
