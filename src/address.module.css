@@ -14,6 +14,7 @@ span.header {
   margin-top: 3rem;
   margin-bottom: 1rem;
   color: rgba(175,62,146,1);
+  text-align: center;
 }
 
 span.listMessage {

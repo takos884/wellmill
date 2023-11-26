@@ -106,7 +106,7 @@ function Signup() {
       }
     }
 
-    if(inputs.password.length <= 8) {
+    if(inputs.password.length < 8) {
       setInputErrors(prevErrors => ({ ...prevErrors, password: true }));
       hasError = true;
     }
@@ -189,7 +189,7 @@ function Signup() {
           <span className={styles.subheader}>生年月日<span className={styles.red}>必須</span></span>
           <input type="date" id="datePicker" onChange={HandleInputChange} onClick={HandleDateClick} name="birthday" value={inputs.birthday} className={`${styles.signup} ${inputErrors.birthday ? styles.inputError : ''}`}/>
           <span className={styles.subheader}>メールアドレス<span className={styles.red}>必須</span></span>
-          <input type="text" placeholder="name@example.com" onChange={HandleInputChange} name="email" value={inputs.email} className={`${styles.signup} ${inputErrors.email ? styles.inputError : ''}`}></input>
+          <input type="email" placeholder="name@example.com" onChange={HandleInputChange} name="email" value={inputs.email} className={`${styles.signup} ${inputErrors.email ? styles.inputError : ''}`}></input>
           <span className={styles.subheader}>パスワード<span className={styles.red}>必須</span></span>
           <input type="password" onChange={HandleInputChange} name="password" value={inputs.password} className={`${styles.signup} ${inputErrors.password ? styles.inputError : ''}`}></input>
           <span className={styles.passwordInfo}>※8文字以上、半角英数字で入力してください</span>
