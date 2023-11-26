@@ -34,8 +34,8 @@ function Checkout() {
   };
 
 
-  return (
-    <div className={styles.checkoutWrapper}>
+  return (    
+    <>
       <Helmet>
         <meta
           http-equiv="Content-Security-Policy"
@@ -49,7 +49,7 @@ function Checkout() {
           </Elements>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

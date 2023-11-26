@@ -23,10 +23,12 @@ export default function CheckoutForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Set payment message pulled from Stripe
   useEffect(() => {
-    if (!stripe) { return; }
+    if (!stripe) { setMessage("Loading Stripe."); return; }
+
     const clientSecret = new URLSearchParams(window.location.search).get( "payment_intent_client_secret" );
-    if (!clientSecret) { return; }
+    if (!clientSecret) { setMessage(null); return; }
 
     stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
       switch (paymentIntent?.status) {
@@ -76,13 +78,57 @@ export default function CheckoutForm() {
     setIsLoading(false);
   };
 
+  function ToYen(value: number | undefined) {
+    if(value === undefined) return null;
+    return value.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })
+  }
+
   const paymentElementOptions: StripePaymentElementOptions = {
     layout: "tabs"
   }
 
+  const headings = (
+    <div className={styles.headings}>
+      <span>商品</span>
+      <span>数量</span>
+      <span style={{textAlign: "center"}}>合計</span>
+    </div>
+  );
+
+  const checkoutLines = cart ? (
+    cart.lines.map(line => {
+      const product = products?.find(product => {return (product.productKey === line.productKey)});
+      if (!product) return null;
+      const lineUnitCost = line.unitPrice * (1+line.taxRate);
+      const lineCost = lineUnitCost * line.quantity;
+      return(
+        <div className={styles.checkoutLine}>
+          <img className={styles.checkoutLine} src={product.images[0].url} />
+          <div className={styles.lineText}>
+            <span className={styles.lineDescription}>{product.title}</span>
+            <span className={styles.lineUnitCost}>{lineUnitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
+          </div>
+          <span className={styles.lineQuantity}>✖{line.quantity}</span>
+          <span className={styles.lineCost}>{lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
+        </div>
+      )
+    })
+  ) : null;
+
+  console.log(cart)
+  const checkoutTotals = cart ? (
+    <>
+      <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
+      <div className={styles.checkoutTotal}><span>Tax (included):</span><span>{ToYen(cart.includedTax)}</span></div>
+      <div className={styles.checkoutTotal}><span>Shipping:</span><span>{ToYen(0)}</span></div>
+      <div className={styles.checkoutTotal}><span>Total:</span><span>{ToYen(cart.cost)}</span></div>
+    </>
+  ) : null;
+
   return (
     <div className={styles.checkoutFormWrapper}>
       <img src="logo.svg" alt="Logo" />
+      <span className={styles.checkoutHeader}>Checkout</span>
       <div className={styles.checkoutFormContent}>
         <form id="payment-form" onSubmit={handleSubmit}>
           <PaymentElement id="payment-element" options={paymentElementOptions} />
@@ -95,7 +141,12 @@ export default function CheckoutForm() {
           {message && <div id="payment-message">{message}</div>}
         </form>
         <div className={styles.checkoutFormProducts}>
-
+          <div className={styles.checkoutLines}>
+            {checkoutLines}
+          </div>
+          <div className={styles.checkoutTotals}>
+            {checkoutTotals}
+          </div>
         </div>
       </div>
     </div>

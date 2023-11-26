@@ -86,7 +86,7 @@ export const useUserData = () => {
     //console.log(APIResponse.data.customerData);
 
     // Returned values are all strings, so convert numbers to actual numbers
-    APIResponse.data.customerData.cart.lines = CartLineValuesToNumbers(APIResponse.data.customerData.cart.lines);
+    APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
 
     UpdateUser(APIResponse.data.customerData)
     //setUser(APIResponse.data.customerData);
@@ -164,9 +164,10 @@ export const useUserData = () => {
       if (!cartLines) { cartLines = currentUser.cart?.lines || []; }
 
       // Cart needs strings converted to numbers, and calculate some metadata
-      const updatedCartLines = CartLineValuesToNumbers(cartLines);
+      const updatedCartLines = ProcessCartLines(cartLines);
       const cartQuantity = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0);
       const cartCost = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0);
+      const includedTax = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * lineItem.taxRate * lineItem.quantity; }, 0);
 
       // Make the object that will be the new user
       const updatedUser = {
@@ -174,7 +175,8 @@ export const useUserData = () => {
         cart: {
           quantity: cartQuantity,
           cost: cartCost,
-          lines: updatedCartLines
+          includedTax: includedTax,
+          lines: updatedCartLines,
         }
       };
 
@@ -182,7 +184,7 @@ export const useUserData = () => {
     });
   }
 
-  function CartLineValuesToNumbers(cartLines: CartLine[]) {
+  function ProcessCartLines(cartLines: CartLine[]) {
     const updatedCartLines = cartLines.map((line) => {
       // Cast then validate relevant values to numbers
       const quantity = parseInt(line.quantity.toString());
@@ -240,9 +242,9 @@ export const useUserData = () => {
       }
 
       // Returned values are all strings, so convert numbers to actual numbers
-      APIResponse.data.customerData.cart.lines = CartLineValuesToNumbers(APIResponse.data.customerData.cart.lines);
+      APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
   
-      setUser(APIResponse.data.customerData)
+      UpdateUser(APIResponse.data.customerData)
       return null;
     }  
 

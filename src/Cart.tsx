@@ -47,6 +47,7 @@ function Cart() {
     if(!user?.token) return;
     if(quantity < 1 || quantity > 10) return;
 
+    // eslint-disable-next-line
     const returnedCart = await updateCartQuantity(user.customerKey, user.token, lineItemKey, quantity);
     //console.log(returnedCart);
   }
@@ -55,19 +56,21 @@ function Cart() {
     if(!user?.customerKey) { return null; }
     if(!user?.token) { return null; }
 
+    // eslint-disable-next-line
     const returnedCart = await deleteFromCart(user.customerKey, user.token, lineItemKey);
     //console.log("Cart returned after deleting from cart:");
     //console.log(returnedCart);
   }
 
-  function HandlePurchaseClick() {
-    if(cartLoading) { return; }
-    alert(`Sending payment request for [${cartQuantity}] items at ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} to Stripe. - ${cartQuantity}つのアイテムに対して ${cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} での支払いリクエストを Stripe に送信します。`)
-  }
-
   function handleCheckoutClick() {
     setDisplayCheckout(true);
   };
+
+  function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    if (event.target === event.currentTarget) {
+      setDisplayCheckout(false);
+    }
+  }
 
   const headings = (cart && cartQuantity > 0) ? (
     <div className={styles.headings}>
@@ -145,7 +148,7 @@ return(<>
       {subTotal}
       {requestMessage}
     </div>
-    {displayCheckout && <Checkout />}
+    {displayCheckout && <div className={styles.checkoutWrapper} onClick={hideCheckout}><Checkout /></div>}
     <Footer />
   </>
   )

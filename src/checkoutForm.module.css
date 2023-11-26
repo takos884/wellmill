@@ -6,5 +6,78 @@ div.checkoutFormWrapper {
 
 div.checkoutFormContent {
   display: grid;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+}
+
+span.checkoutHeader {
+  font-size: 1.5rem;
+  width: 100%;
+  margin: 2rem 0;
+  box-shadow: 0px 4px 4px -2px rgba(0, 0, 0, 0.15);
+}
+
+div.checkoutLines {
+  border-bottom: 0px solid #ddd;
+}
+
+div.checkoutLine {
+  display: grid;
+  grid-template-columns: 4rem 16rem 4rem 6rem;
+  max-width: 30rem;
+  margin: 3rem 0;
+}
+
+img.checkoutLine {
+  max-width: 4rem;
+  max-height: 4rem;
+  width: auto;
+  height: auto;
+}
+
+div.lineText {
+  display: flex;
+  flex-direction: column;
+  padding-left: 1rem;
+  gap: 0.25rem;
+}
+
+span.lineDescription {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #444;
+}
+
+span.lineUnitCost {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #444;
+}
+
+span.lineQuantity {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+span.lineCost {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+div.checkoutTotals {
+  display: flex;
+  flex-direction: column;
+  padding-left: 5rem;
+}
+
+div.checkoutTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }

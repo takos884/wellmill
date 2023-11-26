@@ -84,6 +84,9 @@ export type Customer = {
 }
 
 export type Cart = {
+    quantity: number,
+    cost: number,
+    includedTax: number,
     lines: CartLine[],
 }
 
