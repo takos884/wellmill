@@ -1,7 +1,12 @@
 import React from "react";
 
+import styles from "./newAddress.module.css"
+
 export default function NewAddress() {
+
   return (
-    <span>Add Address Plz</span>
+    <div className={styles.newAddressContent}>
+      
+    </div>
   );
 }

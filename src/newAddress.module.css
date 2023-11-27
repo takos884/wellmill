@@ -1,0 +1,7 @@
+div.newAddressContent {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 3rem;
+  border-radius: 1rem;
+}

@@ -15,9 +15,15 @@ const breadcrumbs = [
 function Address() {
   const [showNewAddress, setShowNewAddress] = useState(false);
 
+  function HideNewAddress(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    if (event.target === event.currentTarget) {
+      setShowNewAddress(false);
+    }
+  }
+
   return(
     <>
-      {showNewAddress && <NewAddress />}     
+      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress /></div>}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>
