@@ -46,6 +46,23 @@ div.addressBox {
   padding: 2rem;
 }
 
+div.addressActions {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+span.addressAction {
+  margin: 1rem;
+  border: 1px solid #444;
+  padding: 0.5rem;
+  border-radius: 0.2rem;
+}
+
+span.deleteAddress {
+  color: #b33;
+  font-weight: bold;
+}
+
 div.otherAddresses {
   width: 28rem;
   border-top: 1px solid #444;

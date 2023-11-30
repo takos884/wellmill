@@ -33,6 +33,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   }, [currentAddress]);
 
 
+  // Close component on 'Escape' keypress
   useEffect(() => {
     function handleEsc(event: KeyboardEvent) {
       if (event.key === 'Escape') { setShowNewAddress(false); }
@@ -166,6 +167,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
     };
 
     await addAddress(addressData);
+    setShowNewAddress(false);
   }
 
   return (
