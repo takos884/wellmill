@@ -19,7 +19,7 @@ const breadcrumbs = [
 ];
 
 function Addresses() {
-  const { user, userLoading, cartLoading } = useUserData();
+  const { user, deleteAddress, userLoading, cartLoading } = useUserData();
   const addresses = user ? user.addresses : [];
 
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -49,13 +49,15 @@ function Addresses() {
     if(address === undefined) return null;
     const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address.pref)?.name;
     const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
-    const editButton = addressKey ? <button onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>Edit Address</button> : null;
+    const editButton = addressKey ? <span onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>変更する</span> : null;
+    // eslint-disable-next-line no-restricted-globals
+    const deleteButton = addressKey ? <span onClick={() => { if(confirm("このアドレスを削除しますか?")) {deleteAddress(addressKey)} }}>削除する</span> : null;
     return(
       <div className={styles.addressBox}>
         <span>{address.lastName} {address.firstName}</span>
         <span>〒{address.postalCode?.toString().slice(0,3)}-{address.postalCode?.toString().slice(3,7)}</span>
         <span>{prefectureName} {address.city} {address.ward} {address.address2}</span>
-        {editButton}
+        <div>{editButton}{deleteButton}</div>
       </div>
     )
   }

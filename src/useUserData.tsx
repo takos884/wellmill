@@ -98,6 +98,29 @@ export const useUserData = () => {
     UpdateUser(freshUser);
   }
 
+  async function deleteAddress(addressKey: number) {
+    setUserLoading(true);
+    const APIResponse = await CallAPI({addressKey: addressKey, customerKey: user?.customerKey, token: user?.token}, "deleteAddress");
+
+    // Error returned in response
+    if(APIResponse.error) {
+      const errorMessage = "APIResponse error: " + APIResponse.error
+      console.log(errorMessage);
+      return { data: null, error: errorMessage };
+    }
+
+    // Got a reply, but no addresses data
+    if(!APIResponse.data?.addresses) {
+      const errorMessage = "No address data returned after deleting customer addresses. Error message: " + APIResponse.error;
+      console.log(errorMessage);
+      return { data: null, error: errorMessage };
+    }
+
+    // Update the user's address data, then store the user's data
+    const freshUser = { ...user, addresses: APIResponse.data.addresses }
+    UpdateUser(freshUser);    
+  }
+
   const loginUser = async (credentials: UserCredentials): Promise<APIResponse> => {
     setUserLoading(true);
     const APIResponse = await CallAPI(credentials, "login");
@@ -281,7 +304,7 @@ export const useUserData = () => {
   return {
     user, userLoading, createUser, loginUser,setUser,
     cartLoading, addToCart, updateCartQuantity, deleteFromCart,
-    addAddress
+    addAddress, deleteAddress
   };
 
 };

@@ -209,6 +209,58 @@ app.post('/addAddress', async (req, res) => {
     res.status(500).send(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
   }
 
+  const freshAddresses = await PullFreshAddresses(customerKey)
+  res.json({ addresses: freshAddresses });
+});
+
+app.post('/deleteAddress', async (req, res) => {
+  console.log("Hit deleteAddress. Time: " + CurrentTime());
+  console.log(req.body);
+  const addressData = req.body.data;
+
+  const addressKey = Number(addressData.addressKey);
+  if(!addressKey) {
+    const errorMessage = `Malformed addressKey in deleteAddress: ${addressKey}`;
+    console.error(errorMessage);
+    res.status(400).send(errorMessage);
+  }
+
+  const customerKey = Number(addressData.customerKey);
+  if(!customerKey) {
+    const errorMessage = `Malformed customerKey in deleteAddress: ${customerKey}`;
+    console.error(errorMessage);
+    res.status(400).send(errorMessage);
+  }
+
+  let query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
+  try {
+    await pool.query(query, [addressKey, customerKey]);
+  } catch(error) {
+    const errorMessage = `Error deleting address, addressKey: ${addressKey}, customerKey: ${customerKey}`;
+    console.error(errorMessage);
+    res.status(500).send(errorMessage);
+  }
+
+  let forceNewDefault = false;
+  query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ?";
+  try {
+    const [defaultsCount] = await pool.query(query, [customerKey]);
+    if(defaultsCount[0]['COUNT(*)'] === 0) { forceNewDefault = true; }
+  } catch(error) {
+    console.error('Error counting address defaults after delete:', error);
+    res.status(500).send('Error counting address defaults after delete: ' + error);  
+  }
+
+  if(forceNewDefault) {
+    query = `UPDATE address SET defaultAddress = ? WHERE customerKey = ? LIMIT 1`;
+    await pool.query(query, [true, customerKey]);
+  }
+
+  const freshAddresses = await PullFreshAddresses(customerKey)
+  res.json({ addresses: freshAddresses });
+});
+
+async function PullFreshAddresses(customerKey) {
   // Pull fresh copy of all addresses to send back
   query = "SELECT * FROM address WHERE customerKey = ?";
   try {
@@ -216,13 +268,12 @@ app.post('/addAddress', async (req, res) => {
 
     // MySQL uses 1 and 0 for true and false, but I want real bools
     addresses.forEach(address => {address.defaultAddress = (address.defaultAddress === 1) ? true : false});
-
-    res.json({ addresses: addresses });
+    return addresses;
   } catch (error) {
-    console.error(`Error pulling fresh addresses after ${newAddress ? "adding" : "updating"} address: ${error}`);
-    res.status(500).send(`Error pulling fresh addresses after ${newAddress ? "adding" : "updating"} address: ${error}`);
-  }
-});
+    console.error(`Error pulling fresh addresses after updating address: ${error}`);
+    res.status(500).send(`Error pulling fresh addresses after updating address: ${error}`);
+  }  
+}
 
 app.post('/sendEmail', async (req, res) => {
     let transporter = nodemailer.createTransport({
