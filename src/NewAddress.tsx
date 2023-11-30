@@ -6,6 +6,9 @@ import { Address } from "./types";
 import styles from "./newAddress.module.css"
 import './App.css';
 
+import { prefectures } from "./addressData"
+
+/*
 const prefectures = [
   { code: "1",  name: "北海道" },
   { code: "2",  name: "青森県" },
@@ -55,7 +58,7 @@ const prefectures = [
   { code: "46", name: "鹿児島県" },
   { code: "47", name: "沖縄県" },
 ];
-
+*/
 
 export default function NewAddress() {
   const { user, addAddress } = useUserData();
@@ -133,13 +136,16 @@ export default function NewAddress() {
       return newPostalCode;
     });
 
+    // Change the address object to contain the postal code, since the address object is sent to the server
+    handleAddressChange("postalCode", newPostalCode);
+
     // Check if the postal code is complete (7 digits) and fetch address data
     if (newPostalCode.length === 7 && /^\d+$/.test(newPostalCode)) {
       fetchAddressData(newPostalCode);
     }
   };
 
-  function handleAddressChange(field: string, newValue: string) {
+  function handleAddressChange(field: string, newValue: string | boolean) {
     setAddress( (previousAddress: Address) => ({ ...previousAddress, [field]: newValue }) );
   }
 
@@ -168,11 +174,31 @@ export default function NewAddress() {
     setDisplayedPostalCode(`〒${postalCodeStart}-${postalCodeEnd}`);
   }
 
+  async function sendAddress(e: React.FormEvent) {
+    e.preventDefault();
+
+    const addressData = {
+      customerKey: user?.customerKey,
+      ...address,
+    };
+
+    console.log("Send address data:");
+    console.log(addressData);
+
+    const response = await addAddress(addressData);
+    console.log(response);
+
+    if(!response || response.error) {
+      console.log(`Create User Error: ${response?.error}`);
+      return;
+    }
+  }
+
   return (
     <>
       <div className={styles.newAddressContent}>
         <span className="topHeader">新しい住所を追加</span>
-        <form>
+        <form className={styles.newAddressForm}>
           <div>
             <span className={styles.subheader}>名前を入力してください<span className={styles.red}>必須</span></span>
             <div className={styles.inputsRow}>
@@ -208,9 +234,19 @@ export default function NewAddress() {
             <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="メットライフ新横浜ビル" value={address?.address2 || ""} onChange={(e) => handleAddressChange("address2", e.target.value)} />
           </div>
           <div className={styles.inputRow}>
-            <span>電話番号</span>
+            <span className={styles.subheader}>電話番号</span>
             <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="080-1234-5678" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} />
           </div>
+
+          <div className="customCheckbox">
+            <label className="customCheckbox">
+              <input type="checkbox" id="customCheckbox" onChange={(e) => handleAddressChange("defaultAddress", (address.defaultAddress ? false : true))} checked={address.defaultAddress}/>
+              <span className="customCheckbox">✓</span>
+              デフォルトの住所として設定する
+            </label>
+          </div>
+
+          <button className={styles.newAddress} onClick={sendAddress}>住所を追加する</button>
         </form>
       </div>
     </>

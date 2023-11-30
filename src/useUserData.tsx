@@ -48,6 +48,9 @@ export const useUserData = () => {
   const { user, setUser, cartLoading, setCartLoading } = context;
   const [userLoading, setUserLoading] = useState(false);
 
+
+
+
   const createUser = async (userData: Customer): Promise<APIResponse> => {
     setUserLoading(true);
     const APIResponse = await CallAPI(userData, "createUser");
@@ -70,6 +73,46 @@ export const useUserData = () => {
     setUserLoading(false);
     return { data: APIResponse.data.token, error: null };  
   };
+
+  async function addAddress(address: Address) {
+    setUserLoading(true);
+    console.log("Sending address to add:");
+    console.log(address);
+    const APIResponse = await CallAPI(address, "addAddress");
+    console.log("APIResponse after addAddress API call:");
+    console.log(APIResponse);    
+
+    if(APIResponse.error) {
+      console.log(APIResponse.error);
+      return { data: null, error: APIResponse.error };
+    }
+
+    if(!APIResponse.data.addressKey) {
+      console.log("No addressKey returned on address ass");
+      return { data: null, error: "No addressKey returned on address ass" };
+    }
+
+    setUser((previousUser: Customer | null) => {
+      if(previousUser === null) return null;
+
+      const existingAddresses = previousUser.addresses || [];
+
+      //// If this address is a default, no other address can be default
+      //if(defaultAddress) { existingAddresses.forEach(address => { address.defaultAddress = false; }); }
+      //
+      //// If this is the only address, it must be the default
+      //if(existingAddresses.length === 0) { newAddress.default_address = true; }
+
+      existingAddresses.push(address)
+
+      const updatedUser = {
+        ...previousUser,
+        addresses: existingAddresses
+      };
+
+      return updatedUser;
+    })
+  }
 
   const loginUser = async (credentials: UserCredentials): Promise<APIResponse> => {
     setUserLoading(true);
@@ -185,7 +228,7 @@ export const useUserData = () => {
   }
 
   function ProcessCartLines(cartLines: CartLine[]) {
-    const updatedCartLines = cartLines.map((line) => {
+    const updatedCartLines = cartLines.map(line => {
       // Cast then validate relevant values to numbers
       const quantity = parseInt(line.quantity.toString());
       const unitPrice = parseFloat(line.unitPrice.toString());
@@ -204,42 +247,6 @@ export const useUserData = () => {
     });
 
     return updatedCartLines;
-  }
-
-  function addAddress(address: Address) {
-    const addressKey = Number(address.addressKey);
-    const defaultAddress = Boolean(address.defaultAddress);
-    const tourokuKbn = Number(address.registrationType);
-    const postalCode = Number(address.postalCode);
-
-    const newAddress = {
-      ...address,
-      address_key: addressKey,
-      default_address: defaultAddress,
-      touroku_kbn: tourokuKbn,
-      post_code: postalCode,
-    }
-
-    setUser((previousUser: Customer | null) => {
-      if(previousUser === null) return null;
-
-      const existingAddresses = previousUser.addresses
-
-      // If this address is a default, no other address can be default
-      if(defaultAddress) { existingAddresses.forEach(address => { address.defaultAddress = false; }); }
-
-      // If this is the only address, it must be the default
-      if(existingAddresses.length === 0) { newAddress.default_address = true; }
-
-      existingAddresses.push(newAddress)
-
-      const updatedUser = {
-        ...previousUser,
-        addresses: existingAddresses
-      };
-
-      return updatedUser;
-    })
   }
 
 
@@ -279,10 +286,13 @@ export const useUserData = () => {
         Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
 
-      // Returned values are all strings, so convert numbers to actual numbers
+      // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
       APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
+
+      console.log("APIResponse.data.customerData in useUserData");
+      console.log(APIResponse.data.customerData);
   
-      UpdateUser(APIResponse.data.customerData)
+      UpdateUser(APIResponse.data.customerData);
       return null;
     }  
 

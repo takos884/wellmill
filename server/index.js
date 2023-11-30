@@ -6,7 +6,6 @@ const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
-//const mysql = require('mysql');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -127,6 +126,78 @@ app.post('/createUser', async (req, res) => {
   }
 });
 
+app.post('/addAddress', async (req, res) => {
+  console.log("Hit addAddress. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const addressData = req.body.data;
+  const customerKey = Number(addressData.customerKey);
+  const firstName =   addressData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')   || "";
+  const lastName =    addressData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
+  const postalCode =  addressData.postalCode?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')  || "";
+  const prefCode =    addressData.prefCode?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
+  const pref =        addressData.pref?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
+  const city =        addressData.city?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
+  const ward =        addressData.ward?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
+  const address2 =    addressData.address2?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
+  const phoneNumber = addressData.phoneNumber?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '') || "";
+
+  let defaultAddress = (addressData.defaultAddress ? "1" : "0");
+
+  if (!Number.isInteger(customerKey) || customerKey <= 0 || customerKey >= 2147483647) {
+    res.status(400).send('Malformed customerKey: ' + customerKey);
+  }
+
+
+  let query;
+
+
+  // Count the number of default addresses. If it's zero, force this new one to be default
+  query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ?";
+  try {
+    const [defaultsCount] = await pool.query(query, [customerKey]);
+    if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = true; }
+  } catch(error) {
+    console.error('Error counting address defaults:', error);
+    res.status(500).send('Error counting address defaults: ' + error);  
+  }
+
+
+  // If this address wants to be the default, all others must not be default
+  if(defaultAddress) {
+    query = "UPDATE address SET defaultAddress = 0 WHERE customerKey = ?;"
+    try {
+      await pool.query(query, [customerKey]);
+    } catch(error) {
+      console.error('Error updating old address defaults:', error);
+      res.status(500).send('Error updating old address defaults: ' + error);  
+    }
+  }
+
+
+  // Do the address insert
+  query = `
+    INSERT INTO address (customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const values = [customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress];
+
+  try {
+    const results = await pool.query(query, values);
+    console.log(results);
+  
+    if(!results || !results.length === 0) {
+      res.status(500).send('No result data returned when inserting address');
+    }
+
+    const addressKey = results[0].insertId;
+    console.log('Generated Address Key:', addressKey);
+    res.json({ addressKey: addressKey });
+  } catch (error) {
+    console.error('Error inserting address:', error);
+    res.status(500).send('Error inserting address: ' + error);
+  }
+});
+
 app.post('/sendEmail', async (req, res) => {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -152,42 +223,6 @@ app.post('/sendEmail', async (req, res) => {
         res.status(500).send(errorMessage);
     }
 });
-
-/*
-app.post('/loginShopify', async (req, res) => {
-  console.log(`Received ${req.method} request on ${req.url}`);
-  //console.log('Body:', req.body);
-
-  let customerAccessToken;
-
-  if(req.body.email && req.body.password) {
-    customerAccessToken = await GetCustomerDataFromCredentials(req.body.email, req.body.password);
-  } else if (req.body.customerAccessToken) {
-    customerAccessToken = req.body.customerAccessToken;
-  } else {
-    res.status(401).send("No customerAccessToken given");
-  }
-
-  console.log("Customer token:")
-  console.log(customerAccessToken)
-
-  const customerData = await GetCustomerDataFromToken(customerAccessToken)
-  console.log("Customer data:")
-  console.log(customerData)
-
-  const cartId = await getCartIdFromCustomerId(customerData.id, customerAccessToken)
-  console.log("Cart ID:")
-  console.log(cartId)
-
-  const cartData = await GetCartDataFromCartId(cartId)
-  console.log("Cart Data:")
-  console.log(cartData)
-
-  customerData.customerAccessToken = customerAccessToken;
-  customerData.cart = cartData;
-  res.send(customerData);
-});
-*/
 
 app.post('/login', async (req, res) => {
   console.log("Hit login. Time:" + CurrentTime());
@@ -424,26 +459,6 @@ async function verifyToken(customerKey, token) {
   }
 }
 
-function verifyTokenOLD(customerKey, token) {
-  return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
-      
-      connection.query(query, [customerKey, token], (error, results, fields) => {
-          if (error) {
-              resolve({ valid: false, error: error.message });
-          } else {
-              // Check if the query returned a matching record
-              if (results.length > 0) {
-                  resolve({ valid: true, error: null });
-              } else {
-                  resolve({ valid: false, error: 'Invalid token or customer key' });
-              }
-          }
-      });
-  });
-}
-
-
 async function GetCustomerDataFromCredentials(email, password) {
   try {
     // Prepare the SQL query to find the user by email
@@ -481,6 +496,9 @@ async function GetCustomerDataFromCredentials(email, password) {
     const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
     customer.cart = { lines: cartData };
 
+    const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
+    customer.addresses = addresses;
+
     // Remove sensitive data before sending the customer object
     delete customer.passwordHash;
 
@@ -489,45 +507,6 @@ async function GetCustomerDataFromCredentials(email, password) {
     console.error('Error in GetCustomerDataFromCredentials:', error);
     throw error;
   }
-}
-
-async function GetCustomerDataFromCredentialsOLD(email, password) {
-  return new Promise((resolve, reject) => {
-    // Prepare the SQL query to find the user by email
-    const query = `SELECT * FROM customer WHERE email = ?`;
-
-    // Execute the query
-    connection.query(query, [email], async (error, results) => {
-    
-      // MySQL query error
-      if (error) { return reject(error); }
-
-      // If no results, the email is not registered
-      if (results.length === 0) { return resolve(null); }
-
-      const customer = results[0];
-      console.log("In GetCustomerDataFromCredentials with following customer:");
-      console.log(customer);
-
-      // Compare the provided password with the stored hash
-      const match = await bcrypt.compare(password, customer.passwordHash);
-
-      // Passwords do not match
-      if (!match) { return resolve(null); }
-
-      // Passwords match, now fetch the customer's cart
-      console.log("Found user, correct password");
-      console.log(customer);
-
-      // Pull customer's cart
-      const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
-      customer.cart = {lines: cartData};
-
-      // Remove sensitive data before sending the customer object
-      delete customer.passwordHash;
-      resolve(customer);
-    });
-  });
 }
 
 async function GetCustomerDataFromToken(token) {
@@ -553,6 +532,9 @@ async function GetCustomerDataFromToken(token) {
     }
     customer.cart = { lines: cartData };
 
+    const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
+    customer.addresses = addresses;
+
     // Remove sensitive data before sending the customer object
     delete customer.password_hash;
 
@@ -563,228 +545,51 @@ async function GetCustomerDataFromToken(token) {
   }
 }
 
-async function GetCustomerDataFromTokenOLD(token) {
-  return new Promise((resolve, reject) => {
-    // Prepare the SQL query to find the user by email
-    const query = `SELECT * FROM customer WHERE token = ?`;
-
-    // Execute the query
-    connection.query(query, [token], async (error, results) => {
-
-      // Database error
-      if (error) { return reject(error); }
-
-      // If no results, the token does not exist
-      if (results.length === 0) { return resolve(null); }
-
-      // If a token exists, user is authenticated
-      const customer = results[0];
-
-      // Pull customer's cart
-      const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
-      if(cartData.error) { return reject("Cart query error: " + cartData.error); }
-      customer.cart = {lines: cartData};
-
-      delete customer.password_hash;
-      resolve(customer);
-    });
-  });
-}
-
 async function GetCartDataFromCustomerKey(customerKey) {
-  try {
-    // Prepare the SQL query to get a customer's line items that haven't been purchased
-    const selectQuery = `
-      SELECT * FROM lineItem
-      WHERE customerKey = ? AND purchaseKey IS NULL`;
-
-    // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const updatedCart = (await pool.query(selectQuery, [customerKey]))[0];
-
-    return updatedCart;
-  } catch (error) {
-    console.error('Error in GetCartDataFromCustomerKey:', error);
-    throw error;
-  }
-}
-
-async function GetCartDataFromCustomerKeyOLD(customerKey) {
+  // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
     SELECT * FROM lineItem
     WHERE customerKey = ? AND purchaseKey IS NULL`;
-  const updatedCart = await new Promise((resolve, reject) => {
-    connection.query(selectQuery, [customerKey], (error, results) => {
-        if (error) reject(error);
-        resolve(results);
-    });
-  });
-  return updatedCart;
-}
 
-
-// These carts were for Shopify
-/*
-async function getCartIdFromCustomerId(customerId, customerAccessToken) {
-  const cartsData = readCartsFile();
-  const cartEntry = cartsData.find(entry => entry.customerId === customerId);
-
-  if (cartEntry && cartEntry.cartId) {
-    console.log('Cart ID for customer:', cartEntry.cartId);
-    return cartEntry.cartId;
-  } else {
-    // Cart does not exist, create a new one and store it
-    const newCartId = await createCart(customerAccessToken);
-    cartsData.push({ customerId, cartId: newCartId });
-    writeCartsFile(cartsData);
-    return newCartId;
-  }
-}
-
-function readCartsFile() {
-  if (!fs.existsSync(CARTS_FILE_PATH)) {
-    fs.writeFileSync(CARTS_FILE_PATH, JSON.stringify([]), 'utf8');
-  }
-  return JSON.parse(fs.readFileSync(CARTS_FILE_PATH, 'utf8'));
-}
-
-function writeCartsFile(cartsData) {
-  fs.writeFileSync(CARTS_FILE_PATH, JSON.stringify(cartsData), 'utf8');
-}
-
-async function createCart(customerAccessToken) {
-  const mutation = `mutation cartCreate($buyerIdentity: CartBuyerIdentityInput) {
-    cartCreate(input: {buyerIdentity: $buyerIdentity}) {
-      cart {
-        id
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }`;
-
-  const variables = {
-    buyerIdentity: {
-      countryCode: 'JP',
-      customerAccessToken: customerAccessToken
-    }
-  };
-
-  const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
-    },
-    body: JSON.stringify({ query: mutation, variables: variables })
-  });
-
-  const responseData = await response.json();
-  if (responseData.errors) {
-    console.error('Error creating cart:', responseData.errors);
-    return null;
-    //throw new Error('Error creating cart');
-  }
-
-  const cartId = responseData.data.cartCreate.cart.id;
-  console.log('Created new cart with ID:', cartId);
-  return cartId;
-}
-
-async function GetCartDataFromCartId(cartId) {
-  const query = `
-  query GetCart($cartId: ID!) {
-    cart(id: $cartId) {
-      id
-      lines(first: 250) {
-        edges {
-          node {
-            id
-            quantity
-            merchandise {
-              ... on ProductVariant {
-                id
-                title
-                priceV2 {
-                  amount
-                  currencyCode
-                }
-              }
-            }
-            cost {
-              subtotalAmount {
-                amount
-                currencyCode
-              }
-              totalAmount {
-                amount
-                currencyCode
-              }
-            }
-          }
-        }
-      }
-      cost {
-        subtotalAmount {
-          amount
-          currencyCode
-        }
-        totalTaxAmount {
-          amount
-          currencyCode
-        }
-        totalAmount {
-          amount
-          currencyCode
-        }
-      }
-    }
-  }
-  `;
-
-  const variables = {
-    cartId: cartId
-  };
-
+  // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
-    const requestBody = JSON.stringify({
-      query: query,
-      variables: variables
-    });
-
-    console.log("requestBody:")
-    console.log(requestBody)
-
-    const response = await fetch(SHOPIFY_GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
-      },
-      body: requestBody
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const responseData = await response.json();
-    console.log("responseData:");
-    console.log(responseData);
-
-    if (responseData.errors) {
-      console.error('GraphQL errors:', responseData.errors);
-      throw new Error('GraphQL errors occurred');
-    }
-
-    return responseData.data.cart;
+    const updatedCart = (await pool.query(selectQuery, [customerKey]))[0];
+    return updatedCart;
   } catch (error) {
-    console.error(`Error fetching cart data: ${error.message}`, error);
+    console.error('Error in GetCartDataFromCustomerKey: ', error);
     throw error;
   }
 }
-*/
+
+async function GetAddressesFromCustomerKey(customerKey) {
+  // Prepare the SQL query to get a customer's line items that haven't been purchased
+  const selectQuery = `
+    SELECT * FROM address
+    WHERE customerKey = ?`;
+
+  // Execute the query using the promisified pool.query and wait for the promise to resolve
+  try {
+    const [addresses] = (await pool.query(selectQuery, [customerKey]));
+    return ProcessAddresses(addresses);
+  } catch (error) {
+    console.error('Error in GetAddressesFromCustomerKey: ', error);
+    throw error;
+  }
+}
+
+function ProcessAddresses(addresses) {
+  const updatedAddresses = addresses.map(address => {
+    if(address === undefined) return null;
+
+    const defaultAddress = address.defaultAddress?.toString() === "1"
+    return {
+      ...address,
+      defaultAddress: defaultAddress
+    }
+  });
+  
+  return updatedAddresses;
+}
 
 
 //#region Stripe
@@ -802,17 +607,10 @@ app.post("/createPaymentIntent", async (req, res) => {
   const paymentIntent = await stripe.paymentIntents.create({
     amount: calculateOrderAmount(items),
     currency: "jpy",
-    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
-    automatic_payment_methods: {
-      enabled: true,
-    },
   });
 
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
+  res.send({ clientSecret: paymentIntent.client_secret });
 });
-
 //#endregion
 
 app.use((err, req, res, next) => {

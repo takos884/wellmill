@@ -20,7 +20,7 @@ import Research from './research';
 import ResultList from './ResultList';
 import HowTo from './HowTo';
 import OrderList from './OrderList';
-import Address from './Address';
+import Addresses from './Addresses'
 import Profile from './Profile';
 
 function Layout() {
@@ -47,7 +47,7 @@ function Layout() {
       <Route path="/result-list" element={<ResultList />} />
       <Route path="/how_to" element={<HowTo />} />
       <Route path="/order-list" element={<OrderList />} />
-      <Route path="/address" element={<Address />} />
+      <Route path="/address" element={<Addresses />} />
       <Route path="/profile" element={<Profile />} />
 
       <Route path="/payment" element={<Payment />} />
