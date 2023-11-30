@@ -74,44 +74,28 @@ export const useUserData = () => {
     return { data: APIResponse.data.token, error: null };  
   };
 
+  // Add can also be used to update, if an addressKey is present in the address data
   async function addAddress(address: Address) {
     setUserLoading(true);
-    console.log("Sending address to add:");
-    console.log(address);
     const APIResponse = await CallAPI(address, "addAddress");
-    console.log("APIResponse after addAddress API call:");
-    console.log(APIResponse);    
 
+    // Error returned in response
     if(APIResponse.error) {
-      console.log(APIResponse.error);
-      return { data: null, error: APIResponse.error };
+      const errorMessage = "APIResponse error: " + APIResponse.error
+      console.log(errorMessage);
+      return { data: null, error: errorMessage };
     }
 
-    if(!APIResponse.data.addressKey) {
-      console.log("No addressKey returned on address ass");
-      return { data: null, error: "No addressKey returned on address ass" };
+    // Got a reply, but no addresses data
+    if(!APIResponse.data?.addresses) {
+      const errorMessage = "No address data returned after editing customer addresses. Error message: " + APIResponse.error;
+      console.log(errorMessage);
+      return { data: null, error: errorMessage };
     }
 
-    setUser((previousUser: Customer | null) => {
-      if(previousUser === null) return null;
-
-      const existingAddresses = previousUser.addresses || [];
-
-      //// If this address is a default, no other address can be default
-      //if(defaultAddress) { existingAddresses.forEach(address => { address.defaultAddress = false; }); }
-      //
-      //// If this is the only address, it must be the default
-      //if(existingAddresses.length === 0) { newAddress.default_address = true; }
-
-      existingAddresses.push(address)
-
-      const updatedUser = {
-        ...previousUser,
-        addresses: existingAddresses
-      };
-
-      return updatedUser;
-    })
+    // Update the user's address data, then store the user's data
+    const freshUser = { ...user, addresses: APIResponse.data.addresses }
+    UpdateUser(freshUser);
   }
 
   const loginUser = async (credentials: UserCredentials): Promise<APIResponse> => {
@@ -279,8 +263,6 @@ export const useUserData = () => {
 
     async function loginUserFromToken(token: string): Promise<Customer | null> {
       const APIResponse = await CallAPI({token: token}, "login");
-      //console.log(`APIResponse after login API call with token ${token}:`);
-      //console.log(APIResponse);
 
       if (APIResponse.data && APIResponse.data.token) {
         Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
@@ -289,9 +271,6 @@ export const useUserData = () => {
       // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
       APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
 
-      console.log("APIResponse.data.customerData in useUserData");
-      console.log(APIResponse.data.customerData);
-  
       UpdateUser(APIResponse.data.customerData);
       return null;
     }  

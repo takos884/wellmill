@@ -92,9 +92,9 @@ type image = {
 
 export type Customer = {
     customerKey?: number,
-    email: string,
-    lastName: string,
-    firstName: string,
+    email?: string,
+    lastName?: string,
+    firstName?: string,
     lastNameKana?: string,
     firstNameKana?: string,
     gender?: string,
@@ -122,7 +122,7 @@ export type CartLine = {
 
 // All are optional, if any one of them is missing, it's still a reasonable address (inside the system)
 export type Address = {
-    addressKey?: number, // Given by MySQL
+    addressKey?: number | null, // Given by MySQL - null just means we're sure this address doesn't have a key yet
     lastName?: string, //"デハーン",
     firstName?: string, //"クリス",
     registrationType?: number, //0,   (登録区分): This term likely represents a registration category or type.

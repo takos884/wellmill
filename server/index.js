@@ -129,8 +129,13 @@ app.post('/createUser', async (req, res) => {
 app.post('/addAddress', async (req, res) => {
   console.log("Hit addAddress. Time: " + CurrentTime());
   console.log(req.body);
-
   const addressData = req.body.data;
+
+  // addressKey can be passed in, when requesting an edit, or given by MySQL for a new address
+  let addressKey;
+  addressKey = Number(addressData.addressKey) || null;
+  const newAddress = (addressKey === null)
+
   const customerKey = Number(addressData.customerKey);
   const firstName =   addressData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')   || "";
   const lastName =    addressData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
@@ -142,6 +147,7 @@ app.post('/addAddress', async (req, res) => {
   const address2 =    addressData.address2?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
   const phoneNumber = addressData.phoneNumber?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '') || "";
 
+  // This can be changed later if needed
   let defaultAddress = (addressData.defaultAddress ? "1" : "0");
 
   if (!Number.isInteger(customerKey) || customerKey <= 0 || customerKey >= 2147483647) {
@@ -151,11 +157,13 @@ app.post('/addAddress', async (req, res) => {
 
   let query;
 
-
   // Count the number of default addresses. If it's zero, force this new one to be default
-  query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ?";
+  // If it's an update, don't include the one being updates in this count
+  // When addressKey is not null, it will exclude the address with that key.
+  // When addressKey is null, the ? IS NULL condition becomes true, so the addressKey <> ? part is effectively ignored.
+  query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ? AND (? IS NULL OR addressKey <> ?)";
   try {
-    const [defaultsCount] = await pool.query(query, [customerKey]);
+    const [defaultsCount] = await pool.query(query, [customerKey, addressKey, addressKey]);
     if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = true; }
   } catch(error) {
     console.error('Error counting address defaults:', error);
@@ -174,27 +182,45 @@ app.post('/addAddress', async (req, res) => {
     }
   }
 
-
-  // Do the address insert
-  query = `
-    INSERT INTO address (customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const values = [customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress];
 
-  try {
-    const results = await pool.query(query, values);
-    console.log(results);
-  
-    if(!results || !results.length === 0) {
-      res.status(500).send('No result data returned when inserting address');
-    }
+  // Make a query to add a new address
+  if(newAddress) {
+    query = `
+      INSERT INTO address (customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  }
 
-    const addressKey = results[0].insertId;
-    console.log('Generated Address Key:', addressKey);
-    res.json({ addressKey: addressKey });
+  // Make a query to edit an existing address
+  else {
+    query = `
+    UPDATE address SET customerKey = ?, firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ?, defaultAddress = ?
+    WHERE addressKey = ?`;
+    values.push(addressKey);
+  }
+
+  // Make the change in the database
+  try {
+    await pool.query(query, values);
+    //const addressKey = results[0].insertId;
+    //console.log('Generated Address Key:', addressKey);
   } catch (error) {
-    console.error('Error inserting address:', error);
-    res.status(500).send('Error inserting address: ' + error);
+    console.error(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
+    res.status(500).send(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
+  }
+
+  // Pull fresh copy of all addresses to send back
+  query = "SELECT * FROM address WHERE customerKey = ?";
+  try {
+    const [addresses] = await pool.query(query, [customerKey]);
+
+    // MySQL uses 1 and 0 for true and false, but I want real bools
+    addresses.forEach(address => {address.defaultAddress = (address.defaultAddress === 1) ? true : false});
+
+    res.json({ addresses: addresses });
+  } catch (error) {
+    console.error(`Error pulling fresh addresses after ${newAddress ? "adding" : "updating"} address: ${error}`);
+    res.status(500).send(`Error pulling fresh addresses after ${newAddress ? "adding" : "updating"} address: ${error}`);
   }
 });
 

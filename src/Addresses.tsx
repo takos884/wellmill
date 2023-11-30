@@ -23,6 +23,7 @@ function Addresses() {
   const addresses = user ? user.addresses : [];
 
   const [showNewAddress, setShowNewAddress] = useState(false);
+  const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(null);
 
   // Prevents scrolling while the Checkout modal is open
   useEffect(() => {
@@ -47,11 +48,14 @@ function Addresses() {
   function GenerateAddressBox(address: Address | undefined) {
     if(address === undefined) return null;
     const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address.pref)?.name;
+    const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
+    const editButton = addressKey ? <button onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>Edit Address</button> : null;
     return(
       <div className={styles.addressBox}>
         <span>{address.lastName} {address.firstName}</span>
         <span>〒{address.postalCode?.toString().slice(0,3)}-{address.postalCode?.toString().slice(3,7)}</span>
         <span>{prefectureName} {address.city} {address.ward} {address.address2}</span>
+        {editButton}
       </div>
     )
   }
@@ -61,8 +65,6 @@ function Addresses() {
   )
 
   const defaultAddress = user?.addresses.find(address => {return address.defaultAddress === true});
-  console.log("defaultAddress");
-  console.log(defaultAddress);
   const defaultAddressBox = GenerateAddressBox(defaultAddress);
   const defaultAddressContent = (
     <>
@@ -72,8 +74,6 @@ function Addresses() {
   )
 
   const otherAddresses = user?.addresses.filter(address => address.defaultAddress === false) || [];
-  console.log("otherAddresses");
-  console.log(otherAddresses);
   const otherAddressesBoxes = otherAddresses.map(address => { return GenerateAddressBox(address); });
   const otherAddressesContent = (
     <>
@@ -84,7 +84,7 @@ function Addresses() {
 
   return(
     <>
-      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress /></div>}
+      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress addressKey={selectedAddressKey} /></div>}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>
