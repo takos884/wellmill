@@ -86,7 +86,7 @@ function Addresses() {
 
   return(
     <>
-      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress addressKey={selectedAddressKey} /></div>}
+      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} /></div>}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>

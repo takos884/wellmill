@@ -8,7 +8,12 @@ import './App.css';
 
 import { prefectures } from "./addressData"
 
-export default function NewAddress({ addressKey }: { addressKey: number | null}) {
+type NewAddressProps = {
+  addressKey: number | null;
+  setShowNewAddress: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+export default function NewAddress({ addressKey, setShowNewAddress }: NewAddressProps) {
   const { user, addAddress } = useUserData();
   const [postalCode, setPostalCode] = useState<string>("");
   const [displayedPostalCode, setDisplayedPostalCode] = useState<string>("");
@@ -18,12 +23,28 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
 
   const currentAddress = addressKey ? user?.addresses.find(address => address.addressKey === addressKey) : null;
 
+
+  // If there is a current address (i.e. editing, not adding), display it on load
   useEffect(() => {
     if (currentAddress) {
       setAddress(currentAddress);
       PostalCodeFormatter(currentAddress.postalCode?.toString())
     }
   }, [currentAddress]);
+
+
+  useEffect(() => {
+    function handleEsc(event: KeyboardEvent) {
+      if (event.key === 'Escape') { setShowNewAddress(false); }
+    };
+
+    // Add event listener for the escape key
+    document.addEventListener('keydown', handleEsc);
+
+    // Clean up the event listener when the component unmounts
+    return () => { document.removeEventListener('keydown', handleEsc); };
+  }, [setShowNewAddress]); 
+
 
   // Fetch address data from postal code
   async function fetchAddressData(fetchPostalCode: string) {
@@ -60,6 +81,7 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
       setFetchingAddress(false);
     }
   }
+
 
   // Event handler for postal code input change
   function handlePostalCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,9 +124,11 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
     }
   };
 
+
   function handleAddressChange(field: string, newValue: string | boolean) {
     setAddress( (previousAddress: Address) => ({ ...previousAddress, [field]: newValue }) );
   }
+
 
   // Adds 〒 and - as needed to format postal code correctly
   function PostalCodeFormatter(newPostalCode?:string) {
@@ -131,6 +155,7 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
     setDisplayedPostalCode(`〒${postalCodeStart}-${postalCodeEnd}`);
   }
 
+
   async function sendAddress(e: React.FormEvent) {
     e.preventDefault();
 
@@ -146,6 +171,7 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
   return (
     <>
       <div className={styles.newAddressContent}>
+        <span className={styles.newAddressX} onClick={() => { setShowNewAddress(false); }}>✖</span>
         <span className="topHeader">新しい住所を追加</span>
         <form className={styles.newAddressForm}>
           <div>
@@ -196,6 +222,7 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
           </div>
 
           <button className={styles.newAddress} onClick={sendAddress}>住所を追加する</button>
+          <span className={styles.cancelNewAddress} onClick={() => { setShowNewAddress(false); }}>キャンセルする</span>
         </form>
       </div>
     </>
