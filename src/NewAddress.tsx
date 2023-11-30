@@ -110,9 +110,7 @@ export default function NewAddress({ addressKey }: { addressKey: number | null})
   function PostalCodeFormatter(newPostalCode?:string) {
 
     // If no new postal code is specified, format the existing one.
-    // If no existing one either, get out.
     if(newPostalCode === undefined) { newPostalCode = postalCode; }
-    if(!newPostalCode) { return; }
 
     // Format for an empty string depends on focus or not.
     // When focused, start with the "〒"
