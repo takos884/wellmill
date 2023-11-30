@@ -128,6 +128,7 @@ function Signup() {
         gender: inputs.gender,
         birthday: inputs.birthday, 
         password: inputs.password,
+        addresses: [],
       };
 
       const response = await createUser(userData);

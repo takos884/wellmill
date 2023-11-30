@@ -43,6 +43,27 @@ export type ShopifyProduct = {
     variants: Variant[];
 };
 
+export type WellMillAzureAddress = {
+    address_key?: number, // Given by MySQL
+    default_address: boolean, // true
+    kaiin_code?: string, //'NV001',
+    kaiin_last_name: string, //"デハーン",
+    kaiin_first_name: string, //"クリス",
+    touroku_kbn: number, //0,   (登録区分): This term likely represents a registration category or type.
+    kaiin_last_name_kana: string, //"デハーン",
+    kaiin_first_name_kana: string, //"クリス",
+    post_code: number, //"1234567",
+    pref_code: string, //"JPHYG",
+    pref: string, //"Hyogo",
+    city: string, //"Kobe",
+    ward: string, //"Chuoku",
+    address2: string, //"Building 1",
+    renrakusaki: string, //"Building 1",   (連絡先): This term translates to "contact information"
+    mail_address: string, //"Building 1",
+    seibetsu: number, //1,   (性別): This term represents gender.
+    seinengappi: string, //"2023/10/24",   (生年月日): This term represents the date of birth.
+}
+
 
 
 
@@ -81,6 +102,7 @@ export type Customer = {
     password?: string,
     token?: string,
     cart?: Cart,
+    addresses: Address[],
 }
 
 export type Cart = {
@@ -96,6 +118,22 @@ export type CartLine = {
     unitPrice: number,
     taxRate: number,
     quantity: number,  
+}
+
+// All are optional, if any one of them is missing, it's still a reasonable address (inside the system)
+export type Address = {
+    addressKey?: number, // Given by MySQL
+    lastName?: string, //"デハーン",
+    firstName?: string, //"クリス",
+    registrationType?: number, //0,   (登録区分): This term likely represents a registration category or type.
+    postalCode?: number, //"1234567",
+    prefCode?: string, //"JPHYG",
+    pref?: string, //"Hyogo",
+    city?: string, //"Kobe",
+    ward?: string, //"Chuoku",
+    address2?: string, //"Building 1",
+    phoneNumber?: string, // 080-1234-5678
+    defaultAddress?: boolean, // true
 }
 
 interface CredentialsWithEmail {

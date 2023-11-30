@@ -40,15 +40,15 @@ span.fieldHeader {
 }
 
 span.red {
-  color: #f00;
+  color: #b33;
   margin: 0 1rem;
 }
 
 input[type="text"],
 select {
   display: flex;
-  width: 100%;
-  margin: 1rem 0;
+  width: calc(100% - 1rem);
+  margin: 1rem 0.5rem;
   font-size: 1.25rem;
   padding: 1rem;
   background-color: #fff;

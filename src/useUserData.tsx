@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import Cookies from 'js-cookie';
-import { Customer, UserCredentials, Cart, CartLine } from './types';
+import { Customer, UserCredentials, Cart, CartLine, Address } from './types';
 
 type APIResponse = {
   data: any | null;
@@ -145,7 +145,7 @@ export const useUserData = () => {
     }
   }
 
-
+  // TODO this can be broken up into UpdateUser and UpdateCart
   function UpdateUser(newUser?:Customer, cartLines?: CartLine[]) {
 
     // If nothing is passed to the function, leave
@@ -205,6 +205,44 @@ export const useUserData = () => {
 
     return updatedCartLines;
   }
+
+  function addAddress(address: Address) {
+    const addressKey = Number(address.addressKey);
+    const defaultAddress = Boolean(address.defaultAddress);
+    const tourokuKbn = Number(address.registrationType);
+    const postalCode = Number(address.postalCode);
+
+    const newAddress = {
+      ...address,
+      address_key: addressKey,
+      default_address: defaultAddress,
+      touroku_kbn: tourokuKbn,
+      post_code: postalCode,
+    }
+
+    setUser((previousUser: Customer | null) => {
+      if(previousUser === null) return null;
+
+      const existingAddresses = previousUser.addresses
+
+      // If this address is a default, no other address can be default
+      if(defaultAddress) { existingAddresses.forEach(address => { address.defaultAddress = false; }); }
+
+      // If this is the only address, it must be the default
+      if(existingAddresses.length === 0) { newAddress.default_address = true; }
+
+      existingAddresses.push(newAddress)
+
+      const updatedUser = {
+        ...previousUser,
+        addresses: existingAddresses
+      };
+
+      return updatedUser;
+    })
+  }
+
+
   // This effect runs once on mount to check for existing user data
   useEffect(() => {
     const initializeUserData = async () => {
@@ -251,5 +289,10 @@ export const useUserData = () => {
     initializeUserData();
   }, [user, setUser]);
 
-  return {createUser, loginUser, user, setUser, addToCart, updateCartQuantity, deleteFromCart, userLoading, cartLoading};
+  return {
+    user, userLoading, createUser, loginUser,setUser,
+    cartLoading, addToCart, updateCartQuantity, deleteFromCart,
+    addAddress
+  };
+
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import './App.css';
 import styles from "./address.module.css"
@@ -14,6 +14,20 @@ const breadcrumbs = [
 
 function Address() {
   const [showNewAddress, setShowNewAddress] = useState(false);
+
+  // Prevents scrolling while the Checkout modal is open
+  useEffect(() => {
+    function disableBodyScroll() { document.body.classList.add('no-scroll');    };
+    function enableBodyScroll()  { document.body.classList.remove('no-scroll'); };
+
+    if (showNewAddress) { disableBodyScroll(); }
+    else                { enableBodyScroll(); }
+
+    // Allow scrolling when the component is unmounted
+    return () => { enableBodyScroll(); };
+  }, [showNewAddress]);
+
+  
 
   function HideNewAddress(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (event.target === event.currentTarget) {
