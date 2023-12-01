@@ -51,7 +51,13 @@ function Checkout({ setDisplayCheckout }: CheckoutProps) {
       <Helmet>
         <meta
           http-equiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self' 'unsafe-inline'; frame-src https://js.stripe.com;"
+          content="
+            default-src 'self' https://zipcloud.ibsnet.co.jp; 
+            script-src 'self' 'unsafe-inline' https://js.stripe.com; 
+            style-src 'self' 'unsafe-inline'; 
+            frame-src https://js.stripe.com;
+            connect-src 'self' https://zipcloud.ibsnet.co.jp;
+          "
         />
       </Helmet>
       <div className={styles.checkoutWrapper} onClick={hideCheckout}>

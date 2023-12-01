@@ -35,7 +35,7 @@ const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
 
 async function fetchProducts() {
-  console.log("Hit fetchProducts. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit fetchProducts. Time: " + CurrentTime());
 
   const query = `
     SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
@@ -131,7 +131,7 @@ app.post('/createUser', async (req, res) => {
 });
 
 app.post('/addAddress', async (req, res) => {
-  console.log("Hit addAddress. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
   console.log(req.body);
   const addressData = req.body.data;
 
@@ -219,7 +219,7 @@ app.post('/addAddress', async (req, res) => {
 });
 
 app.post('/deleteAddress', async (req, res) => {
-  console.log("Hit deleteAddress. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit deleteAddress. Time: " + CurrentTime());
   console.log(req.body);
   const addressData = req.body.data;
 
@@ -307,7 +307,7 @@ app.post('/sendEmail', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-  console.log("Hit login. Time:" + CurrentTime());
+  console.log("░▒▓█ Hit login. Time:" + CurrentTime());
   console.log("req.body");
   console.log(req.body);
   const userCredentials = req.body.data;
@@ -344,7 +344,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/addToCart', async (req, res) => {
-  console.log("Hit addToCart. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit addToCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
   const cartData = req.body.data;
   const { productKey, customerKey, unitPrice, taxRate, quantity } = cartData;
@@ -427,7 +427,7 @@ app.post('/addToCart', async (req, res) => {
 });
 
 app.post('/updateCartQuantity', async (req, res) => {
-  console.log("Hit updateCartQuantity. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit updateCartQuantity. Time: " + CurrentTime());
   console.log(req.body); //
   const updateData = req.body.data;
   const { customerKey, token, lineItemKey, quantity } = updateData;
@@ -477,7 +477,7 @@ app.post('/updateCartQuantity', async (req, res) => {
 });
 
 app.post('/deleteFromCart', async (req, res) => {
-  console.log("Hit deleteFromCart. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit deleteFromCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
   const lineItemData = req.body.data;
   const { customerKey, token, lineItemKey } = lineItemData;
@@ -512,7 +512,7 @@ app.post('/deleteFromCart', async (req, res) => {
 const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
 
 app.post('/storeBackupData', async (req, res) => {
-  console.log("Hit storeBackupData. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
   console.log(req.body);
 
   try {

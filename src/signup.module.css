@@ -32,6 +32,7 @@ div.doubleInput {
   justify-content: space-between;
 }
 
+input[type="email"].signup,
 input[type="text"].signup,
 input[type="password"].signup {
   flex: 1;

@@ -25,10 +25,14 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
 
 
   // If there is a current address (i.e. editing, not adding), display it on load
+  // If there is no current address, but there is a user, autopopulate their name
   useEffect(() => {
     if (currentAddress) {
       setAddress(currentAddress);
       PostalCodeFormatter(currentAddress.postalCode?.toString())
+    }
+    else if(user) {
+      setAddress({firstName: user.firstName, lastName: user.lastName});
     }
   }, [currentAddress]);
 

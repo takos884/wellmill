@@ -146,6 +146,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
   const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
   const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>住所を編集する</span> : null;
+  const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>住所を作成する</span>;
   //const changeButton = addressKey ? <span className={styles.addressAction} onClick={() => {  }}>別の住所を選択する</span> : null;
   //const addressOptions = addresses.map(address => {return (<option></option>)});
   //const addressSelect = (<select></select>)
@@ -159,7 +160,13 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
       <span>{address.ward} {address.address2}</span>
       <div className={styles.addressActions}>{editButton}</div>
     </div>
-  ) : null;
+  ) : (
+    <div className={styles.addressCard} style={{alignItems: "center"}}>
+      <span>住所が見つかりません。</span>
+      <span>住所を入力してください。</span>
+      {createButton}
+    </div>
+  );
 
 
   return (

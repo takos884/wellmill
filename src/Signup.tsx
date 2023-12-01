@@ -152,7 +152,7 @@ function Signup() {
       const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
       backupCustomerData(userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, getFormattedDate());
 
-      //setTimeout(() => { navigate('/account'); }, 500);
+      setTimeout(() => { navigate('/account'); }, 500);
     }
   }
 
@@ -227,7 +227,7 @@ function Signup() {
         <button className={styles.register} onClick={HandleRegistrationClick}>登録</button>
         {createUserResponse?.data && <p>User created: {JSON.stringify(createUserResponse.data)}</p>}
         {createUserResponse?.error && <p>Error: {createUserResponse.error}</p>}
-        {customerBackupData && (<span>{JSON.stringify(customerBackupData)}</span>)}
+        {customerBackupData?.Status && (<span>{(customerBackupData?.Status === 200) ? "✔" : "Error"}</span>)}
         {customerBackupError && (<span>{JSON.stringify(customerBackupError)}</span>)}
       </div>
       <Footer />
