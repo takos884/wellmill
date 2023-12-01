@@ -39,12 +39,6 @@ function Addresses() {
 
   
 
-  function HideNewAddress(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    if (event.target === event.currentTarget) {
-      setShowNewAddress(false);
-    }
-  }
-
   function GenerateAddressBox(address: Address | undefined) {
     if(address === undefined) return null;
     const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address.pref)?.name;
@@ -86,7 +80,7 @@ function Addresses() {
 
   return(
     <>
-      {showNewAddress && <div className={styles.newAddressWrapper} onClick={HideNewAddress}><NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} /></div>}
+      {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>

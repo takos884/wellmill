@@ -47,6 +47,13 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   }, [setShowNewAddress]); 
 
 
+  // Close NewAddress component when the border is clicked
+  function HideNewAddress(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    if (event.target === event.currentTarget) {
+      setShowNewAddress(false);
+    }
+  }
+
   // Fetch address data from postal code
   async function fetchAddressData(fetchPostalCode: string) {
     try {
@@ -171,7 +178,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   }
 
   return (
-    <>
+    <div className={styles.newAddressWrapper} onClick={HideNewAddress}>
       <div className={styles.newAddressContent}>
         <span className={styles.newAddressX} onClick={() => { setShowNewAddress(false); }}>✖</span>
         <span className="topHeader">新しい住所を追加</span>
@@ -227,6 +234,6 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
           <span className={styles.cancelNewAddress} onClick={() => { setShowNewAddress(false); }}>キャンセルする</span>
         </form>
       </div>
-    </>
+    </div>
   );
   }

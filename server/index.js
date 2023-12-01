@@ -136,16 +136,17 @@ app.post('/addAddress', async (req, res) => {
   addressKey = Number(addressData.addressKey) || null;
   const newAddress = (addressKey === null)
 
+  function SanitizeInput(input) { return (input) ? input.replace(/[^\p{L}\p{N}\p{Z}\-#&()]/gu, '') : ""; }
+  const firstName =   SanitizeInput(addressData.firstName);
+  const lastName =    SanitizeInput(addressData.lastName);
+  const postalCode =  SanitizeInput(addressData.postalCode);
+  const prefCode =    SanitizeInput(addressData.prefCode);
+  const pref =        SanitizeInput(addressData.pref);
+  const city =        SanitizeInput(addressData.city);
+  const ward =        SanitizeInput(addressData.ward);
+  const address2 =    SanitizeInput(addressData.address2);
+  const phoneNumber = SanitizeInput(addressData.phoneNumber);
   const customerKey = Number(addressData.customerKey);
-  const firstName =   addressData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')   || "";
-  const lastName =    addressData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
-  const postalCode =  addressData.postalCode?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')  || "";
-  const prefCode =    addressData.prefCode?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
-  const pref =        addressData.pref?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
-  const city =        addressData.city?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
-  const ward =        addressData.ward?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')        || "";
-  const address2 =    addressData.address2?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '')    || "";
-  const phoneNumber = addressData.phoneNumber?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '') || "";
 
   // This can be changed later if needed
   let defaultAddress = (addressData.defaultAddress ? "1" : "0");

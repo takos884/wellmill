@@ -1,27 +1,40 @@
 import React, { useEffect, useState } from "react";
-import {
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
 
+import { prefectures } from "./addressData"
 import styles from './checkoutForm.module.css';
+import NewAddress from "./NewAddress";
 
-export default function CheckoutForm() {
+type CheckoutFormProps = {
+  selectedAddressKey: number | null;
+  setSelectedAddressKey: React.Dispatch<React.SetStateAction<number | null>>;
+  setShowNewAddress: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+
+export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey, setShowNewAddress }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
-  const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
+  const { user, userLoading, cartLoading } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
-
-  const cart = user ? user.cart : undefined;
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const cart = user ? user.cart : undefined;
+
+  // The current address is the default one unless another address key has been set
+  const address = user ? user.addresses.find(address => {
+    return (selectedAddressKey === null) ?
+    address.defaultAddress === true : 
+    address.addressKey === selectedAddressKey;
+  }) : null;
+
 
   // Set payment message pulled from Stripe
   useEffect(() => {
@@ -95,35 +108,55 @@ export default function CheckoutForm() {
     </div>
   );
 
+
   const checkoutLines = cart ? (
-    cart.lines.map(line => {
-      const product = products?.find(product => {return (product.productKey === line.productKey)});
-      if (!product) return null;
-      const lineUnitCost = line.unitPrice * (1+line.taxRate);
-      const lineCost = lineUnitCost * line.quantity;
-      return(
-        <div className={styles.checkoutLine}>
-          <img className={styles.checkoutLine} src={product.images[0].url} />
-          <div className={styles.lineText}>
-            <span className={styles.lineDescription}>{product.title}</span>
-            <span className={styles.lineUnitCost}>{lineUnitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
+    <div className={styles.checkoutLines}>
+      {cart.lines.map(line => {
+        const product = products?.find(product => {return (product.productKey === line.productKey)});
+        if (!product) return null;
+        const lineUnitCost = line.unitPrice * (1+line.taxRate);
+        const lineCost = lineUnitCost * line.quantity;
+        return(
+          <div className={styles.checkoutLine}>
+            <img className={styles.checkoutLine} src={product.images[0].url} />
+            <div className={styles.lineText}>
+              <span className={styles.lineDescription}>{product.title}</span>
+              <span className={styles.lineUnitCost}>{lineUnitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
+            </div>
+            <span className={styles.lineQuantity}>✖{line.quantity}</span>
+            <span className={styles.lineCost}>{lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
           </div>
-          <span className={styles.lineQuantity}>✖{line.quantity}</span>
-          <span className={styles.lineCost}>{lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
-        </div>
-      )
-    })
+        )
+      })}
+    </div>
   ) : null;
 
-  console.log(cart)
+  //console.log(cart)
   const checkoutTotals = cart ? (
-    <>
+    <div className={styles.checkoutTotals}>
       <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
       <div className={styles.checkoutTotal}><span>Tax (included):</span><span>{ToYen(cart.includedTax)}</span></div>
       <div className={styles.checkoutTotal}><span>Shipping:</span><span>{ToYen(0)}</span></div>
       <div className={styles.checkoutTotal}><span>Total:</span><span>{ToYen(cart.cost)}</span></div>
-    </>
+    </div>
   ) : null;
+
+
+
+  const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
+  const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>変更する</span> : null;
+  const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;
+
+  const addressCard = (address) ? (
+    <div className={styles.addressCard}>
+      <span>{address.lastName} {address.firstName}</span>
+      <span>〒{address.postalCode?.toString().slice(0,3)}-{address.postalCode?.toString().slice(3,7)}</span>
+      <span>{prefectureName} {address.city}</span>
+      <span>{address.ward} {address.address2}</span>
+      <div className={styles.addressActions}>{editButton}</div>
+    </div>
+  ) : null;
+
 
   return (
     <div className={styles.checkoutFormWrapper}>
@@ -141,12 +174,9 @@ export default function CheckoutForm() {
           {message && <div id="payment-message">{message}</div>}
         </form>
         <div className={styles.checkoutFormProducts}>
-          <div className={styles.checkoutLines}>
-            {checkoutLines}
-          </div>
-          <div className={styles.checkoutTotals}>
-            {checkoutTotals}
-          </div>
+          {checkoutLines}
+          {checkoutTotals}
+          {addressCard}
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ function Cart() {
 
   const [displayCheckout, setDisplayCheckout] = useState(false);
 
+
   // Prevents scrolling while the Checkout modal is open
   useEffect(() => {
     function disableBodyScroll() { document.body.classList.add('no-scroll');    };
@@ -60,16 +61,6 @@ function Cart() {
     const returnedCart = await deleteFromCart(user.customerKey, user.token, lineItemKey);
     //console.log("Cart returned after deleting from cart:");
     //console.log(returnedCart);
-  }
-
-  function handleCheckoutClick() {
-    setDisplayCheckout(true);
-  };
-
-  function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    if (event.target === event.currentTarget) {
-      setDisplayCheckout(false);
-    }
   }
 
   const headings = (cart && cartQuantity > 0) ? (
@@ -118,7 +109,7 @@ function Cart() {
   const subTotal = (cart && cartQuantity > 0) ? (
     <>
       <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-      <button className={styles.checkout} onClick={handleCheckoutClick}>{checkoutButtonContent}</button>
+      <button className={styles.checkout} onClick={() => {setDisplayCheckout(true);}}>{checkoutButtonContent}</button>
     </>
   ) : null;
 
@@ -138,19 +129,20 @@ function Cart() {
 
   const requestMessage = (!user) ? loggedOutMessage : (cartQuantity === 0) ? emptyCartMessage : null;
 
-return(<>
-    <div className="topDots" />
-    <Header breadcrumbs={breadcrumbs} />
-    <span className="topHeader">カートを見る</span>
-    <div className={styles.cartWrapper}>
-      {headings}
-      {cartLineElements}
-      {subTotal}
-      {requestMessage}
-    </div>
-    {displayCheckout && <div className={styles.checkoutWrapper} onClick={hideCheckout}><Checkout /></div>}
-    <Footer />
-  </>
+  return(
+    <>
+      {displayCheckout && <Checkout setDisplayCheckout={setDisplayCheckout} />}
+      <div className="topDots" />
+      <Header breadcrumbs={breadcrumbs} />
+      <span className="topHeader">カートを見る</span>
+      <div className={styles.cartWrapper}>
+        {headings}
+        {cartLineElements}
+        {subTotal}
+        {requestMessage}
+      </div>
+      <Footer />
+    </>
   )
 }
 
