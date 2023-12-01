@@ -7,7 +7,6 @@ import { useProducts } from "./ProductContext";
 
 import { prefectures } from "./addressData"
 import styles from './checkoutForm.module.css';
-import NewAddress from "./NewAddress";
 
 type CheckoutFormProps = {
   selectedAddressKey: number | null;
@@ -22,9 +21,11 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
   const { user, userLoading, cartLoading } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+  const addresses = user?.addresses || [];
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAddressSelect, setShowAddressSelect] = useState(false);
   
   const cart = user ? user.cart : undefined;
 
@@ -123,7 +124,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
               <span className={styles.lineDescription}>{product.title}</span>
               <span className={styles.lineUnitCost}>{lineUnitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
             </div>
-            <span className={styles.lineQuantity}>✖{line.quantity}</span>
+            <span className={styles.lineQuantity}>✖ {line.quantity}</span>
             <span className={styles.lineCost}>{lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
           </div>
         )
@@ -144,7 +145,10 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
 
   const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
-  const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>変更する</span> : null;
+  const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>住所を編集する</span> : null;
+  //const changeButton = addressKey ? <span className={styles.addressAction} onClick={() => {  }}>別の住所を選択する</span> : null;
+  //const addressOptions = addresses.map(address => {return (<option></option>)});
+  //const addressSelect = (<select></select>)
   const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;
 
   const addressCard = (address) ? (

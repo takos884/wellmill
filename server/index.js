@@ -522,6 +522,56 @@ app.post('/deleteFromCart', async (req, res) => {
 
 });
 
+
+//#region Azure backup
+const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
+
+app.post('/storeBackupData', async (req, res) => {
+  console.log("Hit storeBackupData. Time: " + CurrentTime());
+  console.log(req.body);
+
+  try {
+    // Extract data from the request body
+    const { endpoint, inputData } = req.body;
+
+    const fullEndpoint = `${BASE_URL}${endpoint}`;
+    const fullFetchContent = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+      },
+      body: JSON.stringify(inputData),
+    };
+
+    console.log("fullEndpoint");
+    console.log(fullEndpoint);
+    console.log("fullFetchContent");
+    console.log(fullFetchContent);
+
+    // Make the POST request to the backup server
+    const response = await fetch(fullEndpoint, fullFetchContent);
+    const responseData = await response.json();
+
+    console.log("Json response:");
+    console.log(responseData);
+
+    if (!response.ok) {
+      // Forward any non-2xx responses as is
+      return res.status(response.status).json({ message: `API request failed with status ${response.status}` });
+    }
+
+    // Send the response from the backup server to the client
+    res.json(responseData);
+
+  } catch (error) {
+    // Handle any other errors
+    res.status(500).json({ message: error.message || 'An unexpected error occurred.' });
+  }
+});
+//#endregion Azure backup
+
+
 async function verifyToken(customerKey, token) {
   try {
     const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
@@ -689,7 +739,7 @@ app.post("/createPaymentIntent", async (req, res) => {
 
   res.send({ clientSecret: paymentIntent.client_secret });
 });
-//#endregion
+//#endregion Stripe
 
 app.use((err, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Error:`, err.stack);

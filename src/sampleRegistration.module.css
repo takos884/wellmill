@@ -23,6 +23,7 @@ span.inputHeader {
 
 span.required {
   color: #f44;
+  margin: 0 0.5rem;
 }
 
 .checkboxTextLink {
