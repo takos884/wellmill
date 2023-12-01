@@ -98,7 +98,6 @@ fetchProducts();
 
 
 app.post('/createUser', async (req, res) => {
-  try {
     const userData = req.body.data;
     let firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     let lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -116,10 +115,15 @@ app.post('/createUser', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
 
-    pool.query(query, values);
+  try {
+    const [results] = await pool.query(query, values);
+    console.log("Results after adding new customer:");
+    console.log(results);
 
-    console.log(`Created user with token: ${token}`);
-    res.json({ token: token });
+    const code = "NV" + results.insertId;
+
+    console.log(`Created user with token: ${token} and code: ${code}`);
+    res.json({ token: token, code: code });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).send('Error creating user: ' + error);
@@ -487,25 +491,6 @@ app.post('/deleteFromCart', async (req, res) => {
 
   const tokenVerification = await verifyToken(customerKey, token);
   if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
-
-  /*
-  try {
-    // Delete line from database
-    const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
-    await new Promise((resolve, reject) => {
-      connection.query(deleteQuery, [customerKey, lineItemKey], (error, results) => {
-        if (error) { reject(error); }
-        resolve(results);
-      });
-    });
-
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
-    res.json(updatedCart);
-  } catch (error) {
-      console.error('Error in deleteFromCart:', error);
-      res.status(500).send('An error occurred');
-  }
-  */
 
   try {
     // Delete line from the database

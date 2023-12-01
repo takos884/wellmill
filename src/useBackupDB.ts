@@ -41,9 +41,31 @@ export const useBackupDB = <T extends unknown>() => {
     postBackupData(body);
   };
 
-  // Placeholder for future functions
-  // const backupCustomerData = (...) => { ... };
+  const backupCustomerData = (
+    kaiin_code: string,
+    kaiin_last_name: string,
+    kaiin_first_name: string,
+    kaiin_last_name_kana: string,
+    kaiin_first_name_kana: string,
+    post_code: string,
+    pref_code: string,
+    pref: string,
+    city: string,
+    address1: string,
+    address2: string,
+    renrakusaki: string,
+    mail_address: string,
+    touroku_kbn: number,
+    seibetsu: number,
+    seinengappi: string,
+  ) => {
+    const endpoint = "kaiin_renkei_api";
+    const body = JSON.stringify({endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}});
+    postBackupData(body);
+  }
+
+  // Placeholder for future function
   // const backupOrderData = (...) => { ... };
 
-  return { backupSampleData, data, error };
+  return { backupSampleData, backupCustomerData, data, error };
 };

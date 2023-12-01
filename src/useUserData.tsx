@@ -67,11 +67,17 @@ export const useUserData = () => {
       return { data: null, error: "No token returned on user create" };
     }
 
+    if(!APIResponse.data.code) {
+      console.log("No code returned on user create");
+      return { data: null, error: "No code returned on user create" };
+    }
+
     userData.token = APIResponse.data.token;
+    userData.code = APIResponse.data.code;
     delete userData.password;
     setUser(userData);
     setUserLoading(false);
-    return { data: APIResponse.data.token, error: null };  
+    return { data: APIResponse.data, error: null };  
   };
 
   // Add can also be used to update, if an addressKey is present in the address data

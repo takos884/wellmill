@@ -6,6 +6,7 @@ import { Customer } from "./types";
 import styles from './signup.module.css'
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
+import { useBackupDB } from "./useBackupDB";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -47,6 +48,8 @@ interface InputErrors {
 function Signup() {
   const navigate = useNavigate();
   const { createUser, setUser, loginUser } = useUserData();
+  const { backupCustomerData, data: customerBackupData, error: customerBackupError } = useBackupDB<any>();
+
   const [createUserResponse, setCreateUserResponse] = useState<CreateUserResponse | null>(null);
 
   const [inputs, setInputs] = useState<InputFields>({
@@ -132,18 +135,43 @@ function Signup() {
       };
 
       const response = await createUser(userData);
-      console.log(response);
+      console.log(response);  // { data: {token: 06...19, code: NV14 }}
 
       if(response.error) {
         console.log(`Create User Error: ${response.error}`);
         return;
       }
 
-      loginUser({token: response.data});
+      userData.token = response.data.token;
+      userData.code  = response.data.code;
 
-      setTimeout(() => { navigate('/account'); }, 500);
+      if(userData.token) { loginUser({token: userData.token}); }
+
+      if(!userData.code || !userData.lastName || !userData.firstName) { return; }
+
+      const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
+      backupCustomerData(userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, getFormattedDate());
+
+      //setTimeout(() => { navigate('/account'); }, 500);
     }
   }
+
+  function getFormattedDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    // Add 1 because getMonth() returns month from 0-11
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+
+    // Pad the month and day with a leading zero if they are less than 10
+    const formattedMonth = month < 10 ? `0${month}` : month;
+    const formattedDay = day < 10 ? `0${day}` : day;
+
+    // Format the date in YYYY年MM月DD日 format
+    //return `${year}年${formattedMonth}月${formattedDay}日`;
+    return `${year}/${formattedMonth}/${formattedDay}`;
+  }
+
 
   const genderRadio = (
     <div className={styles.genderOptions}>
@@ -199,7 +227,8 @@ function Signup() {
         <button className={styles.register} onClick={HandleRegistrationClick}>登録</button>
         {createUserResponse?.data && <p>User created: {JSON.stringify(createUserResponse.data)}</p>}
         {createUserResponse?.error && <p>Error: {createUserResponse.error}</p>}
-
+        {customerBackupData && (<span>{JSON.stringify(customerBackupData)}</span>)}
+        {customerBackupError && (<span>{JSON.stringify(customerBackupError)}</span>)}
       </div>
       <Footer />
       <div className={styles.success}>Registration Successful - Loading MyPage</div>

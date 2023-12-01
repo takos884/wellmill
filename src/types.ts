@@ -91,7 +91,8 @@ type image = {
 }
 
 export type Customer = {
-    customerKey?: number,
+    customerKey?: number, // For my MySQL database
+    code?: string,        // For the company Azure backup database
     email?: string,
     lastName?: string,
     firstName?: string,

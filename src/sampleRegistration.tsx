@@ -23,7 +23,7 @@ function SampleRegistration() {
   const [kaiinCode, setKaiinCode] = useState('77777');
   const [kentaiSaishubi, setKentaiSaishubi] = useState(getFormattedDate());
 
-  // sad to use 'any', but I don't really know what the server will return
+  // sad to use 'any', but I don't know what the server will return
   const { backupSampleData, data: sampleBackupData, error: sampleBackupError } = useBackupDB<any>();
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
