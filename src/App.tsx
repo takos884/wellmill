@@ -22,6 +22,7 @@ import HowTo from './HowTo';
 import OrderList from './OrderList';
 import Addresses from './Addresses'
 import Profile from './Profile';
+import PostPurchase from './PostPurchase';
 
 function Layout() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function Layout() {
       <Route path="/shop" element={<Shop />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/post-purchase" element={<PostPurchase />} />
       <Route path="/login" element={<Login />} />
       <Route path="/sign-up" element={<Signup />} />
 

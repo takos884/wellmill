@@ -27,7 +27,6 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showAddressSelect, setShowAddressSelect] = useState(false);
   const [showNewAddress, setShowNewAddress] = useState(false);
 
   const cart = user ? user.cart : undefined;
@@ -49,23 +48,15 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
     stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
       switch (paymentIntent?.status) {
-        case "succeeded":
-          setMessage("Payment succeeded!");
-          break;
-        case "processing":
-          setMessage("Your payment is processing.");
-          break;
-        case "requires_payment_method":
-          setMessage("Your payment was not successful, please try again.");
-          break;
-        default:
-          setMessage("Something went wrong.");
-          break;
+        case "succeeded":               setMessage("Payment succeeded!"); break;
+        case "processing":              setMessage("Your payment is processing."); break;
+        case "requires_payment_method": setMessage("Your payment was not successful, please try again."); break;
+        default:                        setMessage("Something went wrong."); break;
       }
     });
   }, [stripe]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     // Stripe.js hasn't yet loaded. Disable form submission until Stripe.js has loaded.
@@ -75,10 +66,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: {
-        // Make sure to change this to your payment completion page
-        return_url: "http://localhost:3000",
-      },
+      confirmParams: { return_url: "https://cdehaan.ca/wellmill/post-purchase" },
     });
 
     // This point will only be reached if there is an immediate error when
@@ -135,7 +123,6 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
     </div>
   ) : null;
 
-  //console.log(cart)
   const checkoutTotals = cart ? (
     <div className={styles.checkoutTotals}>
       <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
@@ -187,7 +174,6 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
                     {isLoading ? <div className="spinner" id="spinner"></div> : "今すぐ払う"}
                   </span>
                 </button>
-                {/* Show any error or success messages */}
                 {message && <div id="payment-message">{message}</div>}
               </form>
               <div className={styles.checkoutFormProducts}>

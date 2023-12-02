@@ -48,7 +48,7 @@ async function fetchProducts() {
   //console.log("Query: " + query);
 
   try{
-    const results = (await pool.query(query))[0];
+    const [results] = (await pool.query(query));
 
     if (!results) {
       console.log("Products not found");
@@ -329,8 +329,8 @@ app.post('/login', async (req, res) => {
     res.status(401).send("No customer credentials given");
   }
 
-  console.log("Customer data:")
-  console.log(customerData)
+  //console.log("Customer data:")
+  //console.log(customerData)
 
   //const cartId = await getCartIdFromCustomerId(customerData.id, customerData)
   //console.log("Cart ID:")
@@ -406,7 +406,7 @@ app.post('/addToCart', async (req, res) => {
   try {
     // Check if the item already exists in the cart
     const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-    const existingItem = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]))[0];
+    const [existingItem] = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
   
     if (existingItem.length > 0) {
       // Item exists, update the quantity
@@ -562,7 +562,7 @@ app.post('/storeBackupData', async (req, res) => {
 async function verifyToken(customerKey, token) {
   try {
     const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
-    const results = (await pool.query(query, [customerKey, token]))[0];
+    const [results] = await pool.query(query, [customerKey, token]);
 
     if (results.length > 0) {
       return { valid: true, error: null };
@@ -580,14 +580,14 @@ async function GetCustomerDataFromCredentials(email, password) {
     const query = `SELECT * FROM customer WHERE email = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const results = (await pool.query(query, [email]))[0];
+    const [results] = await pool.query(query, [email]);
 
     // If no results, the email is not registered
     if (results.length === 0) {
       return null;
     }
 
-    const customer = results[0];
+    const [customer] = results;
     //console.log("In GetCustomerDataFromCredentials with the following customer:");
     //console.log(customer);
     //console.log("Password:");
@@ -630,7 +630,7 @@ async function GetCustomerDataFromToken(token) {
     const query = `SELECT * FROM customer WHERE token = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const results = (await pool.query(query, [token]))[0];
+    const [results] = await pool.query(query, [token]);
 
     // If no results, the token does not exist
     if (results.length === 0) {
@@ -663,12 +663,15 @@ async function GetCustomerDataFromToken(token) {
 async function GetCartDataFromCustomerKey(customerKey) {
   // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
-    SELECT * FROM lineItem
-    WHERE customerKey = ? AND purchaseKey IS NULL`;
+    SELECT lineItem.* 
+    FROM lineItem 
+    LEFT JOIN purchase ON lineItem.purchaseKey = purchase.purchaseKey
+    WHERE lineItem.customerKey = ?
+    AND (lineItem.purchaseKey IS NULL OR purchase.status = 'created');`;
 
   // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
-    const updatedCart = (await pool.query(selectQuery, [customerKey]))[0];
+    const [updatedCart] = (await pool.query(selectQuery, [customerKey]));
     return updatedCart;
   } catch (error) {
     console.error('Error in GetCartDataFromCustomerKey: ', error);
@@ -719,6 +722,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
 
+  let query, values;
   const { user, cartLines } = req.body;
   const purchaseTotal = calculateOrderAmount(cartLines);
 
@@ -731,24 +735,71 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("Created paymentIntent:");
   console.log(paymentIntent);
 
-  const query = `
+  // Make the purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
+  query = `
     INSERT INTO purchase (customerKey, paymentIntentId, amount)
     VALUES (?, ?, ?)`;
-  const values = [user.customerKey, paymentIntent.id, paymentIntent.amount];
+  values = [user.customerKey, paymentIntent.id, paymentIntent.amount];
 
+  let purchaseInsertId;
   try {
     const [results] = await pool.query(query, values);
-    console.log("Results after saving purchase in MySQL:");
-    console.log(results);
-    res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+    purchaseInsertId = results.insertId;
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error creating user: ', error);
     res.status(500).send('Error creating user: ' + error);
   }
 
+  const cartLineKeys = cartLines.map(line => line.lineItemKey);
+  // Match lineItem	in the cart to this intention
+  query = `
+    UPDATE lineItem
+    SET purchaseKey = ?
+    WHERE lineItemKey IN (?)`;
+  values = [purchaseInsertId, cartLineKeys];
+
+  try {
+    const [results] = await pool.query(query, values);
+    //console.log("Results after saving purchase in MySQL:");
+    //console.log(results);
+  } catch (error) {
+    console.error('Error creating user: ', error);
+    res.status(500).send('Error creating user: ' + error);
+  }
+
+  res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
 
 });
+
+
+app.post("/verifyPayment", async (req, res) => {
+  console.log("░▒▓█ Hit verifyPayment. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const { paymentIntentId, paymentIntentClientSecret } = req.body;
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+  if (paymentIntent.status === 'succeeded') {
+    const query = `
+      UPDATE purchase 
+      SET status = ?, purchaseTime = CURRENT_TIMESTAMP
+      WHERE paymentIntentId = ?`;
+    const values = [paymentIntent.status, paymentIntentId];
+
+    try {
+      const [results] = await pool.query(query, values);
+
+      //TODO here to send to Azure
+      res.send({ paymentStatus: paymentIntent.status });
+    } catch (error) {
+      console.error('Error updating payment: ', error);
+      res.status(500).send('Error updating payment: ' + error);
+    }
+  }
+});
 //#endregion Stripe
+
 
 app.use((err, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Error:`, err.stack);
