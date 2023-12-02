@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
@@ -7,15 +8,16 @@ import { useProducts } from "./ProductContext";
 
 import { prefectures } from "./addressData"
 import styles from './checkoutForm.module.css';
+import NewAddress from "./NewAddress";
 
 type CheckoutFormProps = {
   selectedAddressKey: number | null;
   setSelectedAddressKey: React.Dispatch<React.SetStateAction<number | null>>;
-  setShowNewAddress: React.Dispatch<React.SetStateAction<boolean>>;
+  setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 
-export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey, setShowNewAddress }: CheckoutFormProps) {
+export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey, setDisplayCheckout }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -26,15 +28,16 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAddressSelect, setShowAddressSelect] = useState(false);
-  
+  const [showNewAddress, setShowNewAddress] = useState(false);
+
   const cart = user ? user.cart : undefined;
 
   // The current address is the default one unless another address key has been set
-  const address = user ? user.addresses.find(address => {
+  const address = addresses.find(address => {
     return (selectedAddressKey === null) ?
     address.defaultAddress === true : 
     address.addressKey === selectedAddressKey;
-  }) : null;
+  });
 
 
   // Set payment message pulled from Stripe
@@ -168,28 +171,33 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
     </div>
   );
 
-
   return (
-    <div className={styles.checkoutFormWrapper}>
-      <img src="logo.svg" alt="Logo" />
-      <span className={styles.checkoutHeader}>Checkout</span>
-      <div className={styles.checkoutFormContent}>
-        <form id="payment-form" onSubmit={handleSubmit}>
-          <PaymentElement id="payment-element" options={paymentElementOptions} />
-          <button disabled={isLoading || !stripe || !elements} id="submit">
-            <span id="button-text">
-              {isLoading ? <div className="spinner" id="spinner"></div> : "今すぐ払う"}
-            </span>
-          </button>
-          {/* Show any error or success messages */}
-          {message && <div id="payment-message">{message}</div>}
-        </form>
-        <div className={styles.checkoutFormProducts}>
-          {checkoutLines}
-          {checkoutTotals}
-          {addressCard}
-        </div>
+    <>
+      {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
+      <div className={styles.checkoutModal}>
+        <span className={styles.checkoutX} onClick={() => { setDisplayCheckout(false); }}>✖</span>
+          <div className={styles.checkoutFormWrapper}>
+            <img src="logo.svg" alt="Logo" />
+            <span className={styles.checkoutHeader}>Checkout</span>
+            <div className={styles.checkoutFormContent}>
+              <form id="payment-form" onSubmit={handleSubmit}>
+                <PaymentElement id="payment-element" options={paymentElementOptions} />
+                <button disabled={isLoading || !stripe || !elements} id="submit">
+                  <span id="button-text">
+                    {isLoading ? <div className="spinner" id="spinner"></div> : "今すぐ払う"}
+                  </span>
+                </button>
+                {/* Show any error or success messages */}
+                {message && <div id="payment-message">{message}</div>}
+              </form>
+              <div className={styles.checkoutFormProducts}>
+                {checkoutLines}
+                {checkoutTotals}
+                {addressCard}
+              </div>
+            </div>
+          </div>
       </div>
-    </div>
+    </>
   );
 }

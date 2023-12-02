@@ -32,6 +32,9 @@ const pool = mysql.createPool({
 const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
 const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
+// used for both creating a file, and calculating cart totals
+let products = {};
+
 
 
 async function fetchProducts() {
@@ -52,8 +55,8 @@ async function fetchProducts() {
       return Promise.reject("Products not found");
     }
 
-    // Create an object to hold products and their images
-    const products = {};
+    // holds products and their images
+    products = {};
 
 
     results.forEach(row => {
@@ -308,7 +311,6 @@ app.post('/sendEmail', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   console.log("░▒▓█ Hit login. Time:" + CurrentTime());
-  console.log("req.body");
   console.log(req.body);
   const userCredentials = req.body.data;
   const email = userCredentials.email;
@@ -706,23 +708,45 @@ function ProcessAddresses(addresses) {
 
 
 //#region Stripe
-const calculateOrderAmount = (items) => {
-  // Replace this constant with a calculation of the order's amount
-  // Calculate the order total on the server to prevent
-  // people from directly manipulating the amount on the client
-  return 1400;
+const calculateOrderAmount = (cartLines) => {
+  return Math.round(cartLines.reduce((total, line) => {
+    const lineCost = line.unitPrice * (1 + line.taxRate) * line.quantity;
+    return total + lineCost;
+  }, 0));
 };
 
 app.post("/createPaymentIntent", async (req, res) => {
-  const { items } = req.body;
+  console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const { user, cartLines } = req.body;
+  const purchaseTotal = calculateOrderAmount(cartLines);
 
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
+    amount: purchaseTotal,
     currency: "jpy",
   });
 
-  res.send({ clientSecret: paymentIntent.client_secret });
+  console.log("Created paymentIntent:");
+  console.log(paymentIntent);
+
+  const query = `
+    INSERT INTO purchase (customerKey, paymentIntentId, amount)
+    VALUES (?, ?, ?)`;
+  const values = [user.customerKey, paymentIntent.id, paymentIntent.amount];
+
+  try {
+    const [results] = await pool.query(query, values);
+    console.log("Results after saving purchase in MySQL:");
+    console.log(results);
+    res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).send('Error creating user: ' + error);
+  }
+
+
 });
 //#endregion Stripe
 
