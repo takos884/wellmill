@@ -132,6 +132,7 @@ function Signup() {
         birthday: inputs.birthday, 
         password: inputs.password,
         addresses: [],
+        purchases: [],
       };
 
       const response = await createUser(userData);

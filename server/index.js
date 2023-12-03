@@ -35,12 +35,15 @@ const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 // used for both creating a file, and calculating cart totals
 let products = {};
 
+// used as a pair to run MySQL queries
+let query, values;
+
 
 
 async function fetchProducts() {
   console.log("░▒▓█ Hit fetchProducts. Time: " + CurrentTime());
 
-  const query = `
+  query = `
     SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
     FROM product p
     LEFT JOIN image i ON p.productKey = i.productKey
@@ -101,6 +104,9 @@ fetchProducts();
 
 
 app.post('/createUser', async (req, res) => {
+    console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
+    console.log(req.body);
+
     const userData = req.body.data;
     let firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     let lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -113,10 +119,10 @@ app.post('/createUser', async (req, res) => {
   
     const token = crypto.randomBytes(48).toString('hex');
 
-    const query = `
+    query = `
       INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, email, passwordHash, token)
       VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
+    values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
 
   try {
     const [results] = await pool.query(query, values);
@@ -163,8 +169,6 @@ app.post('/addAddress', async (req, res) => {
   }
 
 
-  let query;
-
   // Count the number of default addresses. If it's zero, force this new one to be default
   // If it's an update, don't include the one being updates in this count
   // When addressKey is not null, it will exclude the address with that key.
@@ -190,7 +194,7 @@ app.post('/addAddress', async (req, res) => {
     }
   }
 
-  const values = [customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress];
+  values = [customerKey, firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, defaultAddress];
 
   // Make a query to add a new address
   if(newAddress) {
@@ -240,7 +244,7 @@ app.post('/deleteAddress', async (req, res) => {
     res.status(400).send(errorMessage);
   }
 
-  let query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
+  query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
   try {
     await pool.query(query, [addressKey, customerKey]);
   } catch(error) {
@@ -363,45 +367,6 @@ app.post('/addToCart', async (req, res) => {
   const roundedUnitPrice = Math.round(unitPrice * 100) / 100;
   const roundedTaxRate   = Math.round(taxRate * 1000) / 1000;
 
-  /*
-  try {
-    // Check if the item already exists in the cart
-    const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-    const existingItem = await new Promise((resolve, reject) => {
-        connection.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate], (error, results) => {
-            if (error) reject(error);
-            resolve(results);
-        });
-    });
-
-    if (existingItem.length > 0) {
-      // Item exists, update the quantity
-      const newQuantity = existingItem[0].quantity + quantity;
-      const updateQuery = "UPDATE lineItem SET quantity = ? WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-      await new Promise((resolve, reject) => {
-          connection.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate], (error, results) => {
-              if (error) reject(error);
-              resolve(results);
-          });
-      });
-    } else {
-      // Insert data into the database
-      const insertQuery = "INSERT INTO lineItem (productKey, customerKey, unitPrice, taxRate, quantity) VALUES (?, ?, ?, ?, ?)";
-      await new Promise((resolve, reject) => {
-          connection.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity], (error, results) => {
-              if (error) reject(error);
-              resolve(results);
-          });
-      });
-    }
-
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
-    res.json(updatedCart);
-  } catch (error) {
-      console.error('Error in addToCart:', error);
-      res.status(500).send('An error occurred');
-  }
-  */
 
   try {
     // Check if the item already exists in the cart
@@ -444,25 +409,6 @@ app.post('/updateCartQuantity', async (req, res) => {
 
   const tokenVerification = await verifyToken(customerKey, token);
   if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
-
-  /*
-  try {
-    // Update line quantity in database
-    const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
-    await new Promise((resolve, reject) => {
-      connection.query(updateQuery, [quantity, customerKey, lineItemKey], (error, results) => {
-        if (error) { reject(error); }
-        resolve(results);
-      });
-    });
-
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey)
-    res.json(updatedCart);
-  } catch (error) {
-      console.error('Error in updateCartQuantity:', error);
-      res.status(500).send('An error occurred');
-  }
-  */
 
   try {
     // Update line quantity in the database
@@ -561,7 +507,7 @@ app.post('/storeBackupData', async (req, res) => {
 
 async function verifyToken(customerKey, token) {
   try {
-    const query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
+    query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
     const [results] = await pool.query(query, [customerKey, token]);
 
     if (results.length > 0) {
@@ -577,7 +523,7 @@ async function verifyToken(customerKey, token) {
 async function GetCustomerDataFromCredentials(email, password) {
   try {
     // Prepare the SQL query to find the user by email
-    const query = `SELECT * FROM customer WHERE email = ?`;
+    query = `SELECT * FROM customer WHERE email = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
     const [results] = await pool.query(query, [email]);
@@ -611,6 +557,11 @@ async function GetCustomerDataFromCredentials(email, password) {
     const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
     customer.cart = { lines: cartData };
 
+    // Pull customer's purchases
+    const purchases = await GetPurchasesFromCustomerKey(customer.customerKey);
+    customer.purchases = purchases;
+
+    // Pull customer's addresses
     const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
     customer.addresses = addresses;
 
@@ -627,13 +578,14 @@ async function GetCustomerDataFromCredentials(email, password) {
 async function GetCustomerDataFromToken(token) {
   try {
     // Prepare the SQL query to find the user by token
-    const query = `SELECT * FROM customer WHERE token = ?`;
+    query = `SELECT * FROM customer WHERE token = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
     const [results] = await pool.query(query, [token]);
 
     // If no results, the token does not exist
     if (results.length === 0) {
+      // TODO think about some login attempt limit
       return null;
     }
 
@@ -642,11 +594,13 @@ async function GetCustomerDataFromToken(token) {
 
     // Pull customer's cart
     const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
-    if (cartData.error) {
-      throw new Error("Cart query error: " + cartData.error);
-    }
     customer.cart = { lines: cartData };
 
+    // Pull customer's purchases
+    const purchases = await GetPurchasesFromCustomerKey(customer.customerKey);
+    customer.purchases = purchases;
+
+    // Pull customer's addresses
     const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
     customer.addresses = addresses;
 
@@ -663,7 +617,7 @@ async function GetCustomerDataFromToken(token) {
 async function GetCartDataFromCustomerKey(customerKey) {
   // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
-    SELECT lineItem.* 
+    SELECT lineItem.*, purchase.status
     FROM lineItem 
     LEFT JOIN purchase ON lineItem.purchaseKey = purchase.purchaseKey
     WHERE lineItem.customerKey = ?
@@ -671,10 +625,32 @@ async function GetCartDataFromCustomerKey(customerKey) {
 
   // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
-    const [updatedCart] = (await pool.query(selectQuery, [customerKey]));
-    return updatedCart;
+    const [currentCart] = (await pool.query(selectQuery, [customerKey]));
+    return currentCart;
   } catch (error) {
     console.error('Error in GetCartDataFromCustomerKey: ', error);
+    throw error;
+  }
+}
+
+async function GetPurchasesFromCustomerKey(customerKey) {
+  // Prepare the SQL query to get a customer's line items that haven't been purchased
+  // Could be more selective
+  const selectQuery = `
+    SELECT lineItem.*, purchase.*
+    FROM lineItem 
+    JOIN purchase ON lineItem.purchaseKey = purchase.purchaseKey
+    WHERE lineItem.customerKey = ?
+    AND purchase.status != 'created';`;
+
+  // Execute the query using the promisified pool.query and wait for the promise to resolve
+  try {
+    const [purchaseHistory] = (await pool.query(selectQuery, [customerKey]));
+    console.log("purchaseHistory");
+    console.log(purchaseHistory);
+    return purchaseHistory;
+  } catch (error) {
+    console.error('Error in GetPurchasesFromCustomerKey: ', error);
     throw error;
   }
 }
@@ -699,7 +675,7 @@ function ProcessAddresses(addresses) {
   const updatedAddresses = addresses.map(address => {
     if(address === undefined) return null;
 
-    const defaultAddress = address.defaultAddress?.toString() === "1"
+    const defaultAddress = (address.defaultAddress?.toString() === "1");
     return {
       ...address,
       defaultAddress: defaultAddress
@@ -722,7 +698,6 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
 
-  let query, values;
   const { user, cartLines } = req.body;
   const purchaseTotal = calculateOrderAmount(cartLines);
 
@@ -779,24 +754,73 @@ app.post("/verifyPayment", async (req, res) => {
   const { paymentIntentId, paymentIntentClientSecret } = req.body;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const paymentStatus = paymentIntent.status;
 
-  if (paymentIntent.status === 'succeeded') {
-    const query = `
+  if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
+    query = `
       UPDATE purchase 
       SET status = ?, purchaseTime = CURRENT_TIMESTAMP
-      WHERE paymentIntentId = ?`;
-    const values = [paymentIntent.status, paymentIntentId];
+      WHERE paymentIntentId = ? AND status != ?`;
+    values = [paymentStatus, paymentIntentId, paymentStatus];
 
     try {
       const [results] = await pool.query(query, values);
 
       //TODO here to send to Azure
-      res.send({ paymentStatus: paymentIntent.status });
+      // Don't send to myself yet, more work to do.
+      //res.send({ paymentStatus: paymentStatus });
     } catch (error) {
       console.error('Error updating payment: ', error);
       res.status(500).send('Error updating payment: ' + error);
     }
   }
+
+  query = `SELECT customerKey FROM purchase WHERE paymentIntentId = ?;`
+  values = [paymentIntentId];
+  let customerKey;
+
+  try {
+    const [results] = await pool.query(query, values);
+
+    if (results.length === 0) {
+      console.error('Error finding customer key after payment verification: ', error);
+      res.status(500).send('Error finding customer key after payment verification: ' + error);
+    }
+
+    customerKey = results[0].customerKey;
+
+  } catch (error) {
+    console.error('Error pulling customer data after payment verification: ', error);
+    res.status(500).send('Error pulling customer data after payment verification: ' + error);
+  }
+
+  query = `SELECT * FROM customer WHERE customerKey = ?`;
+  values = [customerKey];
+  const [results] = await pool.query(query, values);
+
+  if (results.length === 0) {
+    console.error('Error pulling customer data with key after payment verification: ', error);
+    res.status(500).send('Error pulling customer data with key after payment verification: ' + error);
+  }
+
+  const customer = results[0];
+
+  // Pull customer's cart
+  const cartData = await GetCartDataFromCustomerKey(customerKey);
+  customer.cart = { lines: cartData };
+
+  // Pull customer's purchases
+  const purchases = await GetPurchasesFromCustomerKey(customerKey);
+  customer.purchases = purchases;
+
+  // Pull customer's addresses
+  const addresses = await GetAddressesFromCustomerKey(customerKey);
+  customer.addresses = addresses;
+
+  // Remove sensitive data before sending the customer object
+  delete customer.password_hash;
+
+  res.json({customerData: customer, paymentStatus: paymentStatus});
 });
 //#endregion Stripe
 

@@ -104,6 +104,7 @@ export type Customer = {
     token?: string,
     cart?: Cart,
     addresses: Address[],
+    purchases?: Purchase[],
 }
 
 export type Cart = {
@@ -135,6 +136,26 @@ export type Address = {
     address2?: string, //"Building 1",
     phoneNumber?: string, // 080-1234-5678
     defaultAddress?: boolean, // true
+}
+
+export type Purchase = {
+    lineItemKey: number,
+    productKey: number,
+    purchaseKey: number,
+    quantity: number,
+    addedAt: string,
+    unitPrice: number,
+    taxRate: number,
+    customerKey: number,
+    addressKey: number,
+    status: string,
+    creationTime: string,
+    purchaseTime: string,
+    shippedTime: string,
+    refundTime: string,
+    paymentIntentId: number,
+    note: string,
+    amount: number,
 }
 
 interface CredentialsWithEmail {
