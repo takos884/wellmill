@@ -370,7 +370,16 @@ app.post('/addToCart', async (req, res) => {
 
   try {
     // Check if the item already exists in the cart
-    const checkQuery = "SELECT quantity FROM lineItem WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
+    // If it has a purchase record, other than "created", it should not be counted
+    const checkQuery = `
+      SELECT lineItem.quantity
+      FROM lineItem
+      LEFT JOIN purchase ON lineItem.purchaseKey = purchase.purchaseKey
+      WHERE lineItem.productKey = ?
+      AND lineItem.customerKey = ?
+      AND lineItem.unitPrice = ?
+      AND lineItem.taxRate = ?
+      AND (lineItem.purchaseKey IS NULL OR purchase.status = 'created');`;
     const [existingItem] = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
   
     if (existingItem.length > 0) {
@@ -459,14 +468,17 @@ app.post('/deleteFromCart', async (req, res) => {
 //#region Azure backup
 const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
 
+
+// Works a charm
+/*
 app.post('/storeBackupData', async (req, res) => {
   console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
   console.log(req.body);
 
-  try {
-    // Extract data from the request body
-    const { endpoint, inputData } = req.body;
+  // Extract data from the request body
+  const { endpoint, inputData } = req.body;
 
+  try {
     const fullEndpoint = `${BASE_URL}${endpoint}`;
     const fullFetchContent = {
       method: 'POST',
@@ -502,6 +514,45 @@ app.post('/storeBackupData', async (req, res) => {
     res.status(500).json({ message: error.message || 'An unexpected error occurred.' });
   }
 });
+*/
+
+app.post('/storeBackupData', async (req, res) => {
+  const { endpoint, inputData } = req.body;
+
+  const result = await StoreBackupData(endpoint, inputData);
+
+  if (result.error) {
+    return res.status(result.status).json({ message: result.message });
+  }
+
+  res.json(result);
+});
+
+async function StoreBackupData(endpoint, inputData) {
+  try {
+    const fullEndpoint = `${BASE_URL}${endpoint}`;
+    const fullFetchContent = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+      },
+      body: JSON.stringify(inputData),
+    };
+
+    // Make the POST request to the backup server
+    const response = await fetch(fullEndpoint, fullFetchContent);
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      return { error: true, status: response.status, message: 'An unexpected error occurred in StoreBackupData.' };
+    }
+
+    return responseData;
+  } catch (error) {
+    return { error: true, status: 500, message: error.message || 'An unexpected error occurred in StoreBackupData.' };
+  }
+}
 //#endregion Azure backup
 
 
@@ -645,10 +696,10 @@ async function GetPurchasesFromCustomerKey(customerKey) {
 
   // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
-    const [purchaseHistory] = (await pool.query(selectQuery, [customerKey]));
-    console.log("purchaseHistory");
-    console.log(purchaseHistory);
-    return purchaseHistory;
+    const [purchaseHistory] = await pool.query(selectQuery, [customerKey]);
+    //console.log("ProcessPurchaseHistory(purchaseHistory)");
+    //console.log(ProcessPurchaseHistory(purchaseHistory));
+    return ProcessPurchaseHistory(purchaseHistory);
   } catch (error) {
     console.error('Error in GetPurchasesFromCustomerKey: ', error);
     throw error;
@@ -671,18 +722,22 @@ async function GetAddressesFromCustomerKey(customerKey) {
   }
 }
 
+// All values in Addresses come from MySQL as strings, but I want the bool to be a real bool
 function ProcessAddresses(addresses) {
-  const updatedAddresses = addresses.map(address => {
+  return updatedAddresses = addresses.map(address => {
     if(address === undefined) return null;
-
-    const defaultAddress = (address.defaultAddress?.toString() === "1");
-    return {
-      ...address,
-      defaultAddress: defaultAddress
-    }
+    address.defaultAddress = (address.defaultAddress?.toString() === "1");
+    return address;
   });
-  
-  return updatedAddresses;
+}
+
+// All values in Purchase History come from MySQL as strings, but I want the numbers to be real numbers
+function ProcessPurchaseHistory(purchaseHistory) {
+  return purchaseHistory.map(oneHistory => {
+    oneHistory.unitPrice = Math.round(Number(oneHistory.unitPrice));
+    oneHistory.taxRate = Math.round(Number(oneHistory.taxRate)*100)/100;
+    return oneHistory;
+  });
 }
 
 
@@ -755,7 +810,10 @@ app.post("/verifyPayment", async (req, res) => {
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
   const paymentStatus = paymentIntent.status;
+  console.log("paymentIntent");
+  console.log(paymentIntent);
 
+  console.log("Bad debugging paymentStatus: " + paymentStatus);
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
@@ -764,16 +822,174 @@ app.post("/verifyPayment", async (req, res) => {
     values = [paymentStatus, paymentIntentId, paymentStatus];
 
     try {
-      const [results] = await pool.query(query, values);
+      const [verifyPaymentResults] = await pool.query(query, values);
+      console.log("verifyPayment results");
+      console.log(verifyPaymentResults);
 
-      //TODO here to send to Azure
-      // Don't send to myself yet, more work to do.
-      //res.send({ paymentStatus: paymentStatus });
+      //Send order details to Azure
+      if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
+        console.log("Bad debugging 1");
+        query = `
+        SELECT * FROM customer 
+        WHERE customerKey = (
+            SELECT customerKey 
+            FROM purchase 
+            WHERE paymentIntentId = ?)`;
+        values = [paymentIntentId];
+
+        const [customerResults] = await pool.query(query, values);
+
+        // If no results, the user isn't found
+        if (customerResults.length === 0) {
+          console.log("Thrown out at customerResults.length === 0");
+          return null; // TODO throw an error
+        }
+        const customer = customerResults[0];
+        console.log("Bad debugging 2");
+
+        query = `SELECT * FROM product`;
+        values = [];
+
+        const [productResults] = await pool.query(query, values);
+
+        // If no results, the purchase isn't found
+        if (productResults.length === 0) {
+          console.log("Thrown out at productResults.length === 0");
+          return null; // TODO throw an error
+        }
+    
+        const products = productResults;
+        console.log("Bad debugging 3");
+
+        query = `
+          SELECT * FROM purchase 
+          WHERE paymentIntentId = ?`;
+        values = [paymentIntentId];
+
+        const [purchaseResults] = await pool.query(query, values);
+
+        // If no results, the purchase isn't found
+        if (purchaseResults.length === 0) {
+          console.log("Thrown out at purchaseResults.length === 0");
+          return null; // TODO throw an error
+        }
+    
+        const purchase = purchaseResults[0];
+        console.log("Bad debugging 4");
+
+        // TODO this pulls the default address
+        query = `
+          SELECT * FROM address 
+          WHERE customerKey = ? ORDER BY defaultAddress DESC`;
+        values = [customer.customerKey];
+
+        const [addressResults] = await pool.query(query, values);
+
+        // If no results, the user isn't found
+        if (addressResults.length === 0) {
+          console.log("Thrown out at addressResults.length === 0");
+          console.log("Query:")
+          console.log(query)
+          console.log("values:")
+          console.log(values)
+          return null; // TODO throw an error
+        }
+    
+        // If a token exists, the user is authenticated
+        const address = addressResults[0];
+        console.log("Bad debugging 5");
+
+        query = `
+          SELECT * FROM lineItem 
+          WHERE purchaseKey = ?`;
+        values = [purchase.purchaseKey];
+
+        const [lineItemResults] = await pool.query(query, values);
+
+        // If no results, the purchase isn't found
+        if (lineItemResults.length === 0) {
+          console.log("Thrown out at lineItemResults.length === 0");
+          return null; // TODO throw an error
+        }
+    
+        console.log("lineItemResults");
+        console.log(lineItemResults);
+        console.log("products");
+        console.log(products);
+
+        const lineItems = lineItemResults.map(lineItem => {
+          const product = products.find(product => {return lineItem.productKey === product.productKey});
+          return({
+            "chumon_meisai_no": lineItem.lineItemKey,
+            "shohin_code": product?.id,
+            "shohin_name": product?.title,
+            "suryo": lineItem.quantity,
+            "tanka": Number(lineItem.unitPrice),
+            "kingaku": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
+            "soryo": 0,
+            "zei_ritsu": Number(lineItem.taxRate) * 100,
+            "gokei_kingaku": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate)) * lineItem.quantity)
+          })
+        });
+
+        console.log("Bad debugging 6");
+
+        const shippingDetails = lineItemResults.map(lineItem => {
+          const product = products.find(product => {return lineItem.productKey === product.productKey});
+          return ({
+            "haiso_meisai_no": 12,
+            "shohin_code": product?.id,
+            "shohin_name": product?.title,
+            "suryo": lineItem.quantity,
+            "chumon_meisai_no": lineItem.lineItemKey
+          })
+        })
+  
+        console.log("Bad debugging 7");
+
+        const backupData = {
+          "chumon_no": "NVP-" + purchase.purchaseKey,
+          "chumon_date": formatDate(purchase.purchaseTime),
+          "konyu_name": `${customer.lastName}, ${customer.firstName}`,
+          "nebiki": 0,
+          "soryo": 0,
+          "zei1": Math.round(purchase.amount * (1/1.1)),
+          "zei_ritsu1": 10,
+          "zei2": 0,
+          "zei_ritsu2": 0,
+          "zei3": 0,
+          "zei_ritsu3": 0,
+          "konyu_mail_address": customer.email,
+          "touroku_kbn": 0,
+          "chumon_meisai": lineItems, // This is an array
+          "haiso": [
+            {
+              "shuka_date": formatDate(purchase.purchaseTime),
+              "haiso_name": address.firstName,
+              "haiso_post_code": address.postalCode,
+              "haiso_pref_code": address.prefCode,
+              "haiso_pref": address.pref,
+              "haiso_city": address.city,
+              "haiso_address1": address.ward,
+              "haiso_address2": address.address2,
+              "haiso_renrakusaki": `${address.lastName}, ${address.firstName}`,
+              "haiso_meisai": shippingDetails // This is an array
+            }
+          ]
+        }
+        console.log("backupData");
+        console.dir(backupData, { depth: null });
+        const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
+        console.log("backupResults");
+        console.log(backupResults);
+      } // Only runs on "succeeded"
     } catch (error) {
       console.error('Error updating payment: ', error);
-      res.status(500).send('Error updating payment: ' + error);
+      return res.status(500).send('Error updating payment: ' + error);
     }
   }
+
+  console.log("Bad debugging 8");
 
   query = `SELECT customerKey FROM purchase WHERE paymentIntentId = ?;`
   values = [paymentIntentId];
@@ -782,29 +998,33 @@ app.post("/verifyPayment", async (req, res) => {
   try {
     const [results] = await pool.query(query, values);
 
+    console.log("Bad debugging 9");
     if (results.length === 0) {
       console.error('Error finding customer key after payment verification: ', error);
-      res.status(500).send('Error finding customer key after payment verification: ' + error);
+      return res.status(500).send('Error finding customer key after payment verification: ' + error);
     }
 
     customerKey = results[0].customerKey;
+    console.log("Bad debugging 10");
 
   } catch (error) {
     console.error('Error pulling customer data after payment verification: ', error);
-    res.status(500).send('Error pulling customer data after payment verification: ' + error);
+    return res.status(500).send('Error pulling customer data after payment verification: ' + error);
   }
 
+  console.log("Bad debugging 11");
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
   const [results] = await pool.query(query, values);
 
   if (results.length === 0) {
     console.error('Error pulling customer data with key after payment verification: ', error);
-    res.status(500).send('Error pulling customer data with key after payment verification: ' + error);
+    return res.status(500).send('Error pulling customer data with key after payment verification: ' + error);
   }
 
   const customer = results[0];
 
+  console.log("Bad debugging 12");
   // Pull customer's cart
   const cartData = await GetCartDataFromCustomerKey(customerKey);
   customer.cart = { lines: cartData };
@@ -820,7 +1040,8 @@ app.post("/verifyPayment", async (req, res) => {
   // Remove sensitive data before sending the customer object
   delete customer.password_hash;
 
-  res.json({customerData: customer, paymentStatus: paymentStatus});
+  console.log("Bad debugging 13");
+  return res.json({customerData: customer, paymentStatus: paymentStatus});
 });
 //#endregion Stripe
 
@@ -835,5 +1056,15 @@ function CurrentTime() {
   return `${current.getFullYear()}/${String(current.getMonth() + 1).padStart(2, '0')}/${String(current.getDate()).padStart(2, '0')} ${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}:${String(current.getSeconds()).padStart(2, '0')}`;
 }
 
+function formatDate(dateString) {
+  const date = new Date(dateString);
+
+  // Format the date components to be in YYYY-MM-DD
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Add 1 because months are 0-indexed
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });
