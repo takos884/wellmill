@@ -38,6 +38,8 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
     address.addressKey === selectedAddressKey;
   });
 
+  //console.log(address); // undefined when there's no address
+
 
   // Set payment message pulled from Stripe
   useEffect(() => {
@@ -62,7 +64,16 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
     // Stripe.js hasn't yet loaded. Disable form submission until Stripe.js has loaded.
     if (!stripe || !elements) { return; }
 
+    // Already doing a purchase
+    if(isLoading) { return; }
+
+    if(!address) {
+      setMessage("住所を入力してください。");
+      return;
+    }
+
     setIsLoading(true);
+    setMessage(null);
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -91,6 +102,18 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
   const paymentElementOptions: StripePaymentElementOptions = {
     layout: "tabs"
   }
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'loading-cursor-style';
+    style.textContent = 'body { cursor: wait; }';
+    if (isLoading) {
+      document.head.appendChild(style);
+    } else {
+      const existingStyleTag = document.getElementById('loading-cursor-style');
+      if (existingStyleTag) { existingStyleTag.remove(); }
+    }
+  }, [isLoading]);
 
   const headings = (
     <div className={styles.headings}>
@@ -128,16 +151,16 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
       <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
       <div className={styles.checkoutTotal}><span>Tax (included):</span><span>{ToYen(cart.includedTax)}</span></div>
       <div className={styles.checkoutTotal}><span>Shipping:</span><span>{ToYen(0)}</span></div>
-      <div className={styles.checkoutTotal}><span>Total:</span><span>{ToYen(cart.cost)}</span></div>
+      <div className={styles.checkoutTotal}><span style={{fontWeight: "bold"}}>Total:</span><span>{ToYen(cart.cost)}</span></div>
     </div>
   ) : null;
 
 
 
   const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
+  const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>この住所を編集する</span>;
   const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>住所を編集する</span> : null;
-  const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>住所を作成する</span>;
-  //const changeButton = addressKey ? <span className={styles.addressAction} onClick={() => {  }}>別の住所を選択する</span> : null;
+  const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} onClick={() => {  }}>別の住所を選択する</span> : null;
   //const addressOptions = addresses.map(address => {return (<option></option>)});
   //const addressSelect = (<select></select>)
   const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;
@@ -148,7 +171,9 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
       <span>〒{address.postalCode?.toString().slice(0,3)}-{address.postalCode?.toString().slice(3,7)}</span>
       <span>{prefectureName} {address.city}</span>
       <span>{address.ward} {address.address2}</span>
-      <div className={styles.addressActions}>{editButton}</div>
+      <div className={styles.addressActions}></div>
+      {editButton}
+      {changeButton}
     </div>
   ) : (
     <div className={styles.addressCard} style={{alignItems: "center"}}>
@@ -171,10 +196,10 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
                 <PaymentElement id="payment-element" options={paymentElementOptions} />
                 <button disabled={isLoading || !stripe || !elements} id="submit">
                   <span id="button-text">
-                    {isLoading ? <div className="spinner" id="spinner"></div> : "今すぐ払う"}
+                    {isLoading ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
                   </span>
                 </button>
-                {message && <div id="payment-message">{message}</div>}
+                {message && <div id="payment-message" className={styles.paymentMessage}>{message}</div>}
               </form>
               <div className={styles.checkoutFormProducts}>
                 {checkoutLines}

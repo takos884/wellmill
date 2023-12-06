@@ -298,7 +298,9 @@ export const useUserData = () => {
       }
 
       // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
-      APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
+      if(APIResponse?.data?.customerData?.cart?.lines) {
+        APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
+      }
 
       UpdateUser(APIResponse.data.customerData);
       return null;
