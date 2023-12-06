@@ -185,7 +185,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
     <div className={styles.newAddressWrapper} onClick={HideNewAddress}>
       <div className={styles.newAddressContent}>
         <span className={styles.newAddressX} onClick={() => { setShowNewAddress(false); }}>✖</span>
-        <span className="topHeader">新しい住所を追加</span>
+        <span className="topHeader">{addressKey === null ? "新しい住所を追加" : "住所を編集する"}</span>
         <form className={styles.newAddressForm}>
           <div>
             <span className={styles.subheader}>名前を入力してください<span className={styles.red}>必須</span></span>
@@ -234,7 +234,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
             </label>
           </div>
 
-          <button className={styles.newAddress} onClick={sendAddress}>住所を追加する</button>
+          <button className={styles.newAddress} onClick={sendAddress}>{addressKey === null ? "住所を追加する" : "住所を保存する"}</button>
           <span className={styles.cancelNewAddress} onClick={() => { setShowNewAddress(false); }}>キャンセルする</span>
         </form>
       </div>
