@@ -151,7 +151,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
       <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
       <div className={styles.checkoutTotal}><span>Tax (included):</span><span>{ToYen(cart.includedTax)}</span></div>
       <div className={styles.checkoutTotal}><span>Shipping:</span><span>{ToYen(0)}</span></div>
-      <div className={styles.checkoutTotal}><span style={{fontWeight: "bold"}}>Total:</span><span>{ToYen(cart.cost)}</span></div>
+      <div className={styles.checkoutTotal} style={{fontWeight: "bold"}}><span>Total:</span><span>{ToYen(cart.cost)}</span></div>
     </div>
   ) : null;
 
@@ -160,7 +160,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
   const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
   const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>この住所を編集する</span>;
   const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>住所を編集する</span> : null;
-  const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} onClick={() => {  }}>別の住所を選択する</span> : null;
+  const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} style={{background: "#888"}} onClick={() => {  }}>別の住所を選択する</span> : null;
   //const addressOptions = addresses.map(address => {return (<option></option>)});
   //const addressSelect = (<select></select>)
   const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;

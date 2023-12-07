@@ -151,7 +151,7 @@ function Signup() {
       if(!userData.code || !userData.lastName || !userData.firstName) { return; }
 
       const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
-      backupCustomerData(userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, getFormattedDate());
+      backupCustomerData(userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, userData.birthday || "");
 
       setTimeout(() => { navigate('/account'); }, 500);
     }

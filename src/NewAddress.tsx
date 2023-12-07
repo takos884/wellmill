@@ -79,9 +79,9 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
         const result = data.results[0];
         //console.log(result);
 
-        if (result.prefcode) { setAddress( (previousAddress: Address) => ({ ...previousAddress, pref: result.prefcode }) ); }
-        if (result.address2) { setAddress( (previousAddress: Address) => ({ ...previousAddress, city: result.address2 }) ); }
-        if (result.address3) { setAddress( (previousAddress: Address) => ({ ...previousAddress, ward: result.address3 }) ); }
+        if (result.prefcode) { setAddress( (previousAddress: Address) => ({ ...previousAddress, prefCode: result.prefcode }) ); }
+        if (result.address2) { setAddress( (previousAddress: Address) => ({ ...previousAddress, city:     result.address2 }) ); }
+        if (result.address3) { setAddress( (previousAddress: Address) => ({ ...previousAddress, ward:     result.address3 }) ); }
 
       } else {
         // Handle invalid response or no results
@@ -201,7 +201,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
             <span className={styles.inputLabel}>郵便番号</span>
           </div>
           <div className={styles.labeledInput}>
-            <select className={fetchingAddress ? styles.shimmering : ""} value={address?.pref || ""} onChange={(e) => handleAddressChange("pref", e.target.value)}>
+            <select className={fetchingAddress ? styles.shimmering : ""} value={address?.prefCode || ""} onChange={(e) => handleAddressChange("prefCode", e.target.value)}>
               <option value="" disabled selected></option>
               {prefectures.map((prefecture) => (
                 <option key={prefecture.code} value={prefecture.code}>

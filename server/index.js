@@ -38,7 +38,55 @@ let products = {};
 // used as a pair to run MySQL queries
 let query, values;
 
-
+const prefectureNames = [
+  {code: 1 , name:"北海道"},
+  {code: 2 , name:"青森県"},
+  {code: 3 , name:"岩手県"},
+  {code: 4 , name:"宮城県"},
+  {code: 5 , name:"秋田県"},
+  {code: 6 , name:"山形県"},
+  {code: 7 , name:"福島県"},
+  {code: 8 , name:"茨城県"},
+  {code: 9 , name:"栃木県"},
+  {code: 10, name:"群馬県"},
+  {code: 11, name:"埼玉県"},
+  {code: 12, name:"千葉県"},
+  {code: 13, name:"東京都"},
+  {code: 14, name:"神奈川県"},
+  {code: 15, name:"新潟県"},
+  {code: 16, name:"富山県"},
+  {code: 17, name:"石川県"},
+  {code: 18, name:"福井県"},
+  {code: 19, name:"山梨県"},
+  {code: 20, name:"長野県"},
+  {code: 21, name:"岐阜県"},
+  {code: 22, name:"静岡県"},
+  {code: 23, name:"愛知県"},
+  {code: 24, name:"三重県"},
+  {code: 25, name:"滋賀県"},
+  {code: 26, name:"京都府"},
+  {code: 27, name:"大阪府"},
+  {code: 28, name:"兵庫県"},
+  {code: 29, name:"奈良県"},
+  {code: 30, name:"和歌山県"},
+  {code: 31, name:"鳥取県"},
+  {code: 32, name:"島根県"},
+  {code: 33, name:"岡山県"},
+  {code: 34, name:"広島県"},
+  {code: 35, name:"山口県"},
+  {code: 36, name:"徳島県"},
+  {code: 37, name:"香川県"},
+  {code: 38, name:"愛媛県"},
+  {code: 39, name:"高知県"},
+  {code: 40, name:"福岡県"},
+  {code: 41, name:"佐賀県"},
+  {code: 42, name:"長崎県"},
+  {code: 43, name:"熊本県"},
+  {code: 44, name:"大分県"},
+  {code: 45, name:"宮崎県"},
+  {code: 46, name:"鹿児島県"},
+  {code: 47, name:"沖縄県"},
+]
 
 async function fetchProducts() {
   console.log("░▒▓█ Hit fetchProducts. Time: " + CurrentTime());
@@ -108,21 +156,31 @@ app.post('/createUser', async (req, res) => {
     console.log(req.body);
 
     const userData = req.body.data;
-    let firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
-    let lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
-    let firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
-    let lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
-    let email = userData.email?.replace(/[^\w.@-]/g, '');
-    let password = userData.password?.replace(/[^\x20-\x7E]/g, '');
+    const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    const lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    const email = userData.email?.replace(/[^\w.@-]/g, '');
+    const password = userData.password?.replace(/[^\x20-\x7E]/g, '');
+
+    let birthday = null;
+    const birthdayObject = new Date(userData.birthday.replace(/[^\w\-:\/]/g, ''));
+    if (!isNaN(birthdayObject.getTime())) {
+      const year = birthdayObject.getFullYear();
+      const month = (birthdayObject.getMonth() + 1).toString().padStart(2, '0');
+      const day = birthdayObject.getDate().toString().padStart(2, '0');
+      birthday = `${year}-${month}-${day}`;
+    }
+
 
     const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
   
     const token = crypto.randomBytes(48).toString('hex');
 
     query = `
-      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, email, passwordHash, token)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    values = [firstName, lastName, firstNameKana, lastNameKana, email, hashedPassword, token];
+      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, birthday, email, passwordHash, token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    values = [firstName, lastName, firstNameKana, lastNameKana, birthday, email, hashedPassword, token];
 
   try {
     const [results] = await pool.query(query, values);
@@ -153,8 +211,8 @@ app.post('/addAddress', async (req, res) => {
   const firstName =   SanitizeInput(addressData.firstName);
   const lastName =    SanitizeInput(addressData.lastName);
   const postalCode =  SanitizeInput(addressData.postalCode);
-  const prefCode =    SanitizeInput(addressData.prefCode);
-  const pref =        SanitizeInput(addressData.pref);
+  const prefCode =    parseInt(SanitizeInput(addressData.prefCode));
+  const pref =        prefectureNames.find(prefectureName => {return prefectureName.code === prefCode}).name;
   const city =        SanitizeInput(addressData.city);
   const ward =        SanitizeInput(addressData.ward);
   const address2 =    SanitizeInput(addressData.address2);
@@ -909,6 +967,7 @@ app.post("/verifyPayment", async (req, res) => {
         // If no results, the purchase isn't found
         if (lineItemResults.length === 0) {
           console.log("Thrown out at lineItemResults.length === 0");
+          console.log(`purchase.purchaseKey: ${purchase.purchaseKey}`);
           return null; // TODO throw an error
         }
     
@@ -950,7 +1009,7 @@ app.post("/verifyPayment", async (req, res) => {
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
           "chumon_date": formatDate(purchase.purchaseTime),
-          "konyu_name": `${customer.lastName}, ${customer.firstName}`,
+          "konyu_name": `${customer.lastName} ${customer.firstName}`,
           "nebiki": 0,
           "soryo": 0,
           "zei1": Math.round(purchase.amount * (1/1.1)),
@@ -965,14 +1024,14 @@ app.post("/verifyPayment", async (req, res) => {
           "haiso": [
             {
               "shuka_date": formatDate(purchase.purchaseTime),
-              "haiso_name": address.firstName,
+              "haiso_name": `${address.lastName} ${address.firstName}`,
               "haiso_post_code": address.postalCode,
               "haiso_pref_code": address.prefCode,
               "haiso_pref": address.pref,
               "haiso_city": address.city,
               "haiso_address1": address.ward,
               "haiso_address2": address.address2,
-              "haiso_renrakusaki": `${address.lastName}, ${address.firstName}`,
+              "haiso_renrakusaki": `${address.lastName} ${address.firstName}`,
               "haiso_meisai": shippingDetails // This is an array
             }
           ]
@@ -1068,3 +1127,4 @@ function formatDate(dateString) {
 }
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });
+
