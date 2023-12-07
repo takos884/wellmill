@@ -20,7 +20,6 @@ function SampleRegistration() {
   const {user} = useUserData();
   const [researchAgreement, setResearchAgreement] = useState(true);
   const [kentaiId, setKentaiId] = useState('W2023022001000');
-  const [kaiinCode, setKaiinCode] = useState('77777');
   const [kentaiSaishubi, setKentaiSaishubi] = useState(getFormattedDate());
 
   // sad to use 'any', but I don't know what the server will return
@@ -41,7 +40,8 @@ function SampleRegistration() {
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    backupSampleData(kentaiId, kaiinCode, kentaiSaishubi);
+    if(!user || !user?.customerKey) { console.log(`Unknown user: ${user} or user code: ${user?.customerKey}, can't submit.`); return; }
+    backupSampleData(kentaiId, "NV" + user.customerKey, kentaiSaishubi);
   }
 
   function ToggleResearchAgreement() { setResearchAgreement(prev => { return !prev;}) }

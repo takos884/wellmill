@@ -157,23 +157,6 @@ function Signup() {
     }
   }
 
-  function getFormattedDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    // Add 1 because getMonth() returns month from 0-11
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
-
-    // Pad the month and day with a leading zero if they are less than 10
-    const formattedMonth = month < 10 ? `0${month}` : month;
-    const formattedDay = day < 10 ? `0${day}` : day;
-
-    // Format the date in YYYY年MM月DD日 format
-    //return `${year}年${formattedMonth}月${formattedDay}日`;
-    return `${year}/${formattedMonth}/${formattedDay}`;
-  }
-
-
   const genderRadio = (
     <div className={styles.genderOptions}>
       <label>

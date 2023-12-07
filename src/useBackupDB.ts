@@ -7,7 +7,7 @@ export const useBackupDB = <T extends unknown>() => {
   const [error, setError] = useState<string | null>(null);
 
 
-  const postBackupData = async (body: string) => {
+  async function postBackupData(body: string) {
     const requestContent = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,6 +26,7 @@ export const useBackupDB = <T extends unknown>() => {
 
       const result: T = await response.json();
       setData(result);
+      return result;
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -35,10 +36,12 @@ export const useBackupDB = <T extends unknown>() => {
     }
   };
 
-  const backupSampleData = (kentai_id: string, kaiin_code: string, kentai_saishubi: string) => {
+  async function backupSampleData(kentai_id: string, kaiin_code: string, kentai_saishubi: string) {
     const endpoint = "kentai_id_check_api";
     const body = JSON.stringify({endpoint, inputData: {kentai_id, kaiin_code, kentai_saishubi }});
-    postBackupData(body);
+    const sampleBackupResult = await postBackupData(body);
+    //console.log("Result from sample data backup:")
+    //console.log(sampleBackupResult);
   };
 
   const backupCustomerData = (
