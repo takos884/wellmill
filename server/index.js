@@ -811,8 +811,12 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
 
-  const { user, cartLines } = req.body;
+  const customerKey = parseInt(req.body.customerKey);
+  if(isNaN(customerKey)) { return res.status(400).send('customerKey must be a valid integer'); }
+  
+  const cartLines = req.body.cartLines;
   const purchaseTotal = calculateOrderAmount(cartLines);
+  if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
 
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
@@ -827,7 +831,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   query = `
     INSERT INTO purchase (customerKey, paymentIntentId, amount)
     VALUES (?, ?, ?)`;
-  values = [user.customerKey, paymentIntent.id, paymentIntent.amount];
+  values = [customerKey, paymentIntent.id, paymentIntent.amount];
 
   let purchaseInsertId;
   try {
@@ -851,8 +855,8 @@ app.post("/createPaymentIntent", async (req, res) => {
     //console.log("Results after saving purchase in MySQL:");
     //console.log(results);
   } catch (error) {
-    console.error('Error creating user: ', error);
-    res.status(500).send('Error creating user: ' + error);
+    console.error('Error updating line items after making payment intent: ', error);
+    res.status(500).send('Error updating line items after making payment intent: ' + error);
   }
 
   res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
@@ -864,20 +868,26 @@ app.post("/verifyPayment", async (req, res) => {
   console.log("░▒▓█ Hit verifyPayment. Time: " + CurrentTime());
   console.log(req.body);
 
-  const { paymentIntentId, paymentIntentClientSecret } = req.body;
+  const addressKey = parseInt(req.body.addressKey);
+  if(isNaN(addressKey)) { return res.status(400).send('addressKey must be a valid integer'); }
+
+  const {paymentIntentId, paymentIntentClientSecret } = req.body;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+
   const paymentStatus = paymentIntent.status;
   console.log("paymentIntent");
   console.log(paymentIntent);
 
-  console.log("Bad debugging paymentStatus: " + paymentStatus);
+  let customerKey;
+
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
-      SET status = ?, purchaseTime = CURRENT_TIMESTAMP
+      SET status = ?, addressKey = ?, purchaseTime = CURRENT_TIMESTAMP
       WHERE paymentIntentId = ? AND status != ?`;
-    values = [paymentStatus, paymentIntentId, paymentStatus];
+    values = [paymentStatus, addressKey, paymentIntentId, paymentStatus];
 
     try {
       const [verifyPaymentResults] = await pool.query(query, values);
@@ -886,7 +896,6 @@ app.post("/verifyPayment", async (req, res) => {
 
       //Send order details to Azure
       if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
-        console.log("Bad debugging 1");
         query = `
         SELECT * FROM customer 
         WHERE customerKey = (
@@ -903,7 +912,7 @@ app.post("/verifyPayment", async (req, res) => {
           return null; // TODO throw an error
         }
         const customer = customerResults[0];
-        console.log("Bad debugging 2");
+        customerKey = customer.customerKey;
 
         query = `SELECT * FROM product`;
         values = [];
@@ -917,7 +926,6 @@ app.post("/verifyPayment", async (req, res) => {
         }
     
         const products = productResults;
-        console.log("Bad debugging 3");
 
         query = `
           SELECT * FROM purchase 
@@ -933,17 +941,19 @@ app.post("/verifyPayment", async (req, res) => {
         }
     
         const purchase = purchaseResults[0];
-        console.log("Bad debugging 4");
 
-        // TODO this pulls the default address
         query = `
           SELECT * FROM address 
-          WHERE customerKey = ? ORDER BY defaultAddress DESC`;
-        values = [customer.customerKey];
+          WHERE customerKey = ?
+          ORDER BY
+            (addressKey = ?) DESC,
+            defaultAddress DESC
+          LIMIT 1`;
+        values = [customerKey, addressKey];
 
         const [addressResults] = await pool.query(query, values);
 
-        // If no results, the user isn't found
+        // If no results, there are no addresses for this user
         if (addressResults.length === 0) {
           console.log("Thrown out at addressResults.length === 0");
           console.log("Query:")
@@ -952,10 +962,9 @@ app.post("/verifyPayment", async (req, res) => {
           console.log(values)
           return null; // TODO throw an error
         }
-    
-        // If a token exists, the user is authenticated
+
+        // If address data exists, use the top result
         const address = addressResults[0];
-        console.log("Bad debugging 5");
 
         query = `
           SELECT * FROM lineItem 
@@ -991,8 +1000,6 @@ app.post("/verifyPayment", async (req, res) => {
           })
         });
 
-        console.log("Bad debugging 6");
-
         const shippingDetails = lineItemResults.map(lineItem => {
           const product = products.find(product => {return lineItem.productKey === product.productKey});
           return ({
@@ -1004,10 +1011,9 @@ app.post("/verifyPayment", async (req, res) => {
           })
         })
   
-        console.log("Bad debugging 7");
-
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
+          "chumon_no2": "NVP-" + purchase.purchaseKey,
           "chumon_date": formatDate(purchase.purchaseTime),
           "konyu_name": `${customer.lastName} ${customer.firstName}`,
           "nebiki": 0,
@@ -1036,7 +1042,7 @@ app.post("/verifyPayment", async (req, res) => {
             }
           ]
         }
-        console.log("backupData");
+        console.log("backupData (for order)");
         console.dir(backupData, { depth: null });
         const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
         console.log("backupResults");
@@ -1048,30 +1054,6 @@ app.post("/verifyPayment", async (req, res) => {
     }
   }
 
-  console.log("Bad debugging 8");
-
-  query = `SELECT customerKey FROM purchase WHERE paymentIntentId = ?;`
-  values = [paymentIntentId];
-  let customerKey;
-
-  try {
-    const [results] = await pool.query(query, values);
-
-    console.log("Bad debugging 9");
-    if (results.length === 0) {
-      console.error('Error finding customer key after payment verification: ', error);
-      return res.status(500).send('Error finding customer key after payment verification: ' + error);
-    }
-
-    customerKey = results[0].customerKey;
-    console.log("Bad debugging 10");
-
-  } catch (error) {
-    console.error('Error pulling customer data after payment verification: ', error);
-    return res.status(500).send('Error pulling customer data after payment verification: ' + error);
-  }
-
-  console.log("Bad debugging 11");
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
   const [results] = await pool.query(query, values);
@@ -1083,7 +1065,6 @@ app.post("/verifyPayment", async (req, res) => {
 
   const customer = results[0];
 
-  console.log("Bad debugging 12");
   // Pull customer's cart
   const cartData = await GetCartDataFromCustomerKey(customerKey);
   customer.cart = { lines: cartData };
@@ -1099,7 +1080,6 @@ app.post("/verifyPayment", async (req, res) => {
   // Remove sensitive data before sending the customer object
   delete customer.password_hash;
 
-  console.log("Bad debugging 13");
   return res.json({customerData: customer, paymentStatus: paymentStatus});
 });
 //#endregion Stripe
@@ -1125,6 +1105,6 @@ function formatDate(dateString) {
 
   return `${year}-${month}-${day}`;
 }
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });
-

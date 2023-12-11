@@ -11,22 +11,22 @@ import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
 
 type CheckoutFormProps = {
-  selectedAddressKey: number | null;
-  setSelectedAddressKey: React.Dispatch<React.SetStateAction<number | null>>;
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 
-export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey, setDisplayCheckout }: CheckoutFormProps) {
+export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
   const { user, userLoading, cartLoading } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const addresses = user?.addresses || [];
+  const defaultAddressKey = addresses.find(address => {return address.defaultAddress === true})?.addressKey || null;
 
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(defaultAddressKey);
   const [showNewAddress, setShowNewAddress] = useState(false);
 
   const cart = user ? user.cart : undefined;
@@ -77,7 +77,7 @@ export default function CheckoutForm({ selectedAddressKey, setSelectedAddressKey
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: "https://cdehaan.ca/wellmill/post-purchase" },
+      confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}` },
     });
 
     // This point will only be reached if there is an immediate error when

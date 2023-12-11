@@ -16,8 +16,6 @@ const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv
 
 function Checkout({ setDisplayCheckout }: CheckoutProps) {
   const { user, userLoading, cartLoading } = useUserData();
-
-  const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(null);
   const [clientSecret, setClientSecret] = useState("");
 
   function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -41,16 +39,16 @@ function Checkout({ setDisplayCheckout }: CheckoutProps) {
     fetch("https://cdehaan.ca/wellmill/api/createPaymentIntent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: user, addressKey: selectedAddressKey, cartLines: cartLines }),
+      body: JSON.stringify({ customerKey: user?.customerKey, cartLines: cartLines }),
     })
       .then((response) => response.json())
       .then((data) => setClientSecret(data.clientSecret));  
-  }, [user, selectedAddressKey]);
+  }, [user]);
 
   const StripeElements = clientSecret ? (
     <Elements options={options} stripe={stripePromise}>
       <div className={styles.checkoutWrapper} onClick={hideCheckout}>
-        <CheckoutForm selectedAddressKey={selectedAddressKey} setSelectedAddressKey={setSelectedAddressKey} setDisplayCheckout={setDisplayCheckout}/>
+        <CheckoutForm setDisplayCheckout={setDisplayCheckout}/>
       </div>
     </Elements>) : null;
 

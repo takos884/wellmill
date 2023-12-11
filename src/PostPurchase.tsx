@@ -22,6 +22,7 @@ export default function PostPurchase() {
   const paymentIntentId = params.get("payment_intent");
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
   const redirectStatus = params.get("redirect_status");
+  const addressKey = params.get("ak");
 
   const header = (redirectStatus === "succeeded") ? <span>Purchase Complete!</span> : <span>There was an error</span>
 
@@ -29,7 +30,7 @@ export default function PostPurchase() {
     fetch("https://cdehaan.ca/wellmill/api/verifyPayment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }),
+      body: JSON.stringify({ addressKey: addressKey, paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }),
     })
       .then((response) => response.json())
       .then((data) => {
