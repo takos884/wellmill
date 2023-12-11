@@ -9,6 +9,7 @@ import { useProducts } from "./ProductContext";
 import { prefectures } from "./addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
+import { Address } from "./types";
 
 type CheckoutFormProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
@@ -21,7 +22,12 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
 
   const { user, userLoading, cartLoading } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
-  const addresses = user?.addresses || [];
+  const addresses = (user?.addresses || []).sort((a, b) => {
+    if (a.defaultAddress) return -1;
+    if (b.defaultAddress) return 1;
+    return 0;
+  });
+
   const defaultAddressKey = addresses.find(address => {return address.defaultAddress === true})?.addressKey || null;
 
   const [message, setMessage] = useState<string | null>(null);
@@ -66,6 +72,11 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
 
     // Already doing a purchase
     if(isLoading) { return; }
+
+    if(addressKey === null) {
+      setMessage("住所を入力してください。");
+      return;
+    }
 
     if(!address) {
       setMessage("住所を入力してください。");
@@ -158,23 +169,36 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
 
 
   const addressKey = (address?.addressKey !== undefined) ? address.addressKey : null;
-  const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>この住所を編集する</span>;
-  const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>住所を編集する</span> : null;
-  const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} style={{background: "#888"}} onClick={() => {  }}>別の住所を選択する</span> : null;
+  const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>住所を作成する</span>;
+  const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>この住所を編集する</span> : null;
+  const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} onClick={() => { setSelectedAddressKey(null); }}>別の住所を選択する</span> : null;
   //const addressOptions = addresses.map(address => {return (<option></option>)});
   //const addressSelect = (<select></select>)
   const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;
 
-  const addressCard = (address) ? (
-    <div className={styles.addressCard}>
-      <span>{address.lastName} {address.firstName}</span>
-      <span>〒{address.postalCode?.toString().slice(0,3)}-{address.postalCode?.toString().slice(3,7)}</span>
-      <span>{prefectureName} {address.city}</span>
-      <span>{address.ward} {address.address2}</span>
-      <div className={styles.addressActions}></div>
-      {editButton}
-      {changeButton}
-    </div>
+  function generateAddressCard(addressKey: number) {
+    if(!addressKey) return null;
+    const currentAddress = addresses.find(address => {return address.addressKey === addressKey})
+    if(!currentAddress) return null;
+
+    return (
+      <div className={styles.addressCard}>
+        <span>{currentAddress.lastName} {currentAddress.firstName}</span>
+        <span>〒{currentAddress.postalCode?.toString().slice(0,3)}-{currentAddress.postalCode?.toString().slice(3,7)}</span>
+        <span>{prefectureName} {currentAddress.city}</span>
+        <span>{currentAddress.ward} {currentAddress.address2}</span>
+      </div>
+    )
+  }
+
+  const addressCard = (selectedAddressKey) ? (
+    <>
+      {generateAddressCard(selectedAddressKey)}
+      <div className={styles.addressActions}>
+        {editButton}
+        {changeButton}
+      </div>
+    </>
   ) : (
     <div className={styles.addressCard} style={{alignItems: "center"}}>
       <span>住所が見つかりません。</span>
@@ -183,9 +207,27 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     </div>
   );
 
+  const addressCards = addresses.map((address, index) => {
+    if(!address?.addressKey) return null;
+    if(address.defaultAddress) {
+      return (<div key={index} onClick={() => {setSelectedAddressKey(address.addressKey || null)}}><span className={styles.defaultAddressHeader}>デフォルトの住所</span><div className={styles.clickableAddress}>{generateAddressCard(address.addressKey)}</div></div>)
+    }
+    return (<div key={index} onClick={() => {setSelectedAddressKey(address.addressKey || null)}}><div className={styles.clickableAddress}>{generateAddressCard(address.addressKey)}</div></div>)
+  });
+
+  const selectAddressModal = (
+    <div className={styles.selectAddressModal}>
+      <div className={styles.selectAddressContent}>
+        <span className={styles.selectAddressHeader}>住所を選択してください</span>
+        {addressCards}
+      </div>
+    </div>
+  );
+
   return (
     <>
       {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
+      {selectedAddressKey === null && selectAddressModal}
       <div className={styles.checkoutModal}>
         <span className={styles.checkoutX} onClick={() => { setDisplayCheckout(false); }}>✖</span>
           <div className={styles.checkoutFormWrapper}>
@@ -203,8 +245,10 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
               </form>
               <div className={styles.checkoutFormProducts}>
                 {checkoutLines}
-                {checkoutTotals}
-                {addressCard}
+                <div className={styles.checkoutSummary}>
+                  {checkoutTotals}
+                  {addressCard}
+                </div>
               </div>
             </div>
           </div>
