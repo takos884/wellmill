@@ -154,14 +154,20 @@ fetchProducts();
 app.post('/createUser', async (req, res) => {
     console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
     console.log(req.body);
-
     const userData = req.body.data;
+
     const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
-    const email = userData.email?.replace(/[^\w.@-]/g, '');
-    const password = userData.password?.replace(/[^\x20-\x7E]/g, '');
+
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if(!userData.email || !emailRegex.test(userData.email)) { return res.status(400).send('Missing or malformed email'); }
+    const email = userData.email;
+
+    const passwordRegex = /^[\x20-\x7E]{8,}$/;
+    if(!userData.password || !passwordRegex.test(userData.password)) { return res.status(400).send('Missing or malformed password'); }
+    const password = userData.password;
 
     let birthday = null;
     const birthdayObject = new Date(userData.birthday.replace(/[^\w\-:\/]/g, ''));
@@ -190,16 +196,23 @@ app.post('/createUser', async (req, res) => {
     const code = "NV" + results.insertId;
 
     console.log(`Created user with token: ${token} and code: ${code}`);
-    res.json({ token: token, code: code });
+    return res.json({ token: token, code: code });
   } catch (error) {
     console.error('Error creating user:', error);
-    res.status(500).send('Error creating user: ' + error);
+    return res.status(500).send('Error creating user: ' + error);
   }
 });
 
 app.post('/addAddress', async (req, res) => {
   console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
   console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in addAddress: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
   const addressData = req.body.data;
 
   // addressKey can be passed in, when requesting an edit, or given by MySQL for a new address
@@ -217,13 +230,12 @@ app.post('/addAddress', async (req, res) => {
   const ward =        SanitizeInput(addressData.ward);
   const address2 =    SanitizeInput(addressData.address2);
   const phoneNumber = SanitizeInput(addressData.phoneNumber);
-  const customerKey = Number(addressData.customerKey);
 
   // This can be changed later if needed
   let defaultAddress = (addressData.defaultAddress ? "1" : "0");
 
   if (!Number.isInteger(customerKey) || customerKey <= 0 || customerKey >= 2147483647) {
-    res.status(400).send('Malformed customerKey: ' + customerKey);
+    return res.status(400).send('Malformed customerKey: ' + customerKey);
   }
 
 
@@ -234,21 +246,21 @@ app.post('/addAddress', async (req, res) => {
   query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ? AND (? IS NULL OR addressKey <> ?)";
   try {
     const [defaultsCount] = await pool.query(query, [customerKey, addressKey, addressKey]);
-    if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = true; }
+    if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = "1"; }
   } catch(error) {
     console.error('Error counting address defaults:', error);
-    res.status(500).send('Error counting address defaults: ' + error);  
+    return res.status(500).send('Error counting address defaults: ' + error);  
   }
 
 
   // If this address wants to be the default, all others must not be default
-  if(defaultAddress) {
+  if(defaultAddress === "1") {
     query = "UPDATE address SET defaultAddress = 0 WHERE customerKey = ?;"
     try {
       await pool.query(query, [customerKey]);
     } catch(error) {
       console.error('Error updating old address defaults:', error);
-      res.status(500).send('Error updating old address defaults: ' + error);  
+      return res.status(500).send('Error updating old address defaults: ' + error);  
     }
   }
 
@@ -276,30 +288,35 @@ app.post('/addAddress', async (req, res) => {
     //console.log('Generated Address Key:', addressKey);
   } catch (error) {
     console.error(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
-    res.status(500).send(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
+    return res.status(500).send(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
   }
 
   const freshAddresses = await PullFreshAddresses(customerKey)
-  res.json({ addresses: freshAddresses });
+  return res.json({ addresses: freshAddresses });
 });
 
 app.post('/deleteAddress', async (req, res) => {
   console.log("░▒▓█ Hit deleteAddress. Time: " + CurrentTime());
   console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in deleteAddress: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
   const addressData = req.body.data;
+  if(!addressData) {
+    const errorMessage = "No addresses data in deleteAddress";
+    console.error(errorMessage);
+    return res.status(400).send(errorMessage);
+  }
 
   const addressKey = Number(addressData.addressKey);
   if(!addressKey) {
     const errorMessage = `Malformed addressKey in deleteAddress: ${addressKey}`;
     console.error(errorMessage);
-    res.status(400).send(errorMessage);
-  }
-
-  const customerKey = Number(addressData.customerKey);
-  if(!customerKey) {
-    const errorMessage = `Malformed customerKey in deleteAddress: ${customerKey}`;
-    console.error(errorMessage);
-    res.status(400).send(errorMessage);
+    return res.status(400).send(errorMessage);
   }
 
   query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
@@ -308,7 +325,7 @@ app.post('/deleteAddress', async (req, res) => {
   } catch(error) {
     const errorMessage = `Error deleting address, addressKey: ${addressKey}, customerKey: ${customerKey}`;
     console.error(errorMessage);
-    res.status(500).send(errorMessage);
+    return res.status(500).send(errorMessage);
   }
 
   let forceNewDefault = false;
@@ -318,7 +335,7 @@ app.post('/deleteAddress', async (req, res) => {
     if(defaultsCount[0]['COUNT(*)'] === 0) { forceNewDefault = true; }
   } catch(error) {
     console.error('Error counting address defaults after delete:', error);
-    res.status(500).send('Error counting address defaults after delete: ' + error);  
+    return res.status(500).send('Error counting address defaults after delete: ' + error);  
   }
 
   if(forceNewDefault) {
@@ -327,7 +344,7 @@ app.post('/deleteAddress', async (req, res) => {
   }
 
   const freshAddresses = await PullFreshAddresses(customerKey)
-  res.json({ addresses: freshAddresses });
+  return res.json({ addresses: freshAddresses });
 });
 
 async function PullFreshAddresses(customerKey) {
@@ -341,7 +358,7 @@ async function PullFreshAddresses(customerKey) {
     return addresses;
   } catch (error) {
     console.error(`Error pulling fresh addresses after updating address: ${error}`);
-    res.status(500).send(`Error pulling fresh addresses after updating address: ${error}`);
+    return res.status(500).send(`Error pulling fresh addresses after updating address: ${error}`);
   }  
 }
 
@@ -363,17 +380,18 @@ app.post('/sendEmail', async (req, res) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        res.status(200).send('Email sent successfully');
+        return res.status(200).send('Email sent successfully');
     } catch (error) {
         const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
         console.error(errorMessage);
-        res.status(500).send(errorMessage);
+        return res.status(500).send(errorMessage);
     }
 });
 
 app.post('/login', async (req, res) => {
   console.log("░▒▓█ Hit login. Time:" + CurrentTime());
   console.log(req.body);
+
   const userCredentials = req.body.data;
   const email = userCredentials.email;
   const password = userCredentials.password;
@@ -388,30 +406,24 @@ app.post('/login', async (req, res) => {
     console.log("token login");
     customerData = await GetCustomerDataFromToken(token);
   } else {
-    res.status(401).send("No customer credentials given");
+    return res.status(401).send("No customer credentials given");
   }
 
-  //console.log("Customer data:")
-  //console.log(customerData)
-
-  //const cartId = await getCartIdFromCustomerId(customerData.id, customerData)
-  //console.log("Cart ID:")
-  //console.log(cartId)
-
-  //const cartData = await GetCartDataFromCartId(cartId)
-  //console.log("Cart Data:")
-  //console.log(cartData)
-
-  //customerData.customerAccessToken = customerData;
-  //customerData.cart = cartData;
-  res.json({customerData: customerData});
+  return res.json({customerData: customerData});
 });
 
 app.post('/addToCart', async (req, res) => {
   console.log("░▒▓█ Hit addToCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in addToCart: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
   const cartData = req.body.data;
-  const { productKey, customerKey, unitPrice, taxRate, quantity } = cartData;
+  const { productKey, unitPrice, taxRate, quantity } = cartData;
 
   // Sanitize input
   if (!Number.isInteger(productKey)  || productKey.toString().length > 50  ||
@@ -453,29 +465,31 @@ app.post('/addToCart', async (req, res) => {
   
     // Get updated cart data
     const updatedCart = await GetCartDataFromCustomerKey(customerKey);
-    res.json(updatedCart);
+    return res.json(updatedCart);
   } catch (error) {
     console.error('Error in addToCart:', error);
-    res.status(500).send('An error occurred');
+    return res.status(500).send('An error occurred');
   }
 });
 
 app.post('/updateCartQuantity', async (req, res) => {
   console.log("░▒▓█ Hit updateCartQuantity. Time: " + CurrentTime());
-  console.log(req.body); //
+  console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in updateCartQuantity: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
   const updateData = req.body.data;
-  const { customerKey, token, lineItemKey, quantity } = updateData;
+  const { lineItemKey, quantity } = updateData;
 
   // Sanitize input
-  if (!Number.isInteger(customerKey) || customerKey.toString().length > 50 ||
-      !/^[a-zA-Z0-9]+$/.test(token)  || token.length > 200 ||
-      !Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50 ||
+  if (!Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50 ||
       !Number.isInteger(quantity)    || quantity.toString().length > 50) {
       return res.status(400).send('Invalid input');
   }
-
-  const tokenVerification = await verifyToken(customerKey, token);
-  if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
 
   try {
     // Update line quantity in the database
@@ -484,28 +498,30 @@ app.post('/updateCartQuantity', async (req, res) => {
   
     // Get updated cart data
     const updatedCart = await GetCartDataFromCustomerKey(customerKey);
-    res.json(updatedCart);
+    return res.json(updatedCart);
   } catch (error) {
     console.error('Error in updateCartQuantity:', error);
-    res.status(500).send('An error occurred');
+    return res.status(500).send('An error occurred');
   }
 });
 
 app.post('/deleteFromCart', async (req, res) => {
   console.log("░▒▓█ Hit deleteFromCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in deleteFromCart: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
   const lineItemData = req.body.data;
-  const { customerKey, token, lineItemKey } = lineItemData;
+  const { lineItemKey } = lineItemData;
 
   // Sanitize input
-  if (!Number.isInteger(customerKey) || customerKey.toString().length > 50 ||
-      !/^[a-zA-Z0-9]+$/.test(token)  || token.length > 200 ||
-      !Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50) {
+  if (!Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50) {
       return res.status(400).send('Invalid input');
   }
-
-  const tokenVerification = await verifyToken(customerKey, token);
-  if(tokenVerification.valid === false) { return res.status(400).send('Invalid input: ' + tokenVerification.error); }
 
   try {
     // Delete line from the database
@@ -514,12 +530,11 @@ app.post('/deleteFromCart', async (req, res) => {
   
     // Get updated cart data
     const updatedCart = await GetCartDataFromCustomerKey(customerKey);
-    res.json(updatedCart);
+    return res.json(updatedCart);
   } catch (error) {
     console.error('Error in deleteFromCart:', error);
-    res.status(500).send('An error occurred');
+    return res.status(500).send('An error occurred');
   }
-
 });
 
 
@@ -565,17 +580,27 @@ app.post('/storeBackupData', async (req, res) => {
     }
 
     // Send the response from the backup server to the client
-    res.json(responseData);
+    return res.json(responseData);
 
   } catch (error) {
     // Handle any other errors
-    res.status(500).json({ message: error.message || 'An unexpected error occurred.' });
+    return res.status(500).json({ message: error.message || 'An unexpected error occurred.' });
   }
 });
 */
 
 app.post('/storeBackupData', async (req, res) => {
-  const { endpoint, inputData } = req.body;
+  console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in storeBackupData: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  const { endpoint, inputData } = req.body.data;
 
   const result = await StoreBackupData(endpoint, inputData);
 
@@ -583,7 +608,7 @@ app.post('/storeBackupData', async (req, res) => {
     return res.status(result.status).json({ message: result.message });
   }
 
-  res.json(result);
+  return res.json(result);
 });
 
 async function StoreBackupData(endpoint, inputData) {
@@ -601,6 +626,7 @@ async function StoreBackupData(endpoint, inputData) {
     // Make the POST request to the backup server
     const response = await fetch(fullEndpoint, fullFetchContent);
     const responseData = await response.json();
+    console.dir(responseData);
 
     if (!response.ok) {
       return { error: true, status: response.status, message: 'An unexpected error occurred in StoreBackupData.' };
@@ -613,21 +639,6 @@ async function StoreBackupData(endpoint, inputData) {
 }
 //#endregion Azure backup
 
-
-async function verifyToken(customerKey, token) {
-  try {
-    query = 'SELECT * FROM customer WHERE customerKey = ? AND token = ?';
-    const [results] = await pool.query(query, [customerKey, token]);
-
-    if (results.length > 0) {
-      return { valid: true, error: null };
-    } else {
-      return { valid: false, error: 'Invalid token or customer key' };
-    }
-  } catch (error) {
-    return { valid: false, error: `Verify Token error: ${error.message}` };
-  }
-}
 
 async function GetCustomerDataFromCredentials(email, password) {
   try {
@@ -810,11 +821,14 @@ const calculateOrderAmount = (cartLines) => {
 app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
 
-  const customerKey = parseInt(req.body.customerKey);
-  if(isNaN(customerKey)) { return res.status(400).send('customerKey must be a valid integer'); }
-  
-  const cartLines = req.body.cartLines;
+  const cartLines = req.body.data.cartLines;
   const purchaseTotal = calculateOrderAmount(cartLines);
   if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
 
@@ -839,7 +853,7 @@ app.post("/createPaymentIntent", async (req, res) => {
     purchaseInsertId = results.insertId;
   } catch (error) {
     console.error('Error creating user: ', error);
-    res.status(500).send('Error creating user: ' + error);
+    return res.status(500).send('Error creating user: ' + error);
   }
 
   const cartLineKeys = cartLines.map(line => line.lineItemKey);
@@ -856,22 +870,38 @@ app.post("/createPaymentIntent", async (req, res) => {
     //console.log(results);
   } catch (error) {
     console.error('Error updating line items after making payment intent: ', error);
-    res.status(500).send('Error updating line items after making payment intent: ' + error);
+    return res.status(500).send('Error updating line items after making payment intent: ' + error);
   }
 
-  res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
-
+  return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
 });
 
 
 app.post("/verifyPayment", async (req, res) => {
   console.log("░▒▓█ Hit verifyPayment. Time: " + CurrentTime());
   console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
 
-  const addressKey = parseInt(req.body.addressKey);
+  query = `SELECT * FROM customer WHERE customerKey = ?`;
+  values = [customerKey];
+  const [results] = await pool.query(query, values);
+
+  if (results.length === 0) {
+    console.error('Error pulling customer data with key before payment verification. Customer Key: ', customerKey);
+    return res.status(500).send('Error pulling customer data with key before payment verification. Customer Key: ' + customerKey);
+  }
+
+  const customer = results[0];
+
+  const addressKey = parseInt(req.body.data.addressKey);
   if(isNaN(addressKey)) { return res.status(400).send('addressKey must be a valid integer'); }
 
-  const {paymentIntentId, paymentIntentClientSecret } = req.body;
+  const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
   if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
@@ -879,8 +909,6 @@ app.post("/verifyPayment", async (req, res) => {
   const paymentStatus = paymentIntent.status;
   console.log("paymentIntent");
   console.log(paymentIntent);
-
-  let customerKey;
 
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
@@ -896,6 +924,7 @@ app.post("/verifyPayment", async (req, res) => {
 
       //Send order details to Azure
       if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
+        /*
         query = `
         SELECT * FROM customer 
         WHERE customerKey = (
@@ -913,13 +942,12 @@ app.post("/verifyPayment", async (req, res) => {
         }
         const customer = customerResults[0];
         customerKey = customer.customerKey;
+        */
 
         query = `SELECT * FROM product`;
-        values = [];
+        const [productResults] = await pool.query(query);
 
-        const [productResults] = await pool.query(query, values);
-
-        // If no results, the purchase isn't found
+        // If no results, no products found
         if (productResults.length === 0) {
           console.log("Thrown out at productResults.length === 0");
           return null; // TODO throw an error
@@ -1054,17 +1082,6 @@ app.post("/verifyPayment", async (req, res) => {
     }
   }
 
-  query = `SELECT * FROM customer WHERE customerKey = ?`;
-  values = [customerKey];
-  const [results] = await pool.query(query, values);
-
-  if (results.length === 0) {
-    console.error('Error pulling customer data with key after payment verification: ', error);
-    return res.status(500).send('Error pulling customer data with key after payment verification: ' + error);
-  }
-
-  const customer = results[0];
-
   // Pull customer's cart
   const cartData = await GetCartDataFromCustomerKey(customerKey);
   customer.cart = { lines: cartData };
@@ -1084,12 +1101,6 @@ app.post("/verifyPayment", async (req, res) => {
 });
 //#endregion Stripe
 
-
-app.use((err, req, res, next) => {
-    console.error(`[${new Date().toISOString()}] Error:`, err.stack);
-    res.status(500).send('Something broke! Time: ' + CurrentTime());
-});
-
 function CurrentTime() {
   const current = new Date();
   return `${current.getFullYear()}/${String(current.getMonth() + 1).padStart(2, '0')}/${String(current.getDate()).padStart(2, '0')} ${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}:${String(current.getSeconds()).padStart(2, '0')}`;
@@ -1105,6 +1116,53 @@ function formatDate(dateString) {
 
   return `${year}-${month}-${day}`;
 }
+
+
+async function ValidatePayload(payload) {
+  if(!payload) { return {valid: false, message: "No payload"};}
+  if(!payload.customerKey) { return {valid: false, message: "No customer Key"};}
+  const customerKey = Number(payload.customerKey)
+  if(!customerKey) { return {valid: false, message: "Malformed customer Key"};}
+
+  if(payload.token) {
+    const token = payload.token
+    const hexRegex = /^[0-9a-f]{96}$/i;
+    if(!hexRegex.test(token)) { return {valid: false, message: "Malformed token"};}
+
+    query = `SELECT * FROM customer WHERE token = ? AND customerKey = ?`;
+    const [results] = await pool.query(query, [token, customerKey]);
+    if (results.length === 0) { return {valid: false, message: "Token not found"};}
+
+    return {valid: true, message: "Valid token", customerKey: customerKey};
+  }
+
+  if(payload.email && payload.password) {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if(!emailRegex.test(payload.email)) { return {valid: false, message: "Malformed email"};}
+    const email = payload.email;
+
+    const passwordRegex = /^[\x20-\x7E]{8,}$/;
+    if(!passwordRegex.test(payload.password)) { return {valid: false, message: "Malformed password"};}
+    const password = payload.password;
+
+    const query = `SELECT * FROM customer WHERE email = ?`;
+    const [results] = await pool.query(query, [email]);
+    if (results.length === 0) { return {valid: false, message: "Email / Password incorrect"};}
+
+    const [customer] = results;
+    const match = await bcrypt.compare(password, customer.passwordHash);
+    if (!match) { return {valid: false, message: "Email / Password incorrect"};}
+
+    return {valid: true, message: "Valid email / password", customerKey: customerKey};
+  }
+
+  return {valid: false, message: "Validation data not found"};
+}
+
+app.use((err, req, res, next) => {
+    console.error(`[${new Date().toISOString()}] Error:`, err.stack);
+    return res.status(500).send('Something broke! Time: ' + CurrentTime());
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });

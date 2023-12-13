@@ -38,10 +38,11 @@ function SampleRegistration() {
     }
   };
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if(!user || !user?.customerKey) { console.log(`Unknown user: ${user} or user code: ${user?.customerKey}, can't submit.`); return; }
-    backupSampleData(kentaiId, "NV" + user.customerKey, kentaiSaishubi);
+    await backupSampleData(kentaiId, "NV" + user.customerKey, kentaiSaishubi);
+    console.log(sampleBackupData);
   }
 
   function ToggleResearchAgreement() { setResearchAgreement(prev => { return !prev;}) }

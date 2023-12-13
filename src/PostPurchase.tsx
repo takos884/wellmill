@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useUserData } from "./useUserData";
 
 import './App.css';
@@ -13,6 +13,8 @@ const breadcrumbs = [
 
 export default function PostPurchase() {
   const { user, userLoading, cartLoading, setUser } = useUserData();
+  const prevCustomerKey = useRef<number | undefined>();
+
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
   // Get params from the current URL query string
@@ -27,17 +29,21 @@ export default function PostPurchase() {
   const header = (redirectStatus === "succeeded") ? <span>Purchase Complete!</span> : <span>There was an error</span>
 
   useEffect(() => {
+    if(!user) return;
+    if(user.customerKey === prevCustomerKey.current) return;
+    prevCustomerKey.current = user.customerKey;
+
     fetch("https://cdehaan.ca/wellmill/api/verifyPayment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ addressKey: addressKey, paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }),
+      body: JSON.stringify({data: { customerKey: user.customerKey, token: user.token, addressKey: addressKey, paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }}),
     })
       .then((response) => response.json())
       .then((data) => {
         setPaymentStatus(data.paymentStatus);
         setUser(data.customerData);
       })
-  }, []);
+  }, [user, addressKey, paymentIntentId, paymentIntentClientSecret]);
 
 
   return (

@@ -39,7 +39,7 @@ function Checkout({ setDisplayCheckout }: CheckoutProps) {
     fetch("https://cdehaan.ca/wellmill/api/createPaymentIntent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerKey: user?.customerKey, cartLines: cartLines }),
+      body: JSON.stringify({data: { customerKey: user?.customerKey, token: user?.token, cartLines: cartLines }}),
     })
       .then((response) => response.json())
       .then((data) => setClientSecret(data.clientSecret));  

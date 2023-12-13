@@ -83,7 +83,7 @@ export const useUserData = () => {
   // Add can also be used to update, if an addressKey is present in the address data
   async function addAddress(address: Address) {
     setUserLoading(true);
-    const APIResponse = await CallAPI(address, "addAddress");
+    const APIResponse = await CallAPI({...address, token: user?.token}, "addAddress");
 
     // Error returned in response
     if(APIResponse.error) {
@@ -152,7 +152,7 @@ export const useUserData = () => {
 
   const addToCart = useCallback(async (productKey: number, customerKey: number, unitPrice: number, taxRate: number, quantity: number) => {
     setCartLoading(true);
-    const requestBody = {productKey: productKey, customerKey: customerKey, unitPrice: unitPrice, taxRate: taxRate, quantity: quantity};
+    const requestBody = {productKey: productKey, customerKey: customerKey, token: user?.token, unitPrice: unitPrice, taxRate: taxRate, quantity: quantity};
     //console.log("Add to cart with requestBody:");
     //console.log(requestBody);
     const APIResponse = await CallAPI(requestBody, "addToCart");

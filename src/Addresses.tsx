@@ -84,7 +84,7 @@ function Addresses() {
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>
-      <button onClick={() => {setShowNewAddress(true)}}>新しい住所を追加</button>
+      <button onClick={() => {setSelectedAddressKey(null); setShowNewAddress(true)}}>新しい住所を追加</button>
       <div className={styles.contentWrapper}>
         {addresses.length === 0 && noAddressesMessage}
         {addresses.length  >  0 && defaultAddressContent}

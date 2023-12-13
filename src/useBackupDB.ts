@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useUserData } from "./useUserData";
 
 const localEndpoint = 'https://cdehaan.ca/wellmill/api/storeBackupData';
 
 export const useBackupDB = <T extends unknown>() => {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user, userLoading, cartLoading, setUser } = useUserData();
 
 
   async function postBackupData(body: string) {
@@ -38,7 +40,8 @@ export const useBackupDB = <T extends unknown>() => {
 
   async function backupSampleData(kentai_id: string, kaiin_code: string, kentai_saishubi: string) {
     const endpoint = "kentai_id_check_api";
-    const body = JSON.stringify({endpoint, inputData: {kentai_id, kaiin_code, kentai_saishubi }});
+    //const body = JSON.stringify({endpoint, inputData: {kentai_id, kaiin_code, kentai_saishubi }});
+    const body = JSON.stringify({data: {endpoint, inputData: {kentai_id, kaiin_code, kentai_saishubi }, customerKey: user?.customerKey, token: user?.token}});
     const sampleBackupResult = await postBackupData(body);
     //console.log("Result from sample data backup:")
     //console.log(sampleBackupResult);
@@ -63,7 +66,7 @@ export const useBackupDB = <T extends unknown>() => {
     seinengappi: string,
   ) => {
     const endpoint = "kaiin_renkei_api";
-    const body = JSON.stringify({endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}});
+    const body = JSON.stringify({data: {endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}, customerKey: user?.customerKey, token: user?.token}});
     postBackupData(body);
   }
 
