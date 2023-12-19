@@ -4,16 +4,6 @@ div.productRoot {
     align-items: center;
 }
 
-div.topDots {
-    background-image: url(../public/dots_purple.svg);
-    height: 300px;
-    width: 100%;
-    position: absolute;
-    background-repeat: repeat-x;
-    z-index: -1;
-    margin-top: -25px;
-}
-
 div.overlay {
     display: flex;
     align-items: flex-start;

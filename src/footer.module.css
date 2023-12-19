@@ -6,6 +6,13 @@ div.footerGrid {
     max-width: 70rem;
     min-width: 40rem;
 }
+@media screen and (max-width: 992px) {
+    div.footerGrid {
+        grid-template-columns: 1fr;
+        min-width: unset;
+        width: unset;
+    }
+}
 
 div.imgWrapper {
     display: flex;
@@ -13,6 +20,11 @@ div.imgWrapper {
     width: 18rem;
     padding-right: 2rem;
     border-right: 1px solid #888;
+}
+@media screen and (max-width: 992px) {
+    div.imgWrapper {
+        border-right: 0;
+    }
 }
 
 img.footerImg {
@@ -26,6 +38,13 @@ span.footerLink {
     align-items: center;
     border-right: 1px solid #888;
 }
+@media screen and (max-width: 992px) {
+    span.footerLink {
+        padding-top: 1rem;
+        border-right: 0;
+    }
+}
+
 
 div.smallPrint {
     width: 90%;
@@ -36,9 +55,16 @@ div.smallPrint {
     margin: 2rem auto;
     font-size: 0.8rem;
 }
+@media screen and (max-width: 992px) {
+    div.smallPrint {
+        min-width: unset;
+    }
+}
 
 span.smallPrint {
     margin: 0 1rem;
+    white-space: nowrap;
+    color: #444;
 }
 
 div.footerBlock {

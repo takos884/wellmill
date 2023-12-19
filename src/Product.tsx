@@ -138,7 +138,7 @@ function Product() {
     return (
       <>
       <div className={styles.productRoot}>
-        <div className={styles.topDots} />
+        <div className="topDots" />
         <Header breadcrumbs={breadcrumbs} />
         {showModal && loginModal}
         {productsLoading && (<span>Loading Product...</span>)}

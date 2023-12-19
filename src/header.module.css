@@ -5,14 +5,22 @@
   align-items: center;
   border-radius: 0.75rem;
   overflow: hidden;
-  padding: 0;
   height: 4.5rem;
   background-color: #fba800;
   margin-top: 3rem;
-  margin-bottom: 1rem;
   width: 98%;
   max-width: 76rem;
   z-index: 10;
+}
+
+@media screen and (max-width: 992px) {
+  .header {
+    background-color: #ffedcc;
+    margin-top: 0;
+    width: 100%;
+    border-radius: 0;
+
+  }
 }
 
 /* How to remove the sticky header: */
@@ -28,6 +36,14 @@
   height: 100%;
 }
 
+@media screen and (max-width: 992px) {
+  .headerLogo {
+    width: 230px;
+    background-color: transparent;
+  }
+}
+
+
 .headerLogo img {
   width: 200px;
 }
@@ -38,11 +54,24 @@
   justify-content: space-around;
   align-items: center;
 }
+@media screen and (max-width: 992px) {
+  .navItems {
+    justify-content:flex-end;
+    padding-right: 1rem;
+  }
+}
+
 
 .navItem {
   color: #fff;
   font-size: 1rem;
   font-weight: bold;
+}
+
+@media screen and (max-width: 992px) {
+  .navItem:not(.cart) {
+      display: none;
+  }
 }
 
 div.loginButton {
@@ -81,12 +110,76 @@ img.cartDotSpinnerSpinner {
   height: 100%;
 }
 
+div.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  margin-left: 1rem;
+}
+@media screen and (max-width: 992px) {
+  div.hamburger {
+      display: flex;
+  }
+}
+
+div.hamburger > * {
+  transition: filter 0.5s;
+}
+
+.invertChildren > * {
+  filter: invert(1);
+}
+
+svg.hamburger {
+  position: relative;
+  top: 0.25rem;
+  height: 1.5rem;
+}
+
+.topLine, .middleLine, .bottomLine {
+  transition: d 0.5s ease;
+}
+
+span.hamburger {
+  font-size: 0.5rem;
+}
+
+div.mainMenu {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background-color: #FBA800;
+  padding: 20vh 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  transition: transform 0.5s;
+}
+
+span.mainMenu {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-top: 1.25rem;
+}
+
 div.breadcrumbs {
   width: 90%;
   max-width: 70rem;
   font-size: 1.2rem;
   font-weight: bold;
   padding-top: 10rem;
+}
+@media screen and (max-width: 992px) {
+  div.breadcrumbs {
+    padding-top: 6rem;
+    font-size: 1rem;
+  }
 }
 
 div.breadcrumbs a:link,

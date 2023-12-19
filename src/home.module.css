@@ -1,0 +1,118 @@
+/* This is the header on the home page, displayed for mobile */
+/* Base rule (up to 600px) */
+.homeHeader {
+  z-index: 30;
+  position: relative;
+  top: 30px;
+  width: calc(100% - 2rem);
+  display: grid;
+  grid-template-columns: 1fr calc(2 * var(--logoPadding) + 38px);
+}
+
+/* Between 600px and 770px */
+@media screen and (min-width: 600px) and (max-width: 769px) {
+  .homeHeader {
+      grid-template-columns: 300px 1fr;
+  }
+}
+
+/* 770px and above */
+@media screen and (min-width: 770px) {
+  .homeHeader {
+      display: none;
+  }
+}
+
+/* This is the header on the home page, displayed for desktop */
+div.headerWrapper {
+  transform: translateY(-1.2rem);
+  display: flex;
+  width: 100%;
+  z-index: 10;
+  justify-content: center;
+}
+@media screen and (max-width: 992px) {
+  div.headerWrapper {
+    display: none;
+  }
+}
+
+
+
+
+div.homeHeaderLogo {
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+img.homeHeaderLogo {
+  padding: var(--logoPadding);
+  justify-self: center;
+}
+
+div.hamburgerWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FBA800;
+}
+@media screen and (min-width: 600px) and (max-width: 769px) {
+  div.hamburgerWrapper {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+div.hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+
+div.hamburger > * {
+  transition: filter 0.5s;
+}
+
+.invertChildren > * {
+  filter: invert(1);
+}
+
+svg.hamburger {
+  position: relative;
+  top: 0.25rem;
+  height: 1.5rem;
+}
+
+.topLine, .middleLine, .bottomLine {
+  transition: d 0.5s ease;
+}
+
+span.hamburger {
+  font-size: 0.5rem;
+}
+
+div.mainMenu {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background-color: #FBA800;
+  z-index: 20;
+  padding: 20vh 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+span.mainMenu {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-top: 1.25rem;
+}

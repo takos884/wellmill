@@ -3,19 +3,13 @@ div.content {
   flex-direction: column;
   align-items: center;
   width: 60rem;
+  max-width: 95%;
   margin-bottom: 8rem;
 }
 
 span.notice {
   font-size: 1.5rem;
   font-weight: bold;
-}
-
-button {
-  width: 25rem;
-  background-color: #fba800;
-  color: #fff;
-  margin: 2rem 0;
 }
 
 span.finePrint {
@@ -26,6 +20,7 @@ span.finePrint {
 div.formGrid {
   display: grid;
   width: 40rem;
+  max-width: 95%;
   grid-template-columns: 100%;
   padding: 2rem 0;
 }
@@ -93,16 +88,4 @@ textarea {
   font-size: 1.25rem;
   padding: 1rem;
   box-sizing: border-box;
-}
-
-button {
-  transition: all 0.25s;
-  border: 1px solid #fba800;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: transparent;
-  color: #fba800;
-  border: 1px solid #fba800;
 }

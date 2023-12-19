@@ -4,6 +4,7 @@ import Header from "./Header";
 import './App.css';
 import styles from './contact.module.css'
 import Footer from "./Footer";
+import { Link } from "react-router-dom";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -111,7 +112,7 @@ function Contact() {
           <label className="customCheckbox">
             <input type="checkbox" id="customCheckbox" onChange={undefined} name="agreement"/>
             <span className="customCheckbox">✓</span>
-            利用規約とプライバシーポリシーに同意する
+            <Link to="/return-policy">プライバシーポリシー</Link>に同意する
           </label>
         </div>
 

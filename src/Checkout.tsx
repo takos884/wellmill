@@ -26,6 +26,10 @@ function Checkout({ setDisplayCheckout }: CheckoutProps) {
 
   const appearance: Appearance = {
     theme: 'stripe',
+
+    variables: {
+      spacingUnit: '2px',
+    },
   };
   const options: StripeElementsOptions = {
     clientSecret,

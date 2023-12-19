@@ -21,6 +21,12 @@ div.headings {
   margin: 1rem 0;
   border-bottom: 1px solid #000;
 }
+@media screen and (max-width: 992px) {
+  div.headings {
+    display: none;
+  }
+}
+
 
 div.lineItem {
   display: grid;
@@ -29,15 +35,41 @@ div.lineItem {
   padding-bottom: 3rem;
   border-bottom: 1px solid #bbb;
 }
+@media screen and (max-width: 992px) {
+  div.lineItem {
+    grid-template-columns: 100%;
+  }
+}
 
 div.lineItemLeft {
   display: flex;
+}
+@media screen and (max-width: 992px) {
+  div.lineItemLeft {
+    display: grid;
+    grid-template-columns: 30% 70%;
+  }
+}
+
+img.lineItem {
+  width: 100px;
+}
+@media screen and (max-width: 992px) {
+  img.lineItem {
+    width: 100%;
+    align-self: center;
+  }
 }
 
 div.description {
   display: flex;
   flex-direction: column;
   margin-left: 2rem;
+}
+@media screen and (max-width: 992px) {
+  div.description {
+    padding-left: 1rem;
+  }
 }
 
 span.title {
@@ -56,6 +88,14 @@ div.quantityWrapper {
   display: flex;
   align-items: center;
 }
+@media screen and (max-width: 992px) {
+  div.quantityWrapper {
+    width: 70%;
+    justify-self: flex-end;
+    margin: 1rem 0;
+  }
+}
+
 
 div.quantityChanger {
   display: flex;

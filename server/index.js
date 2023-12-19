@@ -175,7 +175,7 @@ app.post('/createUser', async (req, res) => {
       const year = birthdayObject.getFullYear();
       const month = (birthdayObject.getMonth() + 1).toString().padStart(2, '0');
       const day = birthdayObject.getDate().toString().padStart(2, '0');
-      birthday = `${year}-${month}-${day}`;
+      birthday = `${year}年${month}月${day}日`;
     }
 
 
@@ -1114,7 +1114,7 @@ function formatDate(dateString) {
   const month = String(date.getMonth() + 1).padStart(2, '0'); // Add 1 because months are 0-indexed
   const day = String(date.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
+  return `${year}年${month}月${day}日`;
 }
 
 
@@ -1162,6 +1162,19 @@ async function ValidatePayload(payload) {
 app.use((err, req, res, next) => {
     console.error(`[${new Date().toISOString()}] Error:`, err.stack);
     return res.status(500).send('Something broke! Time: ' + CurrentTime());
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(`[${new Date().toISOString()}] Unhandled Rejection at:`, promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error(`[${new Date().toISOString()}] Uncaught Exception:`, error);
+  //process.exit(1);
+});
+
+process.on('exit', (code) => {
+  console.log(`[${new Date().toISOString()}] Process exit with code: ${code}`);
 });
 
 const PORT = process.env.PORT || 3001;

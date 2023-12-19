@@ -41,7 +41,7 @@ function OrderList() {
 
     // Format the date into "YYYY-MM-DD HH:MM:SS"
     //return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    return `${year}年${month}月${day}日 ${hours}:${minutes}`;
   }
 
   const purchaseLines = purchases?.map(purchase => {

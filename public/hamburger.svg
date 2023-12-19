@@ -1,0 +1,5 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path class="top-line"    d="M20 50L180 50" stroke="black" stroke-width="20" stroke-linecap="round"/>
+    <path class="middle-line" d="M20 100L180 100" stroke="black" stroke-width="20" stroke-linecap="round"/>
+    <path class="bottom-line" d="M20 150L180 150" stroke="black" stroke-width="20" stroke-linecap="round"/>
+</svg>

@@ -1,6 +1,7 @@
 :root {
   --productWidth: 300px;
   --productGap: 20px;
+  --logoPadding: 15px;
 }
 
 #root {
@@ -31,6 +32,11 @@ div.topDots {
   z-index: -1;
   margin-top: -25px;
 }
+@media screen and (max-width: 992px) {
+  div.topDots {
+      display: none;
+  }
+}
 
 .topHeader {
   font-size: 4rem;
@@ -44,15 +50,42 @@ div.topDots {
   margin-top: 5rem;
   margin-bottom: 3rem;
 }
+@media screen and (max-width: 992px) {
+  .topHeader {
+    font-size: 2rem;
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+    }
+}
 
 button {
-  margin: 3rem 5rem;
+  background-color: #fba800;
+  color: #fff;
+  width: 25rem;
+  height: 4.5rem;
+  margin: 2rem 0;
   padding: 1rem;
+  border: 1px solid #fba800;
   border-radius: 2rem;
   font-size: 1.5rem;
   font-weight: bold;
-  border: 0;
-  height: 4.5rem;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+@media screen and (max-width: 992px) {
+  button {
+    height: 3.5rem;
+    max-width: 20rem;
+    width: calc(100vw - 4rem);
+    font-size: 1rem;
+  }
+}
+
+button:hover {
+  background-color: transparent;
+  color: #fba800;
+  border: 1px solid #fba800;
 }
 
 div.customCheckbox {
