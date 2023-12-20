@@ -234,7 +234,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
             <img src="logo.svg" alt="Logo" />
             <span className={styles.checkoutHeader}>Checkout</span>
             <div className={styles.checkoutFormContent}>
-              <form id="payment-form" onSubmit={handleSubmit}>
+              <form className={styles.paymentForm} id="payment-form" onSubmit={handleSubmit}>
                 <PaymentElement id="payment-element" options={paymentElementOptions} />
                 <button disabled={isLoading || !stripe || !elements} id="submit">
                   <span id="button-text">

@@ -1,9 +1,17 @@
 div.checkoutModal {
   position: relative;
+  margin: 3rem;
   padding: 3rem;
   background-color: #fff;
   border-radius: 1rem;
   max-width: 60rem;
+  overflow-y: auto;
+}
+@media screen and (max-width: 992px) {
+  div.checkoutModal {
+    margin: 0.5rem;
+    padding: 0.5rem;
+  }
 }
 
 .checkoutX {
@@ -44,6 +52,18 @@ div.checkoutFormContent {
   grid-template-columns: 1fr 1fr;
   gap: 4rem;
 }
+@media screen and (max-width: 992px) {
+  div.checkoutFormContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+form.paymentForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 
 img.spinner {
   height: 2rem;
@@ -75,6 +95,12 @@ div.checkoutLine {
   max-width: 30rem;
   margin-bottom: 1rem;
 }
+@media screen and (max-width: 992px) {
+  div.checkoutLine {
+    grid-template-columns: 4rem 4fr 1fr 2fr;
+  }
+}
+
 
 img.checkoutLine {
   max-width: 4rem;
@@ -175,6 +201,11 @@ span.addressAction {
   font-size: 0.8rem;
   text-align: center;
   cursor: pointer;
+}
+@media screen and (max-width: 992px) {
+  span.addressAction {
+    width: auto;
+  }
 }
 
 div.selectAddressModal {

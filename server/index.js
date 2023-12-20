@@ -1117,6 +1117,25 @@ function formatDate(dateString) {
   return `${year}年${month}月${day}日`;
 }
 
+app.post('/1.1/wf/update_fulfillment', async (req, res) => {
+  console.log("░▒▓█ Hit 1.1/wf/update_fulfillment. Time: " + CurrentTime());
+  console.log("req.body:");
+  console.dir(req.body, { depth: null, colors: true });
+  console.log("req.headers:");
+  console.dir(req.headers, { depth: null, colors: true });
+
+
+  const returnPayload = {
+    "status": "error",
+    "statusCode": 422,
+    "Messages": "すでに発送した商品です"
+  }
+
+  return res.status(200).send(returnPayload);
+});
+
+
+
 
 async function ValidatePayload(payload) {
   if(!payload) { return {valid: false, message: "No payload"};}
