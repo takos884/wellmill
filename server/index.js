@@ -898,9 +898,38 @@ app.post("/verifyPayment", async (req, res) => {
 
   const customer = results[0];
 
+  // This is the address key to use for line items that don't have a line-item level address specified
   const addressKey = parseInt(req.body.data.addressKey);
   if(isNaN(addressKey)) { return res.status(400).send('addressKey must be a valid integer'); }
 
+  // Pick the address with the key specified OR the default OR anything else
+  query = `
+    SELECT * FROM address 
+    WHERE customerKey = ?
+    ORDER BY
+      (addressKey = ?) DESC,
+      defaultAddress DESC`;
+    //LIMIT 1`;
+  values = [customerKey, addressKey];
+
+  const [addresses] = await pool.query(query, values);
+
+  // If no results, there are no addresses for this user
+  if (addresses.length === 0) {
+    console.log("Thrown out at addressResults.length === 0");
+    console.log("Query:")
+    console.log(query)
+    console.log("values:")
+    console.log(values)
+    return res.status(500).send('Error pulling customer addresses. Address Key: ' + addressKey);
+  }
+
+  // Address data exists, use the top result
+  // This address will only be used if the line item doesn't contain any address data
+  const defaultAddress = addresses[0];
+
+
+  // I used their token to validate, not using this secret
   const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -933,6 +962,7 @@ app.post("/verifyPayment", async (req, res) => {
           return null; // TODO throw an error
         }
     
+        // Why tho?
         const products = productResults;
 
         query = `
@@ -951,30 +981,6 @@ app.post("/verifyPayment", async (req, res) => {
         const purchase = purchaseResults[0];
 
         query = `
-          SELECT * FROM address 
-          WHERE customerKey = ?
-          ORDER BY
-            (addressKey = ?) DESC,
-            defaultAddress DESC
-          LIMIT 1`;
-        values = [customerKey, addressKey];
-
-        const [addressResults] = await pool.query(query, values);
-
-        // If no results, there are no addresses for this user
-        if (addressResults.length === 0) {
-          console.log("Thrown out at addressResults.length === 0");
-          console.log("Query:")
-          console.log(query)
-          console.log("values:")
-          console.log(values)
-          return null; // TODO throw an error
-        }
-
-        // If address data exists, use the top result
-        const address = addressResults[0];
-
-        query = `
           SELECT * FROM lineItem 
           WHERE purchaseKey = ?`;
         values = [purchase.purchaseKey];
@@ -987,7 +993,7 @@ app.post("/verifyPayment", async (req, res) => {
           console.log(`purchase.purchaseKey: ${purchase.purchaseKey}`);
           return null; // TODO throw an error
         }
-    
+
         console.log("lineItemResults");
         console.log(lineItemResults);
         console.log("products");
@@ -1018,7 +1024,7 @@ app.post("/verifyPayment", async (req, res) => {
             "chumon_meisai_no": lineItem.lineItemKey
           })
         })
-  
+
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
           "chumon_no2": "NVP-" + purchase.purchaseKey,
@@ -1038,14 +1044,14 @@ app.post("/verifyPayment", async (req, res) => {
           "haiso": [
             {
               "shuka_date": formatDate(purchase.purchaseTime),
-              "haiso_name": `${address.lastName} ${address.firstName}`,
-              "haiso_post_code": address.postalCode,
-              "haiso_pref_code": address.prefCode,
-              "haiso_pref": address.pref,
-              "haiso_city": address.city,
-              "haiso_address1": address.ward,
-              "haiso_address2": address.address2,
-              "haiso_renrakusaki": `${address.lastName} ${address.firstName}`,
+              "haiso_name": `${defaultAddress.lastName} ${defaultAddress.firstName}`,
+              "haiso_post_code": defaultAddress.postalCode,
+              "haiso_pref_code": defaultAddress.prefCode,
+              "haiso_pref": defaultAddress.pref,
+              "haiso_city": defaultAddress.city,
+              "haiso_address1": defaultAddress.ward,
+              "haiso_address2": defaultAddress.address2,
+              "haiso_renrakusaki": `${defaultAddress.phoneNumber.replace(/\D/g, '')}`,
               "haiso_meisai": shippingDetails // This is an array
             }
           ]
@@ -1070,8 +1076,9 @@ app.post("/verifyPayment", async (req, res) => {
   const purchases = await GetPurchasesFromCustomerKey(customerKey);
   customer.purchases = purchases;
 
-  // Pull customer's addresses
-  const addresses = await GetAddressesFromCustomerKey(customerKey);
+  // Attach customer's addresses
+  // We already pulled addresses
+  //const addresses = await GetAddressesFromCustomerKey(customerKey);
   customer.addresses = addresses;
 
   // Remove sensitive data before sending the customer object

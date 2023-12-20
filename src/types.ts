@@ -122,6 +122,22 @@ export type CartLine = {
     quantity: number,  
 }
 
+type LineItemAddress = {
+    addressKey: number | null;
+    quantity: number;
+    addressIndex: number;
+};
+  
+type LineItem = {
+    lineItemKey: number;
+    quantity?: number;
+    addresses: LineItemAddress[] | null;
+};
+  
+export type AddressStateArray = LineItem[];
+  
+  
+
 // All are optional, if any one of them is missing, it's still a reasonable address (inside the system)
 export type Address = {
     addressKey?: number | null, // Given by MySQL - null just means we're sure this address doesn't have a key yet

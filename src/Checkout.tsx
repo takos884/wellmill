@@ -5,16 +5,18 @@ import styles from './checkout.module.css';
 import { Elements } from "@stripe/react-stripe-js";
 import { Appearance, StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
 import { useUserData } from "./useUserData";
+import { AddressStateArray } from "./types";
 
 
 type CheckoutProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
+  addressesState: AddressStateArray;
 };
 
 // This is our *publishable* test API key.
 const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
-function Checkout({ setDisplayCheckout }: CheckoutProps) {
+function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
   const { user, userLoading, cartLoading } = useUserData();
   const [clientSecret, setClientSecret] = useState("");
 
@@ -40,10 +42,13 @@ function Checkout({ setDisplayCheckout }: CheckoutProps) {
     const cartLines = user?.cart?.lines
     if(cartLines === undefined) return;
 
+    // From here, a customer cannot set item-specific addresses.
+    // If an item-specific address (including mailing address and addressKey) is set, use that.
+    // If not, use the default address. (Existing site can't do this. Should we?)
     fetch("https://cdehaan.ca/wellmill/api/createPaymentIntent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({data: { customerKey: user?.customerKey, token: user?.token, cartLines: cartLines }}),
+      body: JSON.stringify({data: { customerKey: user?.customerKey, token: user?.token, cartLines: cartLines, addressesState: addressesState }}),
     })
       .then((response) => response.json())
       .then((data) => setClientSecret(data.clientSecret));  
