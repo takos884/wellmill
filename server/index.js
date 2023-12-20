@@ -924,26 +924,6 @@ app.post("/verifyPayment", async (req, res) => {
 
       //Send order details to Azure
       if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
-        /*
-        query = `
-        SELECT * FROM customer 
-        WHERE customerKey = (
-            SELECT customerKey 
-            FROM purchase 
-            WHERE paymentIntentId = ?)`;
-        values = [paymentIntentId];
-
-        const [customerResults] = await pool.query(query, values);
-
-        // If no results, the user isn't found
-        if (customerResults.length === 0) {
-          console.log("Thrown out at customerResults.length === 0");
-          return null; // TODO throw an error
-        }
-        const customer = customerResults[0];
-        customerKey = customer.customerKey;
-        */
-
         query = `SELECT * FROM product`;
         const [productResults] = await pool.query(query);
 
@@ -967,7 +947,7 @@ app.post("/verifyPayment", async (req, res) => {
           console.log("Thrown out at purchaseResults.length === 0");
           return null; // TODO throw an error
         }
-    
+
         const purchase = purchaseResults[0];
 
         query = `

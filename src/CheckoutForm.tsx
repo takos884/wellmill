@@ -9,7 +9,6 @@ import { useProducts } from "./ProductContext";
 import { prefectures } from "./addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
-import { Address } from "./types";
 
 type CheckoutFormProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
