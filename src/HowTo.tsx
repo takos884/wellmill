@@ -19,7 +19,8 @@ function HowTo() {
       <span className="topHeader">採血の方法</span>
       <div className={styles.contentWrapper}>
         <span className={styles.content}>内容物</span>
-        <img className={styles.main} src="howto/howto_kit.svg"/>
+        <img className={`${styles.main} ${styles.desktop524Only}`} src="howto/howto_kit.svg"/>
+        <img className={`${styles.main} ${styles.mobile524Only}`} src="howto/howto_kit_mobile.svg"/>
         <span className={styles.content}>内容書類</span><br/>
         <span className={styles.content}>採血手順書  ◦依頼書  ◦レターパック用宛名シール</span>
         <span className={styles.header}>採血前の準備</span>

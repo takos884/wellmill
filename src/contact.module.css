@@ -11,6 +11,12 @@ span.notice {
   font-size: 1.5rem;
   font-weight: bold;
 }
+@media screen and (max-width: 992px) {
+  span.notice {
+    font-size: 1.25rem;
+  }
+}
+
 
 span.finePrint {
   font-size: 1rem;
@@ -88,4 +94,9 @@ textarea {
   font-size: 1.25rem;
   padding: 1rem;
   box-sizing: border-box;
+}
+
+span.smallPrint {
+  white-space: nowrap;
+  font-size: 0.8rem;
 }

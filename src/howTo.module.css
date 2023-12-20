@@ -8,21 +8,51 @@ div.contentWrapper {
   color: #444;
   padding-bottom: 10rem;
 }
+@media screen and (max-width: 768px) {
+  div.contentWrapper {
+    font-size: 1rem;
+  }
+}
 
 span.content {
   line-height: 2.5rem;
 }
+
 
 img.main {
   width: 100%;
   margin: 1rem 0;
 }
 
+.desktop524Only{
+  display: unset;
+}
+@media screen and (max-width: 524px) {
+  .desktop524Only {
+    display: none;
+  }
+}
+
+.mobile524Only{
+  display: none;
+}
+@media screen and (max-width: 524px) {
+  .mobile524Only {
+    display: unset;
+  }
+}
+
+
 span.header {
   font-size: 2.5rem;
   margin-top: 3rem;
   margin-bottom: 1rem;
   color: rgba(175,62,146,1);
+}
+@media screen and (max-width: 768px) {
+  span.header {
+    font-size: 1.5rem;
+  }
 }
 
 span.red {
@@ -36,6 +66,12 @@ div.step {
   justify-content: center;
   margin-bottom: 5rem;
 }
+@media screen and (max-width: 424px) {
+  div.step {
+    flex-direction: column;
+  }
+}
+
 
 span.stepNumber {
   position: absolute;
@@ -55,10 +91,12 @@ div.imgWrapper {
   display: flex;
   justify-content: center;
   align-items: center;
+  align-self: center;
   width: 40%;
 }
 
 img.step {
+  display: unset;
 }
 
 div.stepText {
@@ -67,6 +105,13 @@ div.stepText {
   padding: 0 3rem;
   box-sizing: border-box;
 }
+@media screen and (max-width: 424px) {
+  div.stepText {
+    padding: 0;
+    width: auto;
+  }
+}
+
 
 span.stepMain {
   display: flex;

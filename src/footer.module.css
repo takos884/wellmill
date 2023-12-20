@@ -24,6 +24,7 @@ div.imgWrapper {
 @media screen and (max-width: 992px) {
     div.imgWrapper {
         border-right: 0;
+        padding-right: 0;
     }
 }
 

@@ -112,7 +112,7 @@ function Contact() {
           <label className="customCheckbox">
             <input type="checkbox" id="customCheckbox" onChange={undefined} name="agreement"/>
             <span className="customCheckbox">✓</span>
-            <Link to="/return-policy">プライバシーポリシー</Link>に同意する
+            <span className={styles.smallPrint}><Link to="/return-policy">プライバシーポリシー</Link>に同意する</span>
           </label>
         </div>
 
