@@ -821,6 +821,7 @@ const calculateOrderAmount = (cartLines) => {
 app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
+  //console.dir(req.body, { depth: null, colors: true });
   const validation = await ValidatePayload(req.body.data);
   if(validation.valid === false) {
     console.log(`Validation error in createPaymentIntent: ${validation.message}`);
@@ -832,6 +833,8 @@ app.post("/createPaymentIntent", async (req, res) => {
   const purchaseTotal = calculateOrderAmount(cartLines);
   if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
 
+  const addressesState = req.body.data.addressesState;
+
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
     amount: purchaseTotal,
@@ -839,7 +842,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   });
 
   console.log("Created paymentIntent:");
-  console.log(paymentIntent);
+  //console.log(paymentIntent);
 
   // Make the purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
   query = `
@@ -852,12 +855,12 @@ app.post("/createPaymentIntent", async (req, res) => {
     const [results] = await pool.query(query, values);
     purchaseInsertId = results.insertId;
   } catch (error) {
-    console.error('Error creating user: ', error);
-    return res.status(500).send('Error creating user: ' + error);
+    console.error('Error creating purchase intention: ', error);
+    return res.status(500).send('Error creating purchase intention: ' + error);
   }
 
-  const cartLineKeys = cartLines.map(line => line.lineItemKey);
   // Match lineItem	in the cart to this intention
+  const cartLineKeys = cartLines.map(line => line.lineItemKey);
   query = `
     UPDATE lineItem
     SET purchaseKey = ?
@@ -871,6 +874,69 @@ app.post("/createPaymentIntent", async (req, res) => {
   } catch (error) {
     console.error('Error updating line items after making payment intent: ', error);
     return res.status(500).send('Error updating line items after making payment intent: ' + error);
+  }
+
+
+
+  // Make duplicate lineItems for orders sent to multiple addresses
+  for (const addressState of addressesState) {
+    console.log(`addressState`);
+    console.dir(addressState, { depth: null, colors: true });
+
+    // If addresses is null, the address will be set later
+    if (addressState.addresses === null) { return; }
+
+    const lineItemKeys = [addressState.lineItemKey]
+
+    query = `
+      INSERT INTO lineItem (productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate)
+      SELECT productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate
+      FROM lineItem
+      WHERE lineItemKey = ?`;
+
+    const values = [addressState.lineItemKey];
+
+    // We already have one copy, so start loop counter at 1
+    const copiesNeeded = addressState.addresses.length;
+    console.log(`copiesNeeded: ${copiesNeeded}`);
+    console.log(`query: ${query}`);
+
+    for(let duplicateLoop = 1; duplicateLoop < copiesNeeded; duplicateLoop++) {
+      try {
+        const [results] = await pool.query(query, values);
+        lineItemKeys.push(results.insertId);
+        console.log(`lineItemKeys: ${lineItemKeys}`);
+      } catch (error) {
+        console.error('Error in duplicating line item:', error);
+        throw error;
+      }
+    }
+
+    if(lineItemKeys.length !== copiesNeeded) {
+      console.error(`Error in number of duplicated line items. lineItemKeys.length: ${lineItemKeys.length}, copiesNeeded: ${copiesNeeded}`);
+      return;
+    }
+
+    const addresses = await GetAddressesFromCustomerKey(customerKey);
+
+    for (const [index, lineItemAddress] of addressState.addresses.entries()) {
+      const addressKey = lineItemAddress.addressKey;
+      const quantity = lineItemAddress.quantity;
+      const address = addresses.find(ad => {return ad.addressKey === addressKey});
+
+      query = `
+        UPDATE lineItem
+        SET addressKey = ?, quantity = ?, firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ?
+        WHERE lineItemKey = ?`;
+      const values = [addressKey, quantity, address.firstName, address.lastName, address.postalCode, address.prefCode, address.pref, address.city, address.ward, address.address2, address.phoneNumber, lineItemKeys[index]];
+
+      try {
+        await pool.query(query, values);
+      } catch (error) {
+        console.error('Error populating duplicated line item:', error);
+        throw error;
+      }
+    }
   }
 
   return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
@@ -1151,7 +1217,7 @@ async function ValidatePayload(payload) {
     if(!passwordRegex.test(payload.password)) { return {valid: false, message: "Malformed password"};}
     const password = payload.password;
 
-    const query = `SELECT * FROM customer WHERE email = ?`;
+    let query = `SELECT * FROM customer WHERE email = ?`;
     const [results] = await pool.query(query, [email]);
     if (results.length === 0) { return {valid: false, message: "Email / Password incorrect"};}
 
