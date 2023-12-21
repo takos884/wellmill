@@ -821,7 +821,7 @@ const calculateOrderAmount = (cartLines) => {
 app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
-  //console.dir(req.body, { depth: null, colors: true });
+  console.dir(req.body, { depth: null, colors: true });
   const validation = await ValidatePayload(req.body.data);
   if(validation.valid === false) {
     console.log(`Validation error in createPaymentIntent: ${validation.message}`);
@@ -884,7 +884,7 @@ app.post("/createPaymentIntent", async (req, res) => {
     console.dir(addressState, { depth: null, colors: true });
 
     // If addresses is null, the address will be set later
-    if (addressState.addresses === null) { return; }
+    if (addressState.addresses === null) { continue; }
 
     const lineItemKeys = [addressState.lineItemKey]
 
@@ -1008,9 +1008,9 @@ app.post("/verifyPayment", async (req, res) => {
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
-      SET status = ?, addressKey = ?, purchaseTime = CURRENT_TIMESTAMP
+      SET status = ?, purchaseTime = CURRENT_TIMESTAMP
       WHERE paymentIntentId = ? AND status != ?`;
-    values = [paymentStatus, addressKey, paymentIntentId, paymentStatus];
+    values = [paymentStatus, paymentIntentId, paymentStatus];
 
     try {
       const [verifyPaymentResults] = await pool.query(query, values);
@@ -1020,16 +1020,13 @@ app.post("/verifyPayment", async (req, res) => {
       //Send order details to Azure
       if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
         query = `SELECT * FROM product`;
-        const [productResults] = await pool.query(query);
+        const [products] = await pool.query(query);
 
         // If no results, no products found
-        if (productResults.length === 0) {
+        if (products.length === 0) {
           console.log("Thrown out at productResults.length === 0");
           return null; // TODO throw an error
         }
-    
-        // Why tho?
-        const products = productResults;
 
         query = `
           SELECT * FROM purchase 
@@ -1060,12 +1057,43 @@ app.post("/verifyPayment", async (req, res) => {
           return null; // TODO throw an error
         }
 
-        console.log("lineItemResults");
-        console.log(lineItemResults);
+        // Filter out line items that need their address updated
+        const noAddressLineItems = lineItemResults.filter(lineItem => lineItem.addressKey === null);
+        console.log("noAddressLineItems")
+        console.dir(noAddressLineItems, { depth: null, colors: true });
+
+
+        for (const lineItem of noAddressLineItems) {
+          query = `
+            UPDATE lineItem
+            SET addressKey = ?, firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ?
+            WHERE lineItemKey = ?`;
+
+          values = [defaultAddress.addressKey, defaultAddress.firstName, defaultAddress.lastName, defaultAddress.postalCode, defaultAddress.prefCode, defaultAddress.pref, defaultAddress.city, defaultAddress.ward, defaultAddress.address2, defaultAddress.phoneNumber, lineItem.lineItemKey];
+
+          try {
+              await pool.query(query, values);
+              console.log(`Updated line item ${lineItem.lineItemKey} with default address.`);
+          } catch (error) {
+              console.error(`Error updating line item ${lineItem.lineItemKey}:`, error);
+              // Handle error appropriately (e.g., continue, throw, etc.)
+          }
+        }
+
+        query = `
+          SELECT * FROM lineItem 
+          WHERE purchaseKey = ?`;
+        values = [purchase.purchaseKey];
+
+        const [lineItemUpdatedResults] = await pool.query(query, values);
+
+
+        console.log("lineItemUpdatedResults");
+        console.log(lineItemUpdatedResults);
         console.log("products");
         console.log(products);
 
-        const lineItems = lineItemResults.map(lineItem => {
+        const orderDetails = lineItemUpdatedResults.map(lineItem => {
           const product = products.find(product => {return lineItem.productKey === product.productKey});
           return({
             "chumon_meisai_no": lineItem.lineItemKey,
@@ -1080,16 +1108,65 @@ app.post("/verifyPayment", async (req, res) => {
           })
         });
 
-        const shippingDetails = lineItemResults.map(lineItem => {
+        console.log("orderDetails");
+        console.dir(orderDetails, { depth: null, colors: true });
+
+
+        
+        const uniqueAddressKeysSet = new Set();
+        for (const item of lineItemUpdatedResults) {
+          uniqueAddressKeysSet.add(item.addressKey);
+        }
+        const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+        console.log("uniqueAddressKeys");
+        console.dir(uniqueAddressKeys, { depth: null, colors: true });
+
+        //haiso
+        const delivery = uniqueAddressKeys.map(addressKey => {
+          const address = addresses.find(ad => {return ad.addressKey === addressKey});
+          const lineItems = lineItemUpdatedResults.filter(lineItem => {return lineItem.addressKey === addressKey})
+
+          //haiso_meisai
+          const deliveryDetails = lineItems.map(lineItem => {
+            const product = products.find(product => {return lineItem.productKey === product.productKey});
+            return {
+              "haiso_meisai_no": 12, // must be a number
+              "shohin_code": product?.id,
+              "shohin_name": product?.title,
+              "suryo": lineItem.quantity,
+              "chumon_meisai_no": lineItem.lineItemKey  
+            }
+          });
+
+          return {
+            "shuka_date": formatDate(purchase.purchaseTime),
+            "haiso_name": `${address.lastName} ${address.firstName}`,
+            "haiso_post_code": address.postalCode,
+            "haiso_pref_code": address.prefCode,
+            "haiso_pref": address.pref,
+            "haiso_city": address.city,
+            "haiso_address1": address.ward,
+            "haiso_address2": address.address2,
+            "haiso_renrakusaki": `${address.phoneNumber.replace(/\D/g, '')}`,
+            "haiso_meisai": deliveryDetails
+          }
+        })
+
+        console.log("delivery");
+        console.dir(delivery, { depth: null, colors: true });
+
+        /*
+        const shippingDetails = lineItemUpdatedResults.map(lineItem => {
           const product = products.find(product => {return lineItem.productKey === product.productKey});
           return ({
-            "haiso_meisai_no": 12,
+            "haiso_meisai_no": 12, // must be a number
             "shohin_code": product?.id,
             "shohin_name": product?.title,
             "suryo": lineItem.quantity,
             "chumon_meisai_no": lineItem.lineItemKey
           })
         })
+        */
 
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
@@ -1106,21 +1183,8 @@ app.post("/verifyPayment", async (req, res) => {
           "zei_ritsu3": 0,
           "konyu_mail_address": customer.email,
           "touroku_kbn": 0,
-          "chumon_meisai": lineItems, // This is an array
-          "haiso": [
-            {
-              "shuka_date": formatDate(purchase.purchaseTime),
-              "haiso_name": `${defaultAddress.lastName} ${defaultAddress.firstName}`,
-              "haiso_post_code": defaultAddress.postalCode,
-              "haiso_pref_code": defaultAddress.prefCode,
-              "haiso_pref": defaultAddress.pref,
-              "haiso_city": defaultAddress.city,
-              "haiso_address1": defaultAddress.ward,
-              "haiso_address2": defaultAddress.address2,
-              "haiso_renrakusaki": `${defaultAddress.phoneNumber.replace(/\D/g, '')}`,
-              "haiso_meisai": shippingDetails // This is an array
-            }
-          ]
+          "chumon_meisai": orderDetails,
+          "haiso": delivery
         }
         console.log("backupData (for order)");
         console.dir(backupData, { depth: null });
