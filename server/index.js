@@ -717,7 +717,7 @@ async function StoreBackupData(endpoint, inputData) {
     // Make the POST request to the backup server
     const response = await fetch(fullEndpoint, fullFetchContent);
     const responseData = await response.json();
-    console.dir(responseData);
+    //console.dir(responseData);
 
     if (!response.ok) {
       return { error: true, status: response.status, message: 'An unexpected error occurred in StoreBackupData.' };
@@ -1187,7 +1187,8 @@ app.post("/verifyPayment", async (req, res) => {
             "shohin_code": product?.id,
             "shohin_name": product?.title,
             "suryo": lineItem.quantity,
-            "tanka": Number(lineItem.unitPrice),
+            //"tanka": Number(lineItem.unitPrice),
+            "tanka": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
             "kingaku": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
             "soryo": 0,
             "zei_ritsu": Number(lineItem.taxRate) * 100,

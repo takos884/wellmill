@@ -173,6 +173,7 @@ export type Purchase = {
     paymentIntentId: number,
     note: string,
     amount: number,
+    shippingStatus?: string,
 }
 
 interface CredentialsWithEmail {

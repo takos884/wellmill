@@ -59,7 +59,7 @@ function OrderList() {
           <span>{unitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} x {purchase.quantity}</span>
         </div>
         <div className={styles.lineItemText}>
-          <span>注文の状況: {purchase.status}</span>
+          <span>注文の状況: {purchase.shippingStatus || purchase.status}</span>
           <span>{UtcTimeToJapanTime(purchase.purchaseTime)}</span>
         </div>
         <div className={styles.lineItemText}>
