@@ -16,6 +16,7 @@ const breadcrumbs = [
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const {user, setUser, loginUser} = useUserData();
 
   const navigate = useNavigate();
@@ -23,7 +24,11 @@ const Login = () => {
   const handleLogin = async () => {
     const response = await loginUser({email: username, password: password});
 
-    if(response.error) { console.log(`Login error: ${response.error}`); }
+    if(response.error) {
+      console.log(`Login error: ${response.error}`);
+      setErrorMessage(response.error);
+      return;
+    }
 
     const data = response.data;
 
@@ -48,10 +53,11 @@ const Login = () => {
       <span className="topHeader">ログイン</span>
       <div className={styles.loginWrapper}>
         <span className={styles.loginSubheader}>メールアドレス</span>
-        <input className="formField" type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input className="formField" type="text" placeholder="Username" value={username} onChange={(e) => {setUsername(e.target.value); setErrorMessage(null);}} />
         <span className={styles.loginSubheader}>パスワード</span>
-        <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <button className={styles.loginButton} onClick={handleLogin}>ログイン</button>
+        <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => {setPassword(e.target.value); setErrorMessage(null);}} />
+        <button onClick={handleLogin}>ログイン</button>
+        {errorMessage && <span className={styles.errorMessage}>{errorMessage}</span>}
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
       </div>

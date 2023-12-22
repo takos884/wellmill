@@ -80,10 +80,39 @@ export const useUserData = () => {
     return { data: APIResponse.data, error: null };  
   };
 
+  const updateUser = async (userData: Customer): Promise<APIResponse> => {
+    setUserLoading(true);
+    const APIResponse = await CallAPI({...userData, customerKey: user?.customerKey, token: user?.token}, "updateUser");
+    //console.log("APIResponse after create API call:");
+    //console.log(APIResponse);
+
+    if(APIResponse.error) {
+      console.log(APIResponse.error);
+      return { data: null, error: APIResponse.error };
+    }
+
+    if(!APIResponse.data.code) {
+      console.log("No code returned on user create");
+      return { data: null, error: "No code returned on user create" };
+    }
+
+    delete userData.password;
+
+    // If the update is partial, keep existing data that isn't overwritten
+    setUser(prev => {
+      const newUserData = {...prev, ...userData}
+      return newUserData
+    });
+
+    setUser(userData);
+    setUserLoading(false);
+    return { data: APIResponse.data, error: null };  
+  };
+
   // Add can also be used to update, if an addressKey is present in the address data
   async function addAddress(address: Address) {
     setUserLoading(true);
-    const APIResponse = await CallAPI({...address, token: user?.token}, "addAddress");
+    const APIResponse = await CallAPI({...address, customerKey: user?.customerKey, token: user?.token}, "addAddress");
 
     // Error returned in response
     if(APIResponse.error) {
@@ -134,6 +163,7 @@ export const useUserData = () => {
     //console.log(APIResponse);
 
     if(APIResponse.error) {
+      console.log("Login error:");
       console.log(APIResponse.error);
       return { data: null, error: APIResponse.error };
     }
@@ -191,7 +221,16 @@ export const useUserData = () => {
         body: requestBody,
       });
 
-      if (!response.ok) { return { data: null, error: `HTTP error! Status: ${response.status}` }; }
+      if (!response.ok) {
+        // Attempt to parse the error message from the response
+        try {
+            const errorData = await response.json();
+            return { data: null, error: errorData.error || `HTTP error! Status: ${response.status}` };
+        } catch (parseError) {
+            // If parsing fails, return a generic error message
+            return { data: null, error: `HTTP error! Status: ${response.status}` };
+        }
+    }
 
       const data = await response.json();
       return { data: data, error: null };
@@ -310,7 +349,7 @@ export const useUserData = () => {
   }, [user, setUser]);
 
   return {
-    user, userLoading, createUser, loginUser,setUser,
+    user, userLoading, createUser, loginUser, updateUser, setUser,
     cartLoading, addToCart, updateCartQuantity, deleteFromCart,
     addAddress, deleteAddress
   };

@@ -1,6 +1,7 @@
 div.contentWrapper {
   display: flex;
   flex-direction: column;
+  align-items: center;
   width: 80%;
   max-width: 45rem;
   font-size: 1.25rem;
@@ -9,15 +10,100 @@ div.contentWrapper {
   padding-bottom: 10rem;
 }
 
-span.header {
-  font-size: 2.5rem;
-  margin-top: 3rem;
-  margin-bottom: 1rem;
-  color: rgba(175,62,146,1);
+div.form {
+  display: flex;
+  flex-direction: column;
+  width: 40rem;
+  padding-bottom: 5rem;
 }
 
-span.listMessage {
-  display: flex;
-  margin-top: 2rem;
-  justify-content: center;
+span.subheader {
+  margin-top: 1rem;
+  font-size: 1.25rem;
 }
+
+span.red {
+  color: #b33;
+  margin: 0 1rem;
+}
+
+div.doubleInput {
+  display: flex;
+  justify-content: space-between;
+}
+
+input[type="email"].signup,
+input[type="text"].signup,
+input[type="password"].signup {
+  flex: 1;
+  font-size: 1.25rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  transition: background-color 0.5s;
+}
+
+div.doubleInput > input[type="text"] {
+  max-width: calc(50% - 1rem);
+}
+
+
+.genderOptions {
+  display: flex;
+  font-size: var(--radioSize);
+  margin-bottom: 3rem;
+}
+
+.genderOptions label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-top: 1rem;
+  margin-right: 3rem;
+}
+
+.genderOptions input[type="radio"] {
+  display: none; /* Hide the default radio button */
+}
+
+.radioCircle {
+  width: var(--radioSize);
+  height: var(--radioSize);
+  border-radius: 50%;
+  border: 2px solid #000;
+  background-color: transparent;
+}
+
+.genderOptions input[type="radio"]:checked + .radioCircle {
+  background: radial-gradient(circle at center, #2f80ed 0%, #2f80ed 35%, transparent 45%, transparent 100%);
+}
+
+input[type="date"] {
+  position: relative;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 3rem;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  color: #444;
+  flex: 1;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  color: transparent;
+  background: transparent;
+}
+

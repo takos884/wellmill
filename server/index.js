@@ -160,6 +160,7 @@ app.post('/createUser', async (req, res) => {
     const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+    const gender = userData.gender?.replace(/[^\p{L}\p{N}\p{Z}]/gu, ''); // "male" or "female" typically
 
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if(!userData.email || !emailRegex.test(userData.email)) { return res.status(400).send('Missing or malformed email'); }
@@ -169,39 +170,122 @@ app.post('/createUser', async (req, res) => {
     if(!userData.password || !passwordRegex.test(userData.password)) { return res.status(400).send('Missing or malformed password'); }
     const password = userData.password;
 
-    let birthday = null;
-    const birthdayObject = new Date(userData.birthday.replace(/[^\w\-:\/]/g, ''));
-    if (!isNaN(birthdayObject.getTime())) {
-      const year = birthdayObject.getFullYear();
-      const month = (birthdayObject.getMonth() + 1).toString().padStart(2, '0');
-      const day = birthdayObject.getDate().toString().padStart(2, '0');
-      birthday = `${year}年${month}月${day}日`;
-    }
-
+    const birthday = ValidateBirthday(userData.birthday);
 
     const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
   
     const token = crypto.randomBytes(48).toString('hex');
 
     query = `
-      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, birthday, email, passwordHash, token)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    values = [firstName, lastName, firstNameKana, lastNameKana, birthday, email, hashedPassword, token];
+      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, passwordHash, token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    values = [firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, hashedPassword, token];
 
   try {
     const [results] = await pool.query(query, values);
-    console.log("Results after adding new customer:");
-    console.log(results);
+    //console.log("Results after adding new customer:");
+    //console.log(results);
 
-    const code = "NV" + results.insertId;
+    const customerKey = results.insertId;
+    const code = "NV" + customerKey;
 
-    console.log(`Created user with token: ${token} and code: ${code}`);
-    return res.json({ token: token, code: code });
+    console.log(`Created user with customerKey: ${customerKey}, token: ${token} and code: ${code}`);
+    return res.json({ customerKey: customerKey, token: token, code: code });
   } catch (error) {
     console.error('Error creating user:', error);
     return res.status(500).send('Error creating user: ' + error);
   }
 });
+
+app.post('/updateUser', async (req, res) => {
+  console.log("░▒▓█ Hit updateUser. Time: " + CurrentTime());
+  console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in updateUser: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+
+  const customerKey = validation.customerKey;
+
+  const userData = req.body.data;
+
+  const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+  const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+  const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+  const lastNameKana = userData.lastNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
+  const gender = userData.gender?.replace(/[^\p{L}\p{N}\p{Z}]/gu, ''); // "male" or "female" typically
+
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if(userData.email && !emailRegex.test(userData.email)) { return res.status(400).send('Malformed email'); }
+  const email = userData.email;
+
+  const passwordRegex = /^[\x20-\x7E]{8,}$/;
+  if(userData.password && !passwordRegex.test(userData.password)) { return res.status(400).send('Malformed current password'); }
+  const password = userData.password;
+
+  if(userData.newPassword && !passwordRegex.test(userData.newPassword)) { return res.status(400).send('Malformed new password'); }
+  const newPassword = userData.newPassword;
+
+  const birthday = ValidateBirthday(userData.birthday);
+
+  if(newPassword) {
+    if(!password) { return res.status(400).send('Current password required to change password'); }
+
+  }
+  const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined; // 10 salt rounds
+
+  const queryParts = [];
+  values = [];
+
+  if (firstName      !== undefined) { queryParts.push('firstName = ?');      values.push(firstName); }
+  if (lastName       !== undefined) { queryParts.push('lastName = ?');       values.push(lastName); }
+  if (firstNameKana  !== undefined) { queryParts.push('firstNameKana = ?');  values.push(firstNameKana); }
+  if (lastNameKana   !== undefined) { queryParts.push('lastNameKana = ?');   values.push(lastNameKana); }
+  if (gender         !== undefined) { queryParts.push('gender = ?');         values.push(gender); }
+  if (birthday       !== undefined) { queryParts.push('birthday = ?');       values.push(birthday); }
+  if (email          !== undefined) { queryParts.push('email = ?');          values.push(email); }
+  if (hashedPassword !== undefined) { queryParts.push('hashedPassword = ?'); values.push(hashedPassword); }
+
+  if (queryParts.length === 0) {
+    return res.status(400).send('No updateable fields provided');
+  }
+
+  query = `UPDATE customer SET ${queryParts.join(', ')} WHERE customerKey = ?`;
+  values.push(customerKey);
+
+  console.log("Update query:")
+  console.log(query)
+  console.log("Update values:")
+  console.log(values)
+
+  try {
+    const [results] = await pool.query(query, values);
+    console.log("Results after updating customer:");
+    console.log(results);
+
+    console.log(`Updated user with key: ${customerKey}`);
+    return res.json({ customerKey: customerKey, code: `NV${customerKey}` });
+  } catch (error) {
+    console.error('Internal error updating user:', error);
+    return res.status(500).send('Internal error updating user');
+  }
+});
+
+function ValidateBirthday(birthdayInput) {
+  const birthdayObject = new Date(birthdayInput.replace(/[^\w\-:\/]/g, ''));
+  if (isNaN(birthdayObject.getTime())) { return undefined; }
+
+  const now = new Date();
+  const oneHundredFiftyYearsAgo = new Date(now.getFullYear() - 150, now.getMonth(), now.getDate());
+  if (birthdayObject > now || birthdayObject < oneHundredFiftyYearsAgo) { return undefined; }
+
+  const year = birthdayObject.getFullYear();
+  const month = (birthdayObject.getMonth() + 1).toString().padStart(2, '0');
+  const day = birthdayObject.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+  //return `${year}年${month}月${day}日`;
+}
 
 app.post('/addAddress', async (req, res) => {
   console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
@@ -232,6 +316,7 @@ app.post('/addAddress', async (req, res) => {
   const phoneNumber = SanitizeInput(addressData.phoneNumber);
 
   // This can be changed later if needed
+  // MySQL uses "1" and "0" for true and false
   let defaultAddress = (addressData.defaultAddress ? "1" : "0");
 
   if (!Number.isInteger(customerKey) || customerKey <= 0 || customerKey >= 2147483647) {
@@ -402,11 +487,17 @@ app.post('/login', async (req, res) => {
   if(email && password) {
     console.log("Email/password login");
     customerData = await GetCustomerDataFromCredentials(email, password);
+    if(customerData.error) {
+      return res.status(401).json({ error: customerData.error });
+    }
   } else if(token) {
     console.log("token login");
     customerData = await GetCustomerDataFromToken(token);
+    if(customerData.error) {
+      return res.status(401).json({ error: customerData.error });
+    }
   } else {
-    return res.status(401).send("No customer credentials given");
+    return res.status(401).json({ error: "No customer credentials given" });
   }
 
   return res.json({customerData: customerData});
@@ -650,16 +741,11 @@ async function GetCustomerDataFromCredentials(email, password) {
 
     // If no results, the email is not registered
     if (results.length === 0) {
-      return null;
+      //return {error: "Email and Password pair not found"};
+      return {error: "メールアドレスとパスワードが一致しません"};
     }
 
     const [customer] = results;
-    //console.log("In GetCustomerDataFromCredentials with the following customer:");
-    //console.log(customer);
-    //console.log("Password:");
-    //console.log(password);
-    //console.log("Hash:");
-    //console.log(customer.passwordHash);
 
     // Compare the provided password with the stored hash
     const match = await bcrypt.compare(password, customer.passwordHash);
@@ -667,7 +753,8 @@ async function GetCustomerDataFromCredentials(email, password) {
     // Passwords do not match
     if (!match) {
       // TODO think about some login attempt limit
-      return null;
+      //return {error: "Email and Password pair not found"};
+      return {error: "メールアドレスとパスワードが一致しません"};
     }
 
     // Passwords match, now fetch the customer's cart
@@ -691,7 +778,7 @@ async function GetCustomerDataFromCredentials(email, password) {
     return customer;
   } catch (error) {
     console.error('Error in GetCustomerDataFromCredentials:', error);
-    throw error;
+    return {error: "Internal login error"};
   }
 }
 
@@ -706,7 +793,7 @@ async function GetCustomerDataFromToken(token) {
     // If no results, the token does not exist
     if (results.length === 0) {
       // TODO think about some login attempt limit
-      return null;
+      return {error: "Token not validated"};
     }
 
     // If a token exists, the user is authenticated
@@ -730,7 +817,7 @@ async function GetCustomerDataFromToken(token) {
     return customer;
   } catch (error) {
     console.error('Error in GetCustomerDataFromToken:', error);
-    throw error;
+    return {error: "Error validating token"};
   }
 }
 
@@ -1130,7 +1217,7 @@ app.post("/verifyPayment", async (req, res) => {
           const deliveryDetails = lineItems.map(lineItem => {
             const product = products.find(product => {return lineItem.productKey === product.productKey});
             return {
-              "haiso_meisai_no": 12, // must be a number
+              "haiso_meisai_no": lineItem.lineItemKey, // must be a number
               "shohin_code": product?.id,
               "shohin_name": product?.title,
               "suryo": lineItem.quantity,
@@ -1240,13 +1327,128 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   console.dir(req.body, { depth: null, colors: true });
   console.log("req.headers:");
   console.dir(req.headers, { depth: null, colors: true });
+  let query, values; // For MySQL
 
+  //#region Validate inputs
+  const purchaseKey = parseInt(req.body.chumon_no.replace(/\D/g, ''));
+  if(isNaN(purchaseKey)) {
+    return res.status(400).send('Bad Request: Could not parse numeric purchaseKey');
+  }
+
+  let inputCount = 0;
+
+  const purchaseDetails = req.body.chumon_meisai;
+  if(purchaseDetails === null) {
+    return res.status(400).send('Bad Request: null chumon_meisai (purchaseDetails)');
+  }
+  if(typeof purchaseDetails !== "object") {
+    return res.status(400).send('Bad Request: non-object chumon_meisai (purchaseDetails)');
+  }
+
+  const shippingDetails = req.body.haiso_meisai;
+  if(shippingDetails === null) {
+    return res.status(400).send('Bad Request: null haiso_meisai (shippingDetails)');
+  }
+  if(typeof shippingDetails !== "object") {
+    return res.status(400).send('Bad Request: non-object haiso_meisai (shippingDetails)');
+  }
+  const shippedLineItemKeys = shippingDetails.map(shippingDetail => {return parseInt(shippingDetail.haiso_meisai_no)});
+  const purchasedLineItemKeys = purchaseDetails.map(purchaseDetail => {return parseInt(purchaseDetail.chumon_meisai_no)});
+  const allLineItemKeys = [...shippedLineItemKeys, ...purchasedLineItemKeys];
+  if(allLineItemKeys.length === 0) {
+    return res.status(400).send('Bad Request: no items sent');
+  }
+  //#endregion
+
+
+  /*
+  //#region Count the number of lineItems covered by shipping status update using haiso_meisai_no
+  query = `
+    SELECT * FROM lineItem 
+    WHERE lineItemKey IN (?)`;
+  values = [allLineItemKeys];
+
+  try {
+    const [result] = await pool.query(query, values);
+    if(result.length === 0) {
+      const returnPayload = {
+        "status": "error",
+        "statusCode": 404,
+        "Messages": "注文情報が見つかりませんでした (haiso_meisai_no)"
+      }
+    
+      return res.status(404).send(returnPayload);  
+    }
+  } catch (error) {
+    res.status(500).send('Error finding unshipped line items');
+  }
+  //#endregion
+  */
+
+
+  //#region Count the number of lineItems covered by shipping status update using haiso_meisai_no and purchaseKey
+  query = `
+    SELECT * FROM lineItem 
+    WHERE purchaseKey = ? AND lineItemKey IN (?)`;
+  values = [purchaseKey, shippedLineItemKeys];
+
+  try {
+    const [result] = await pool.query(query, values);
+    if(result.length === 0) {
+      const returnPayload = {
+        "status": "error",
+        "statusCode": 404,
+        "Messages": "注文情報が見つかりませんでした (chumon_no)"
+      }
+    
+      return res.status(404).send(returnPayload);  
+    }
+  } catch (error) {
+    res.status(500).send('Error finding unshipped line items');
+  }
+  //#endregion
+
+
+  //#region Actually update lineItems with "shipped" status
+  query = `
+    UPDATE lineItem 
+    SET shippingStatus = ? 
+    WHERE purchaseKey = ? AND lineItemKey IN (?) AND (shippingStatus != ? OR shippingStatus IS NULL)`;
+  values = ['shipped', purchaseKey, shippedLineItemKeys, 'shipped'];
+
+  try{
+    const [result] = await pool.query(query, values);
+    console.log("Query:", query);
+    console.log("Values:", values);
+    console.log("result:");
+    console.dir(result, { depth: null, colors: true });
+    if(result.affectedRows === 0) {
+      const returnPayload = {
+        "status": "error",
+        "statusCode": 422,
+        "Messages": "すでに発送した商品です"
+      }
+    
+      return res.status(422).send(returnPayload);  
+    }
+  } catch (error) {
+    console.error('Error updating shipping status: ', error);
+    return res.status(500).send('Error updating shipping status: ' + error);
+  }
+  //#endregion
+
+  const fulfillmentId = `${shippedLineItemKeys.join('-')}_${NoPunctuationDateTime()}`;
 
   const returnPayload = {
-    "status": "error",
-    "statusCode": 422,
-    "Messages": "すでに発送した商品です"
+    "status": "success",
+    "statusCode": 200,
+    "response": {
+      "fulfillmentId": fulfillmentId,
+      "fulfillmentStatus": "success"
+    }
   }
+  console.log("returnPayload:");
+  console.dir(returnPayload, { depth: null, colors: true });
 
   return res.status(200).send(returnPayload);
 });
@@ -1254,12 +1456,17 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
 
 
 
+// Validates a user with either customerKey+token, or customerKey+email+password
 async function ValidatePayload(payload) {
+
+  // Check for required inputs
   if(!payload) { return {valid: false, message: "No payload"};}
   if(!payload.customerKey) { return {valid: false, message: "No customer Key"};}
   const customerKey = Number(payload.customerKey)
   if(!customerKey) { return {valid: false, message: "Malformed customer Key"};}
 
+
+  // Validate with token
   if(payload.token) {
     const token = payload.token
     const hexRegex = /^[0-9a-f]{96}$/i;
@@ -1272,6 +1479,8 @@ async function ValidatePayload(payload) {
     return {valid: true, message: "Valid token", customerKey: customerKey};
   }
 
+
+  // Validate with email / password
   if(payload.email && payload.password) {
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if(!emailRegex.test(payload.email)) { return {valid: false, message: "Malformed email"};}
@@ -1293,6 +1502,18 @@ async function ValidatePayload(payload) {
   }
 
   return {valid: false, message: "Validation data not found"};
+}
+
+function NoPunctuationDateTime() {
+  const now = new Date();
+  const formattedDateTime = (
+    now.getFullYear().toString() + 
+    (now.getMonth() + 1).toString().padStart(2, '0') + // +1 because getMonth() returns 0-11
+    now.getDate().toString().padStart(2, '0') +
+    now.getHours().toString().padStart(2, '0') +
+    now.getMinutes().toString().padStart(2, '0') +
+    now.getSeconds().toString().padStart(2, '0'));
+  return formattedDateTime;
 }
 
 app.use((err, req, res, next) => {

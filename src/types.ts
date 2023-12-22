@@ -99,7 +99,8 @@ export type Customer = {
     lastNameKana?: string,
     firstNameKana?: string,
     gender?: string,
-    birthday?: string 
+    birthday?: string,
+    phoneNumber?: string, 
     password?: string,
     token?: string,
     cart?: Cart,

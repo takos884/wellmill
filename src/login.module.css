@@ -28,9 +28,11 @@ span.loginRecovery {
   text-decoration: line-through;
 }
 
-button.loginButton {
-  color: #fff;
-  background-color: #fba800;
+span.errorMessage {
+  position: relative;
+  top: -2rem;
+  color: #800;
+  font-weight: bold;
 }
 
 div.loginLine {

@@ -7,6 +7,7 @@ import styles from './signup.module.css'
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
 import { useBackupDB } from "./useBackupDB";
+import Cookies from "js-cookie";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -18,7 +19,7 @@ type CreateUserResponse = {
   error: string | null;
 };
 
-// Define a type/interface for your input fields
+// Define a type/interface for input fields
 interface InputFields {
   lastName: string;
   firstName: string;
@@ -31,7 +32,7 @@ interface InputFields {
   agreement: boolean;
 }
 
-// Define a type/interface for your input errors
+// Define a type/interface for input errors
 interface InputErrors {
   lastName: boolean;
   firstName: boolean;
@@ -135,23 +136,30 @@ function Signup() {
         purchases: [],
       };
 
+      // This is my database update
       const response = await createUser(userData);
-      console.log(response);  // { data: {token: 06...19, code: NV14 }}
+      //console.log(response);  // {data: {customerKey: 24, token: 06...19, code: NV14 }}
 
       if(response.error) {
         console.log(`Create User Error: ${response.error}`);
         return;
       }
 
+      userData.customerKey = parseInt(response.data.customerKey);
       userData.token = response.data.token;
-      userData.code  = response.data.code;
+      userData.code = response.data.code;
 
-      if(userData.token) { loginUser({token: userData.token}); }
+      if(userData.token) {
+        //console.log(`Going to login with token: ${userData.token}`);
+        loginUser({token: userData.token});
+        Cookies.set('WellMillToken', userData.token, { expires: 31, sameSite: 'Lax' });
+      }
 
+      // Azure demands these values
       if(!userData.code || !userData.lastName || !userData.firstName) { return; }
 
       const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
-      backupCustomerData(userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, userData.birthday || "");
+      backupCustomerData(userData.customerKey, userData.token || "", userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, userData.birthday || "");
 
       setTimeout(() => { navigate('/account'); }, 500);
     }

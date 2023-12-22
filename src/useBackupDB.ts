@@ -48,6 +48,8 @@ export const useBackupDB = <T extends unknown>() => {
   };
 
   const backupCustomerData = (
+    customerKey: number,
+    token: string,
     kaiin_code: string,
     kaiin_last_name: string,
     kaiin_first_name: string,
@@ -66,7 +68,9 @@ export const useBackupDB = <T extends unknown>() => {
     seinengappi: string,
   ) => {
     const endpoint = "kaiin_renkei_api";
-    const body = JSON.stringify({data: {endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}, customerKey: user?.customerKey, token: user?.token}});
+    const body = JSON.stringify({data: {customerKey: customerKey, token: token, endpoint: endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}}});
+    console.log("body in backupCustomerData in useBackupDB");
+    console.dir(body, { depth: null, colors: true });
     postBackupData(body);
   }
 
