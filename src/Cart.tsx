@@ -10,6 +10,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Checkout from "./Checkout";
 import { AddressStateArray } from "./types";
+import NewAddress from "./NewAddress";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -29,6 +30,8 @@ function Cart() {
   const [displayCheckout, setDisplayCheckout] = useState(false);
   const [addressesState, setAddressesState] = useState<AddressStateArray>([]);
   const [lastUpdatedLineItemKey, setLastUpdatedLineItemKey] = useState<number | null>(null);
+  const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(null);
+  const [showNewAddress, setShowNewAddress] = useState(false);
 
 
   // Set multiple addresses state to all-default to start
@@ -153,6 +156,11 @@ function Cart() {
   function HandleAddressSelectChange(lineItemKey: number, addressIndex: number | null, event: React.ChangeEvent<HTMLSelectElement>) {
     if(!user?.customerKey) return;
     if(!user?.token) return;
+
+    if(parseInt(event.target.value) === 0) {
+      setShowNewAddress(true);
+      return;
+    }
 
     setAddressesState((prev) => {
       const newAddressesState = prev.map(li => {
@@ -320,6 +328,7 @@ function Cart() {
         <div className={styles.addressLine}>
           <select value={address?.addressKey || undefined} onChange={(event) => {HandleAddressSelectChange(line.lineItemKey, oneAddress.addressIndex, event)}}>
             {addressOptions}
+            <option key={0} value={0}>新しいアドレス</option>
           </select>
           <div className={styles.quantityWrapper}>
             <div className={styles.quantityChanger}>
@@ -396,6 +405,7 @@ function Cart() {
 
   return(
     <>
+      {showNewAddress && <NewAddress addressKey={null} setShowNewAddress={setShowNewAddress} />}
       {displayCheckout && <Checkout setDisplayCheckout={setDisplayCheckout} addressesState={addressesState}/>}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />

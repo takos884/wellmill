@@ -160,9 +160,7 @@ function Product() {
           <button className={styles.infoLink} onClick={() => navigate('/return-policy')}>返品について</button>
         </div>
         <span className={styles.otherHeader}>その他のおすすめキット</span>
-        <div>
-          {otherProductsList}
-        </div>
+        {otherProductsList}
       </div>
       <Footer />
       </>

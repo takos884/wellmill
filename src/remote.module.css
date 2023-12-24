@@ -13,12 +13,34 @@ div.content {
     width: 100%;
 }
 
+div.colorImgGrid {
+    grid-template-columns: 50% 50%;
+    width: 90%;
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+@media screen and (max-width: 768px) {
+    div.colorImgGrid {
+        display: grid;
+    }
+}
+img.colorImgMobile {
+    max-width: 100%;
+}
+
 span.subHeader {
     color: #af3e92;
     font-size: 2.5rem;
     font-weight: bold;
-    width: var(--max-width);
+    width: 90%;
+    max-width: var(--max-width);
     margin-bottom: 1rem;
+}
+@media screen and (max-width: 768px) {
+    span.subHeader {
+        font-size: 1.5rem;
+    }
 }
 
 div.colorBox {
@@ -32,9 +54,9 @@ div.colorContent {
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    width: var(--max-width);
+    max-width: var(--max-width);
+    width: 90%;
     padding: 1rem 0;
-    bottom: 3rem;
 }
 
 span.orange {
@@ -45,11 +67,16 @@ span.orange {
     display: flex;
 }
 
-img.colorImg {
+img.colorImgDesktop {
     width: 10rem;
     height: auto;
     transform: translateY(-70px);
     margin-left: 5rem;
+}
+@media screen and (max-width: 768px) {
+    img.colorImgDesktop {
+        display: none;
+    }
 }
 
 span.colorContent {
@@ -65,17 +92,27 @@ div.bubbleWrapper {
     flex-direction: column;
     padding: 2rem 0;
     width: 55rem;
+    max-width: 90%;
 }
 
 div.bubble {
     background-color: #fff;
-    width: 42rem;
-    height: 12rem;
+    max-width: 42rem;
+    width: 100%;
+    min-height: 12rem;
     padding: 1rem;
     border-radius: 10rem;
     display: flex;
     align-items: center;
 }
+@media screen and (max-width: 768px) {
+    div.bubble {
+        min-height: 8rem;
+        padding: 0.5rem 0;
+        margin: 0.5rem 0;
+    }
+}
+
 
 span.bubbleNumber {
     padding: 0 2rem;
@@ -83,6 +120,12 @@ span.bubbleNumber {
     font-size: 10rem;
     font-weight: bold;
     font-family: Arial, sans-serif;
+}
+@media screen and (max-width: 768px) {
+    span.bubbleNumber {
+        font-size: 6rem;
+        padding: 0 1rem;
+    }
 }
 
 div.bubbleContent {
@@ -96,12 +139,32 @@ span.bubbleHeader {
     font-size: 1.75rem;
     font-weight: bold;
 }
+@media screen and (max-width: 768px) {
+    span.bubbleHeader {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+}
+
 
 span.bubbleText {
     font-size: 1.25rem;
+    font-weight: bold;
+}
+@media screen and (max-width: 768px) {
+    span.bubbleText {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
 }
 
 img.bubbleImg {
     width: 8rem;
     margin: 2rem;
+}
+@media screen and (max-width: 768px) {
+    img.bubbleImg {
+        width: 4rem;
+        margin-left: 1rem;
+    }
 }

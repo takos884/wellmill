@@ -15,10 +15,12 @@ function Remote() {
     <>
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs}/>
-      <span className="topHeader">モニタリング検査<span className={styles.blackHeader}>とは？</span></span>
+      <span className="topHeader" style={{whiteSpace: "nowrap"}}>モニタリング検査<span className={styles.blackHeader}>とは？</span></span>
       <div className={styles.content}>
-
-
+        <div className={styles.colorImgGrid}>
+          <img className={styles.colorImgMobile} src="remote-01-mobile.png"/>
+          <img className={styles.colorImgMobile} src="remote-02-mobile.png"/>
+        </div>
           <span className={styles.subHeader}>ウェルミルを使うと何が分かる？どんな検査？</span>
           <div className={styles.colorBox} style={{backgroundColor: "#f9f0f7"}}>
             <div className={styles.colorContent}>
@@ -30,11 +32,14 @@ function Remote() {
                         調べたい検査項目は、検査キットに同封されている依頼書のQRコードを読み込んで、マイページで登録します。<br/>
                         当社に検体が到着後、数日以内に検査結果をマイページに反映いたしますので、ご確認ください。</span>
                 </div>
-                <img className={styles.colorImg} src="remote-1.png" alt="People collecting online results" />
+                <img className={styles.colorImgDesktop} src="remote-1.png" alt="People collecting online results" />
             </div>
           </div>
 
-
+          <div className={styles.colorImgGrid}>
+            <img className={styles.colorImgMobile} src="remote-03-mobile.png"/>
+            <img className={styles.colorImgMobile} src="remote-04-mobile.png"/>
+          </div>
           <span className={styles.subHeader}>検体採取って？</span>
           <div className={styles.colorBox} style={{backgroundColor: "#fdf2d8"}}>
             <div className={styles.colorContent}>
@@ -45,11 +50,15 @@ function Remote() {
                     自己採血専用の、使い捨ての小さな針を使って、指から採血します。<br/>
                     少量の血液のみでOKなので、身体への負担も最小限に抑えられます。</span>
                 </div>
-                <img className={styles.colorImg} src="remote-2.png" alt="A woman at home checking lab results on her phone" />
+                <img className={styles.colorImgDesktop} src="remote-2.png" alt="A woman at home checking lab results on her phone" />
             </div>
           </div>
 
 
+          <div className={styles.colorImgGrid}>
+            <img className={styles.colorImgMobile} src="remote-05-mobile.png"/>
+            <img className={styles.colorImgMobile} src="remote-06-mobile.png"/>
+          </div>
           <span className={styles.subHeader}>モニタリング検査のメリット</span>
           <div className={styles.colorBox} style={{backgroundColor: "#f9f0f7"}}>
             <div className={styles.colorContent}>
@@ -65,7 +74,7 @@ function Remote() {
                     自身のカラダ数値をコンスタントに追うことで、<br/>
                     健康な状態をキープするために利用していただけます。</span>
                 </div>
-                <img className={styles.colorImg} src="remote-3.png" alt="A man considering a doctor's appointment" />
+                <img className={styles.colorImgDesktop} src="remote-3.png" alt="A man considering a doctor's appointment" />
             </div>
           </div>
 

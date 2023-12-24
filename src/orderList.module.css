@@ -28,6 +28,18 @@ div.lineItem {
   padding: 1rem;
 }
 
+@media screen and (max-width: 768px) {
+  div.lineItem {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    align-items: center;
+    justify-items: center;
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    margin: 0.5rem;  
+  }
+}
+
 div.lineItemText {
   margin: 0 1rem;
   display: flex;

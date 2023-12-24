@@ -3,6 +3,7 @@ div.contentWrapper {
   flex-direction: column;
   align-items: center;
   max-width: 60rem;
+  width: 90%;
   padding-bottom: 10rem;
 }
 

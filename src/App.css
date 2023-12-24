@@ -50,7 +50,7 @@ div.topDots {
   margin-top: 5rem;
   margin-bottom: 3rem;
 }
-@media screen and (max-width: 992px) {
+@media screen and (max-width: 768px) {
   .topHeader {
     font-size: 2rem;
     margin-top: 3rem;
@@ -75,7 +75,6 @@ button {
 
 @media screen and (max-width: 992px) {
   button {
-    height: 3.5rem;
     max-width: 20rem;
     width: calc(100vw - 4rem);
     font-size: 1rem;

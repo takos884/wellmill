@@ -5,6 +5,8 @@ import './App.css';
 import Header from "./Header";
 import Footer from "./Footer";
 
+import styles from "./postpurchase.module.css"
+
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
   { text: "カートを見る", url: "/cart" },
@@ -26,7 +28,10 @@ export default function PostPurchase() {
   const redirectStatus = params.get("redirect_status");
   const addressKey = params.get("ak");
 
-  const header = (redirectStatus === "succeeded") ? <span>Purchase Complete!</span> : <span>There was an error</span>
+  const header = (redirectStatus === "succeeded") ? <span className={styles.received}>ご注文を承りました</span> : <span>There was an error</span>
+  const paymentInProgress = <span className={styles.wait}>お支払い処理中です、少々お待ちください</span>
+  const PaymentSuccess = <span className={styles.success}>ご注文が完了しました</span>
+  const serverReply = <span className={styles.message}>サーバーからのメッセージ: {paymentStatus}</span>
 
   useEffect(() => {
     if(!user) return;
@@ -53,7 +58,10 @@ export default function PostPurchase() {
       <span className="topHeader">カートを見る</span>
 
       {header}
-      <span>Server says: {paymentStatus}</span>
+      {(paymentStatus === null) && paymentInProgress}
+      {paymentStatus === "succeeded" && PaymentSuccess}
+      {paymentStatus !== null && serverReply}
+      <span></span>
       <Footer />
     </>
   );

@@ -1,0 +1,18 @@
+span.received {
+  font-size: 1.25rem;
+}
+
+span.wait {
+  color: #666;
+}
+
+span.success {
+  font-size: 2rem;
+  color: #080;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+span.message {
+  font-size: 0.8rem;
+}

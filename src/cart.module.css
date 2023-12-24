@@ -37,7 +37,9 @@ div.lineItem {
 }
 @media screen and (max-width: 992px) {
   div.lineItem {
-    grid-template-columns: 100%;
+    display: flex;
+    flex-direction: column;
+
   }
 }
 
@@ -87,12 +89,14 @@ span.descriptionPrice {
 div.quantityWrapper {
   display: flex;
   align-items: center;
+  max-width: 14rem;
 }
 @media screen and (max-width: 992px) {
   div.quantityWrapper {
     width: 70%;
     justify-self: flex-end;
     margin: 1rem 0;
+    align-self: flex-end;
   }
 }
 
@@ -166,6 +170,11 @@ span.splitToggle {
   text-decoration: underline;
   cursor: pointer;
 }
+@media screen and (max-width: 768px) {
+  span.splitToggle {
+    padding-right: 0;
+  }
+}
 
 div.addressLines {
   grid-column: span 2;
@@ -178,6 +187,14 @@ div.addressLines {
 div.addressLine {
   display: flex;
 }
+@media screen and (max-width: 768px) {
+  div.addressLine {
+    flex-direction: column;
+    border-bottom: 1px solid #bbb;
+    border-top: 1px solid #bbb;
+  }
+}
+
 
 img.spinner {
   height: 2rem;

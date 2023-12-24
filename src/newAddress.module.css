@@ -25,6 +25,13 @@ div.newAddressContent {
   overflow-y: auto;
   z-index: 20;
 }
+@media screen and (max-width: 992px) {
+  div.newAddressContent {
+    width: calc(100% - 2rem);
+    max-height: calc(100% - 2rem);
+  }
+}
+
 
 /* Hide scrollbar for Chrome, Safari and Opera */
 .newAddressContent::-webkit-scrollbar {
@@ -81,6 +88,7 @@ div.inputsRow {
 
 span.subheader {
   margin-top: 1rem;
+  margin-left: 0.5rem;
   font-size: 1rem;
   color: #444;
   font-weight: bold;
@@ -95,6 +103,12 @@ div.labeledInput {
   display: grid;
   grid-template-columns: 50% 50%;
 }
+@media screen and (max-width: 992px) {
+  div.labeledInput {
+    grid-template-columns: 1fr 8rem;
+  }
+}
+
 
 span.inputLabel {
   display: flex;

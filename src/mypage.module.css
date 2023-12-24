@@ -3,6 +3,7 @@ div.content {
   flex-direction: column;
   align-items: center;
   width: 60rem;
+  max-width: 90%;
 }
 
 span.header {
@@ -10,14 +11,33 @@ span.header {
   font-weight: bold;
   color: #af3e92;
 }
+@media screen and (max-width: 992px) {
+  span.header {
+    font-size: 1.5rem;
+  }
+}
 
 div.linksGrid {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 2rem;
   margin: 3rem 0;
 }
+/* Between 769px and 992px */
+@media screen and (min-width: 769px) and (max-width: 992px) {
+  div.linksGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* 993px and above */
+@media screen and (min-width: 993px) {
+  div.linksGrid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
 
 span.link {
   display: flex;
@@ -29,6 +49,11 @@ span.link {
   font-weight: bold;
   color: #af3e92;
   transition: background-color 0.25s;
+}
+@media screen and (max-width: 768px) {
+  span.link {
+    font-size: 1rem;
+  }
 }
 
 span.link:hover {

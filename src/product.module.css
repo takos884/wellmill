@@ -2,6 +2,7 @@ div.productRoot {
     display: flex;
     flex-direction: column;
     align-items: center;
+    max-width: 100%;
 }
 
 div.overlay {
@@ -54,6 +55,12 @@ div.productGrid {
     gap: 2rem;
     margin-top: 4rem;
 }
+@media screen and (max-width: 768px) {
+    div.productGrid {
+        grid-template-columns: 1fr;
+    }
+}
+  
 
 div.imageGrid{
     display: grid;
@@ -171,10 +178,16 @@ div.productFaq > details > p {
 
 div.infoLinks {
     display: flex;
-    width: 100%;
+    width: 80%;
     max-width: 80rem;
     margin: 3rem 0;
     justify-content: space-evenly;
+}
+@media screen and (max-width: 768px) {
+    div.infoLinks {
+        flex-direction: column;
+        align-items: center;
+    }
 }
 
 button.infoLink {
@@ -188,6 +201,12 @@ button.infoLink {
     color: #af3e92;
     transition: background-color 0.3s, color 0.3s;
 }
+@media screen and (max-width: 992px) {
+    button.infoLink {
+        font-size: 1rem;
+        margin: 1rem;
+    }
+}  
 
 button.infoLink:hover {
     background-color: #af3e92;
@@ -202,9 +221,15 @@ span.otherHeader {
 
 div.otherProductsGrid {
     display: grid;
+    justify-items: center;
     width: 90%;
     max-width: 80rem;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     margin: 2rem 0;
+}
+@media screen and (max-width: 768px) {
+    div.otherProductsGrid {
+        grid-template-columns: 1fr;
+    }
 }
