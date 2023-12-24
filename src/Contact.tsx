@@ -73,7 +73,7 @@ function Contact() {
       <div className={styles.content}>
         <span className={styles.notice}>よくあるご質問はこちらに記載しておりますので、<br/>
         お問い合わせ前にまずはこちらをご確認ください。</span>
-        <button>よくある質問</button>
+        <Link to="/qa" style={{textDecoration: "underline", cursor: "pointer"}}><button>よくある質問</button></Link>
         <span className={styles.finePrint}>営業のお問い合わせはお控えください。</span>
         <div className={styles.formGrid}>
           <div className={styles.field}>
@@ -112,7 +112,7 @@ function Contact() {
           <label className="customCheckbox">
             <input type="checkbox" id="customCheckbox" onChange={undefined} name="agreement"/>
             <span className="customCheckbox">✓</span>
-            <span className={styles.smallPrint}><Link to="/privacy-policy" style={{textDecoration: "underline"}}>プライバシーポリシー</Link>に同意する</span>
+            <span className={styles.smallPrint}><Link to="/privacy-policy" style={{textDecoration: "underline", cursor: "pointer"}}>プライバシーポリシー</Link>に同意する</span>
           </label>
         </div>
 

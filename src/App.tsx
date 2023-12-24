@@ -23,6 +23,8 @@ import OrderList from './OrderList';
 import Addresses from './Addresses'
 import Profile from './Profile';
 import PostPurchase from './PostPurchase';
+import Privacy from './Privacy';
+import Faq from './Faq';
 
 function Layout() {
   const location = useLocation();
@@ -55,6 +57,8 @@ function Layout() {
       <Route path="/payment" element={<Payment />} />
       <Route path="/delivery" element={<Delivery />} />
       <Route path="/return-policy" element={<ReturnPolicy />} />
+      <Route path="/privacy-policy" element={<Privacy />} />
+      <Route path="/qa" element={<Faq />} />
       <Route path="/" element={<Home />} />
     </Routes>
   )
