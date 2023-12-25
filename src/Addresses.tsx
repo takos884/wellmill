@@ -56,6 +56,10 @@ function Addresses() {
     )
   }
 
+  const loadingAddressesMessage = (
+    <span className={styles.listMessage}>住所を読み込んでいます</span>
+  )
+
   const noAddressesMessage = (
     <span className={styles.listMessage}>登録されている住所はありません</span>
   )
@@ -84,9 +88,10 @@ function Addresses() {
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>
-      <button onClick={() => {setSelectedAddressKey(null); setShowNewAddress(true)}}>新しい住所を追加</button>
+      {userLoading === false && (<button onClick={() => {setSelectedAddressKey(null); setShowNewAddress(true)}}>新しい住所を追加</button>)}
       <div className={styles.contentWrapper}>
-        {addresses.length === 0 && noAddressesMessage}
+        {userLoading === true && loadingAddressesMessage}
+        {userLoading === false && addresses.length === 0 && noAddressesMessage}
         {addresses.length  >  0 && defaultAddressContent}
         {addresses.length  >  1 && otherAddressesContent}
       </div>

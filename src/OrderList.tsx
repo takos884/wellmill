@@ -62,7 +62,7 @@ function OrderList() {
           <span>注文の状況: {purchase.shippingStatus || purchase.status}</span>
           <span>{UtcTimeToJapanTime(purchase.purchaseTime)}</span>
         </div>
-        <div className={styles.lineItemText}>
+        <div className={styles.lineItemText} style={{flexGrow: "0"}}>
           <span>Total: {lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
         </div>
       </div>

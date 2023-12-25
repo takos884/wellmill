@@ -17,7 +17,7 @@
   .header {
     background-color: #ffedcc;
     margin-top: 0;
-    width: 100%;
+    width: 100vw;
     border-radius: 0;
 
   }
@@ -40,6 +40,9 @@
   .headerLogo {
     width: 230px;
     background-color: transparent;
+    flex-grow: 1;
+    justify-content: flex-start;
+    margin-left: 1rem;
   }
 }
 
@@ -150,8 +153,8 @@ div.mainMenu {
   position: fixed;
   top: 0;
   bottom: 0;
-  right: 0;
   left: 0;
+  width: 100vw;
   background-color: #FBA800;
   padding: 20vh 0;
   display: flex;

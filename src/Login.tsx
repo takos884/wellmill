@@ -53,7 +53,7 @@ const Login = () => {
       <span className="topHeader">ログイン</span>
       <div className={styles.loginWrapper}>
         <span className={styles.loginSubheader}>メールアドレス</span>
-        <input className="formField" type="text" placeholder="Username" value={username} onChange={(e) => {setUsername(e.target.value); setErrorMessage(null);}} />
+        <input className="formField" type="email" placeholder="wellmill@example.com" value={username} onChange={(e) => {setUsername(e.target.value); setErrorMessage(null);}} />
         <span className={styles.loginSubheader}>パスワード</span>
         <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => {setPassword(e.target.value); setErrorMessage(null);}} />
         <button onClick={handleLogin}>ログイン</button>

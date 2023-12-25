@@ -14,6 +14,7 @@ span.loginSubheader {
 }
 
 input.loginInput,
+input[type="email"],
 input[type="password"] {
   padding: 1rem;
   margin: 1rem 0;

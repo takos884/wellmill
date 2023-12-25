@@ -42,7 +42,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     )    
 
     const mainMenu = (
-        <div className={styles.mainMenu} style={{transform: showMenu ? "translateX(0)" : "translateX(100%)"}}>
+        <div className={styles.mainMenu} style={{transform: showMenu ? "translateX(0)" : "translateX(100vw)"}}>
             <span className={styles.mainMenu}><Link to="/">ホーム</Link></span>
             <span className={styles.mainMenu}><Link to="/remote-examination">リモート検査とは？</Link></span>
             <span className={styles.mainMenu}><Link to="/shop">SHOP</Link></span>
