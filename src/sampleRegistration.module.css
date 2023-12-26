@@ -2,7 +2,7 @@ div.contentWrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 60rem;
+  max-width: 40rem;
   width: 90%;
   padding-bottom: 10rem;
 }
@@ -34,4 +34,29 @@ span.required {
 
 span.checkboxFooter {
   font-size: 0.8rem;
+}
+
+span.goodReply {
+  color: #020;
+}
+
+span.badReply {
+  color: #200;
+}
+
+div.unknownId {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+span.unknownId {
+  color: #b00;
+  font-size: 1.25rem;
+}
+
+span.unknownIdSmallPrint {
+  font-size: 0.8rem;
+  color: #222;
 }

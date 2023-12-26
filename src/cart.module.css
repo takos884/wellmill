@@ -244,6 +244,12 @@ span.requestMessage {
   margin-top: 2rem;
 }
 
+span.errorMessage {
+  text-align: center;
+  width: 25rem;
+  margin-left: auto;
+}
+
 span.closeCheckout {
   position: absolute;
 }

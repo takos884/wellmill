@@ -176,6 +176,18 @@ app.post('/createUser', async (req, res) => {
   
     const token = crypto.randomBytes(48).toString('hex');
 
+    query = "SELECT COUNT(*) FROM customer WHERE email = ?";
+    try {
+      const [existingCustomerCount] = await pool.query(query, [email]);
+      if(existingCustomerCount[0]['COUNT(*)'] > 0) {
+        //return res.status(400).send("すでに登録されたメール"); // Email already registered
+        return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
+      }
+    } catch(error) {
+      console.error('Error counting existing users by email:', error);
+      return res.status(500).send('Error counting existing users by email');  
+    }
+
     query = `
       INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, passwordHash, token)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -234,6 +246,20 @@ app.post('/updateUser', async (req, res) => {
 
   }
   const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined; // 10 salt rounds
+
+  if(email) {
+    query = "SELECT COUNT(*) FROM customer WHERE email = ? AND customerKey != ?";
+    try {
+      const [existingCustomerCount] = await pool.query(query, [email, customerKey]);
+      if(existingCustomerCount[0]['COUNT(*)'] > 0) {
+        //return res.status(400).send("すでに登録されたメール"); // Email already registered
+        return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
+      }
+    } catch(error) {
+      console.error('Error counting existing users by email:', error);
+      return res.status(500).send('Error counting existing users by email');
+    }    
+  }
 
   const queryParts = [];
   values = [];

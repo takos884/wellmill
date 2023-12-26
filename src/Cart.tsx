@@ -32,6 +32,7 @@ function Cart() {
   const [lastUpdatedLineItemKey, setLastUpdatedLineItemKey] = useState<number | null>(null);
   const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
   // Set multiple addresses state to all-default to start
@@ -47,6 +48,34 @@ function Cart() {
   }, [cart, addressesState.length]);
 
 
+
+
+  // Things to do every time "user" updates:
+  // 1 - Remove the error message
+  // 2 - Update the select if it was used to make a new address
+  useEffect(() => {
+    // Remove the error message, the user is clearly trying their best
+    setErrorMessage(null);
+
+    const addressSelects = document.querySelectorAll('select[name="addressSelect"]');
+    // Convert NodeList to an array and update each select's value
+    // This changes the select values directly.
+    // This is bad React style, but I want it, because I don't want to trigger any updates based on this.
+    Array.from(addressSelects).forEach(element => {
+      const select = element as HTMLSelectElement;
+      if (select.value === "0" && select.options.length > 1) {
+        select.value = select.options[select.options.length - 2].value; // -1 would be the "add address" option
+      }
+    });
+  }, [user])
+
+
+  // If the addresses change, remove the error about addresses
+  useEffect(() => {
+    setErrorMessage(null);
+  }, [addressesState])
+
+
   // Prevents scrolling while the Checkout modal is open
   useEffect(() => {
     function disableBodyScroll() { document.body.classList.add('no-scroll');    };
@@ -58,6 +87,7 @@ function Cart() {
     // Allow scrolling when the component is unmounted
     return () => { enableBodyScroll(); };
   }, [displayCheckout]);
+
 
 
   // Sends updates to the server when address-specific quantities are updated
@@ -153,9 +183,22 @@ function Cart() {
   }
  
 
+  function HandleAddressSelectClick(event: React.MouseEvent<HTMLSelectElement>) {
+    setErrorMessage(null);
+    if (event.target instanceof HTMLSelectElement) {
+      const selectElement = event.target as HTMLSelectElement;
+      if(selectElement.options.length === 1) {
+        selectElement.blur();
+        setShowNewAddress(true);
+      }
+    }
+  }
+
   function HandleAddressSelectChange(lineItemKey: number, addressIndex: number | null, event: React.ChangeEvent<HTMLSelectElement>) {
     if(!user?.customerKey) return;
     if(!user?.token) return;
+
+    setErrorMessage(null);
 
     if(parseInt(event.target.value) === 0) {
       setShowNewAddress(true);
@@ -291,6 +334,16 @@ function Cart() {
   })
   }
 
+  function HandleCheckoutClick() {
+    const addressSelects = document.querySelectorAll('select[name="addressSelect"]');
+    const noAddressSelect = Array.from(addressSelects).find(addressSelect => {
+      const currentSelect = addressSelect as HTMLSelectElement;
+      return currentSelect.value === "0"
+    });
+    if(noAddressSelect) { setErrorMessage("商品ごとに住所を選択してください。"); return; }
+    setDisplayCheckout(true);
+  }
+
   const headings = (cart && cartQuantity > 0) ? (
     <div className={styles.headings}>
       <span>商品</span>
@@ -326,7 +379,9 @@ function Cart() {
 
       return (
         <div className={styles.addressLine}>
-          <select value={address?.addressKey || undefined} onChange={(event) => {HandleAddressSelectChange(line.lineItemKey, oneAddress.addressIndex, event)}}>
+          <select name="addressSelect" value={address?.addressKey || undefined} onClick={(event) => HandleAddressSelectClick(event)} onChange={(event) => {HandleAddressSelectChange(line.lineItemKey, oneAddress.addressIndex, event)}}>
+            {false && addressOptions.length !== 0 && (!address?.addressKey) && <option key={-1} value={-1}>住所を選択してください ▼</option>}
+            {false && addressOptions.length === 0 && <option key={-1} value={-1}>登録された住所がありません ▼</option>}
             {addressOptions}
             <option key={0} value={0}>新しいアドレス</option>
           </select>
@@ -342,7 +397,7 @@ function Cart() {
       )
     }) : null;
 
-    const addRemoveAddresses = addressSplit ? (
+    const addAddress = addressSplit ? (
       <div>
         <span className={styles.addAddress} onClick={() => {HandleAddAddressClick(line.lineItemKey)}}>+</span>
       </div>
@@ -371,7 +426,7 @@ function Cart() {
           <span className={styles.splitToggle} onClick={() => HandleSplitToggleClick(line.lineItemKey)}>{addressSplit ? "配送先を削除" : "複数の配送先を指定する" }</span>
           <div className={styles.addressLines}>
             {addressesLines}
-            {addRemoveAddresses}
+            {(addressesLines && addressesLines.length < totalQuantity) ? addAddress : null}
           </div>
         </div>
       </>
@@ -383,7 +438,7 @@ function Cart() {
   const subTotal = (cart && cartQuantity > 0) ? (
     <>
       <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-      <button className={styles.checkout} onClick={() => {setDisplayCheckout(true);}}>{checkoutButtonContent}</button>
+      <button className={styles.checkout} onClick={() => {HandleCheckoutClick();}}>{checkoutButtonContent}</button>
     </>
   ) : null;
 
@@ -415,6 +470,7 @@ function Cart() {
         {cartLineElements}
         {subTotal}
         {requestMessage}
+        {errorMessage && <span className={styles.errorMessage}>{errorMessage}</span>}
       </div>
       <Footer />
     </>

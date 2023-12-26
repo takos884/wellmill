@@ -58,7 +58,8 @@ export const useUserData = () => {
     //console.log(APIResponse);
 
     if(APIResponse.error) {
-      console.log(APIResponse.error);
+      console.dir(APIResponse, { depth: null, colors: true });
+      //console.log(APIResponse.error);
       return { data: null, error: APIResponse.error };
     }
 
@@ -224,13 +225,22 @@ export const useUserData = () => {
       if (!response.ok) {
         // Attempt to parse the error message from the response
         try {
-            const errorData = await response.json();
-            return { data: null, error: errorData.error || `HTTP error! Status: ${response.status}` };
-        } catch (parseError) {
-            // If parsing fails, return a generic error message
+            const errorDataJson = await response.json();
+            console.dir(errorDataJson, { depth: null, colors: true });
+            return { data: null, error: errorDataJson.error || `HTTP error. Status: ${response.status}` };
+        } catch (jsonParseError) {
+          try{
+            // If didn't find Json error data, look for a text error message
+            const errorDataText = await response.text();
+            console.dir(errorDataText, { depth: null, colors: true });
+            return { data: null, error: errorDataText };
+          } catch (textParseError){
+            // If parsing json AND text fails, return a generic error message
+            console.dir(response, { depth: null, colors: true });
             return { data: null, error: `HTTP error! Status: ${response.status}` };
+          }
         }
-    }
+      }
 
       const data = await response.json();
       return { data: data, error: null };

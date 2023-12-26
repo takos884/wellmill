@@ -19,7 +19,7 @@ function SampleRegistration() {
   //const {user, setUser, userLoading} = useUserData();
   const {user} = useUserData();
   const [researchAgreement, setResearchAgreement] = useState(true);
-  const [kentaiId, setKentaiId] = useState('W2023022001000');
+  const [kentaiId, setKentaiId] = useState(''); //W2023022001000
   const [kentaiSaishubi, setKentaiSaishubi] = useState(getFormattedDate());
 
   // sad to use 'any', but I don't know what the server will return
@@ -62,6 +62,22 @@ function SampleRegistration() {
     return `${year}年${formattedMonth}月${formattedDay}日`;
   }
 
+  const registrationMessage = <span className={sampleBackupData?.Status === 200 ? styles.goodReply : styles.badReply}>{
+    (!sampleBackupData) ? null : // No reply, don't display anything
+    (sampleBackupData.Status === 200) ? "登録が完了しました。" : // All good
+    (sampleBackupData.Status === 204 && sampleBackupData?.Messages?.[0] === "1行:kentai_idは14文字数以外を指定されていません。") ? null : // This message displayed elsewhere
+    (sampleBackupData.Messages && sampleBackupData.Messages.length > 0) ? sampleBackupData.Messages[0] : // Error with message
+    (sampleBackupData.Status) ? `${sampleBackupData?.Status} Error` : // Error with no message, only status (e.g. 404, 500)
+    "不明なエラー" // Unknown error
+  }</span>
+
+  const unknownId = (sampleBackupData?.Status === 204 && sampleBackupData?.Messages?.[0] === "1行:kentai_idは14文字数以外を指定されていません。") ? (
+  <div className={styles.unknownId}>
+    <span className={styles.unknownId}>検体IDが見つかりません</span>
+    <span className={styles.unknownIdSmallPrint}>数回登録を試みても登録がうまくいかない場合は<Link to="/contact" style={{textDecoration: "underline"}}>お問い合わせ</Link>ください</span>
+  </div>) : null;
+
+  console.dir(sampleBackupData);
   return(
     <>
       <div className="topDots" />
@@ -74,6 +90,7 @@ function SampleRegistration() {
         <img src="registerQR.jpg" alt="Sample QR code"/>
         <span className={styles.inputHeader}>検体ID<span className={styles.required}>必須</span></span>
         <input type="text" value={kentaiId} name="kentaiId" onChange={handleInputChange} />
+        {unknownId}
         <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
         <input type="text" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange} placeholder={getFormattedDate()}></input>
 
@@ -87,7 +104,7 @@ function SampleRegistration() {
         <span className={styles.checkboxFooter}>研究利用への同意は任意です。</span>
         <span className={styles.checkboxFooter}>チェックを外していただいてもサービスはご利用いただけます。</span>
         <button onClick={handleSubmit}>登録</button>
-        {(sampleBackupData?.Status) && (<span>Server reply: {sampleBackupData.Status === 200 ? "Ok" : "Error"}</span>)}
+        <span>{registrationMessage}</span>
         {sampleBackupError && (<span>Server error: {sampleBackupError}</span>)}
       </div>
     </>

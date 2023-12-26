@@ -141,7 +141,9 @@ function Signup() {
       //console.log(response);  // {data: {customerKey: 24, token: 06...19, code: NV14 }}
 
       if(response.error) {
+        console.dir(response, { depth: null, colors: true });
         console.log(`Create User Error: ${response.error}`);
+        setCreateUserResponse({data: null, error: response.error});
         return;
       }
 

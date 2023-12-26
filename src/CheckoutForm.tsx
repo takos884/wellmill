@@ -226,7 +226,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   return (
     <>
       {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
-      {selectedAddressKey === null && selectAddressModal}
+      {selectedAddressKey === null && addressCards.length > 0 && selectAddressModal}
       <div className={styles.checkoutModal}>
         <span className={styles.checkoutX} onClick={() => { setDisplayCheckout(false); }}>✖</span>
           <div className={styles.checkoutFormWrapper}>
