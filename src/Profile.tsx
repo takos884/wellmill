@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
+import React, { ChangeEvent, MouseEventHandler, useEffect, useState } from "react";
 
 import './App.css';
 import styles from "./profile.module.css"
@@ -32,6 +32,9 @@ interface InputFields {
   email: string;
   password: string;
   agreement: boolean;
+  existingPassword: string,
+  newPassword1: string,
+  newPassword2: string,
 }
 
 // Define an interface for input errors
@@ -45,12 +48,16 @@ interface InputErrors {
   email: boolean;
   password: boolean;
   agreement: boolean;
+  existingPassword: boolean,
+  newPassword1: boolean,
+  newPassword2: boolean,
 }
 
 function Profile() {
   const {user, loginUser, updateUser, userLoading} = useUserData();
   const {backupCustomerData, data: customerBackupData, error: customerBackupError} = useBackupDB<any>();
   const [updateUserResponse, setUpdateUserResponse] = useState<UpdateUserResponse | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [inputs, setInputs] = useState<InputFields>({
     lastName: '',
     firstName: '',
@@ -61,6 +68,9 @@ function Profile() {
     email: '',
     password: '',
     agreement: false,
+    existingPassword: "",
+    newPassword1: "",
+    newPassword2: "",  
   });
 
   const [inputErrors, setInputErrors] = useState<InputErrors>({
@@ -73,6 +83,9 @@ function Profile() {
     email: false,
     password: false,
     agreement: false,
+    existingPassword: false,
+    newPassword1: false,
+    newPassword2: false,
   });
 
   // When user data becomes available, populate the fields with existing data. Also, on component load.
@@ -189,6 +202,70 @@ function Profile() {
     setTimeout(() => { window.location.reload(); }, 1000);    
   }
 
+  async function HandlePasswordClick() {
+    console.log("update password time. user:")
+    console.dir(user, { depth: null, colors: true });
+
+    // Can't do an update without existing user data
+    if(!user) { return; }
+    console.log("ready to go")
+
+    const requiredFields = ['password', 'newPassword1', 'newPassword2', ];
+    let hasError = false;
+
+    // Check if any required fields are empty
+    for (const field of requiredFields) {
+      if (inputs[field as keyof InputFields] === '') {
+        setInputErrors(prevErrors => ({ ...prevErrors, [field]: true }));
+        hasError = true;
+      }
+    }
+    console.log("got everything")
+
+    if (hasError) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    const userData: Customer = {
+      password: inputs.password,
+      newPassword1: inputs.newPassword1,
+      newPassword2: inputs.newPassword2,
+    };
+
+    // This is my database update
+    // A user code (i.e. NV-198) comes back after creating a user, but only a token is returned after an update
+    console.log("Update, with userData:")
+    console.dir(userData, { depth: null, colors: true });
+    const response = await updateUser(userData);
+    console.log(response);  // { data: {token: 06...19 }}
+
+    if(response.error) {
+      console.log(`Create User Error: ${response.error}`);
+      alert("旧パスワードが間違っています。")
+      return;
+    }
+
+    // This shouldn't happen, it's not needed, so no token is sent back
+    if(response.data.token) {
+      loginUser({token: response.data.token});
+      Cookies.set('WellMillToken', response.data.token, { expires: 31, sameSite: 'Lax' });
+    }
+
+    // Gender can pull from the input, or existing data. Azure wants 0, 1, or 9. 🤷
+    const genderNumber = inputs.gender ?
+      ((inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9) :
+      ((user.gender   === "male") ? 0 : (user.gender   === "female") ? 1 : 9);
+
+    // If the user object has addresses, look for the default one, but accept any address if there is no default.
+    const address = (user.addresses && user.addresses.length > 0) ? user.addresses.find(address => address.defaultAddress === true) || user.addresses[0] : null;
+
+    // This does the Azure backup. Take input data if available, or existing data, or blank
+    backupCustomerData(user.customerKey || 0, user.token || "", `NV${user.customerKey}`, userData.lastName || user.lastName || "", userData.firstName || user.firstName || "", userData.lastNameKana || user.lastNameKana || "", userData.firstNameKana || user.firstNameKana || "", address?.postalCode?.toString() || "", address?.prefCode || "", address?.pref || "", address?.city || "", address?.ward || "", address?.address2 || "", user.phoneNumber || "", userData.email || user.email || "", 1, genderNumber, userData.birthday || "");
+
+    setTimeout(() => { window.location.reload(); }, 1000);    
+  }
+
   const genderRadio = (
     <div className={styles.genderOptions}>
       <label>
@@ -202,8 +279,33 @@ function Profile() {
     </div>
   )
 
+  function HandleModalClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (event.target === event.currentTarget) {
+      setShowPasswordModal(false);
+    }
+  }
+
+  const passwordModal = (
+    <div className={styles.passwordModalWrapper} onClick={HandleModalClick}>
+      <div className={styles.passwordModalContent}>
+        <span className={styles.passwordModalX} onClick={() => {setShowPasswordModal(false)}}>X</span>
+        <span className={styles.passwordModalHeader}>パスワード変更</span>
+        <span className={styles.passwordModalSubheader}>現在のパスワード</span>
+        <input type="password" value={inputs.password} name="password" onChange={HandleInputChange} className={styles.passwordModalPassword} />
+        <span className={styles.passwordModalSubheader}>新しいパスワード</span>
+        <input type="password" value={inputs.newPassword1} name="newPassword1" onChange={HandleInputChange} className={styles.passwordModalPassword} />
+        <span className={styles.passwordModalSubheader}>新しいパスワードの確認</span>
+        <input type="password" value={inputs.newPassword2} name="newPassword2" onChange={HandleInputChange} className={styles.passwordModalPassword} />
+        <span className={styles.passwordModalInfo}>パスワードは半角英数字で入力してください。</span>
+        <span className={styles.passwordModalInfo}>8文字以で入力してください。</span>
+        <button onClick={HandlePasswordClick} style={{maxWidth: "100%"}}>変更を保存</button>
+      </div>
+    </div>
+  )
+
   return(
     <>
+      {showPasswordModal && passwordModal}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">アカウント情報</span>
@@ -225,8 +327,10 @@ function Profile() {
           <input type="date" id="datePicker" onChange={HandleInputChange} onClick={HandleDateClick} name="birthday" value={inputs.birthday} className={`${styles.signup} ${inputErrors.birthday ? styles.inputError : ''}`}/>
           <span className={styles.subheader}>メールアドレス<span className={styles.red}>必須</span></span>
           <input type="email" placeholder="name@example.com" onChange={HandleInputChange} name="email" value={inputs.email} className={`${styles.signup} ${inputErrors.email ? styles.inputError : ''}`}></input>
+          <span className={styles.subheader}>パスワード</span>
+          <span onClick={() => {setShowPasswordModal(prev => {return !prev})}} style={{textDecoration: "underline", cursor: "pointer"}}>パスワードを変更する</span>
         </div>
-        <button className={styles.register} onClick={HandleRegistrationClick}>登録</button>
+        <button className={styles.register} style={{maxWidth: "100%"}} onClick={HandleRegistrationClick}>登録</button>
         {updateUserResponse?.data && <p>User created: {JSON.stringify(updateUserResponse.data)}</p>}
         {updateUserResponse?.error && <p>Error: {updateUserResponse.error}</p>}
         {customerBackupData?.Status && (<span>{(customerBackupData?.Status === 200) ? "✔" : "Error"}</span>)}

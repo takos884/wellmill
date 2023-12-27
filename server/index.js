@@ -212,15 +212,17 @@ app.post('/createUser', async (req, res) => {
 app.post('/updateUser', async (req, res) => {
   console.log("░▒▓█ Hit updateUser. Time: " + CurrentTime());
   console.log(req.body);
+
+  //#region Validate input
   const validation = await ValidatePayload(req.body.data);
   if(validation.valid === false) {
     console.log(`Validation error in updateUser: ${validation.message}`);
     return res.status(400).send("Validation error");
   }
-
   const customerKey = validation.customerKey;
 
   const userData = req.body.data;
+  const token = userData.token;
 
   const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
   const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -236,29 +238,60 @@ app.post('/updateUser', async (req, res) => {
   if(userData.password && !passwordRegex.test(userData.password)) { return res.status(400).send('Malformed current password'); }
   const password = userData.password;
 
-  if(userData.newPassword && !passwordRegex.test(userData.newPassword)) { return res.status(400).send('Malformed new password'); }
-  const newPassword = userData.newPassword;
+  if(userData.newPassword1 && !passwordRegex.test(userData.newPassword1)) { return res.status(400).send('Malformed new password'); }
+  const newPassword1 = userData.newPassword1;
+
+  if(userData.newPassword2 && !passwordRegex.test(userData.newPassword2)) { return res.status(400).send('Malformed new password'); }
+  const newPassword2 = userData.newPassword2;
+
+  if(newPassword1 && newPassword2 && newPassword1 !== newPassword2) { return res.status(400).send('Mismatched new password'); }
+
+  if(newPassword1 && !password) { return res.status(400).send('Current password required to change password'); }
 
   const birthday = ValidateBirthday(userData.birthday);
+  //#endregion
 
-  if(newPassword) {
-    if(!password) { return res.status(400).send('Current password required to change password'); }
-
-  }
   const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined; // 10 salt rounds
+  const hashedNewPassword = newPassword1 ? await bcrypt.hash(newPassword1, 10) : undefined; // 10 salt rounds
 
+
+  // If updating to a new email address, make sure no one else has it.
   if(email) {
     query = "SELECT COUNT(*) FROM customer WHERE email = ? AND customerKey != ?";
     try {
       const [existingCustomerCount] = await pool.query(query, [email, customerKey]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
-        return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
+        return res.status(400).json({data: null, error: "※すでにこのメールアドレスのユーザーが存在しています。"}); // Email already registered
       }
     } catch(error) {
       console.error('Error counting existing users by email:', error);
       return res.status(500).send('Error counting existing users by email');
     }    
   }
+
+  //#region Query to get customer info by customerKey and verify current password, if given
+  try {
+    query = `SELECT passwordHash FROM customer WHERE customerKey = ?`;
+    const [results] = await pool.query(query, [customerKey]);
+
+    // If no results, customer not found
+    if (results.length === 0) {
+      return res.status(500).send("Can't SELECT customer data");
+    }
+
+    const [customer] = results;
+
+    // Compare the password (if provided) with the stored hash
+    if(password) {
+      const match = await bcrypt.compare(password, customer.passwordHash);
+      if(!match) {
+        return res.status(400).send("現在のパスワードが正しくありません");
+      }  
+    }
+  } catch(error) {
+    return res.status(500).send("Error pulling customer data");
+  }
+  //#endregion
 
   const queryParts = [];
   values = [];
@@ -270,7 +303,9 @@ app.post('/updateUser', async (req, res) => {
   if (gender         !== undefined) { queryParts.push('gender = ?');         values.push(gender); }
   if (birthday       !== undefined) { queryParts.push('birthday = ?');       values.push(birthday); }
   if (email          !== undefined) { queryParts.push('email = ?');          values.push(email); }
-  if (hashedPassword !== undefined) { queryParts.push('hashedPassword = ?'); values.push(hashedPassword); }
+
+  if (hashedPassword !== undefined && !hashedNewPassword) { queryParts.push('passwordHash = ?'); values.push(hashedPassword); }
+  if (hashedNewPassword) { queryParts.push('passwordHash = ?'); values.push(hashedNewPassword); }
 
   if (queryParts.length === 0) {
     return res.status(400).send('No updateable fields provided');
@@ -298,6 +333,7 @@ app.post('/updateUser', async (req, res) => {
 });
 
 function ValidateBirthday(birthdayInput) {
+  if(!birthdayInput) return undefined;
   const birthdayObject = new Date(birthdayInput.replace(/[^\w\-:\/]/g, ''));
   if (isNaN(birthdayObject.getTime())) { return undefined; }
 
@@ -609,6 +645,175 @@ app.post('/sendWelcome', async (req, res) => {
               <td align="left" style="padding: 1rem 0;">
                 <a href="https://cdehaan.ca/wellmill/shop" class="button" style="color: #FFFFFF">
                   ショッピングアクセスする
+                </a>
+              </td>
+            </tr>
+            <!-- Separator -->
+            <tr>
+              <td align="center" style="padding: 2rem 0;">
+                <hr/>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td align="left" style="padding-bottom: 2rem;">
+                <table width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td class="footer-text" align="left">
+                      株式会社リプロセル 臨床検査室
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text" align="left">
+                      〒222-0033 神奈川県横浜市港北区新横浜3-8-11
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text footer-highlight" align="left">
+                      0120-825-828
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text" align="left">
+                      (平日9:00~18:00 土日祝日休み)
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
+
+  let mailOptions = {
+      from: process.env.WELLMILL_EMAIL_ADDRESS, 
+      to: recipient, 
+      //to: "cdehaan@gmail.com", 
+      subject: '【ウェルミル】お客様アカウントの確認',
+      html: emailHTML,
+      attachments: [{
+        filename: 'logo.png',
+        path: __dirname + '/logo.png',
+        cid: 'logo'
+    }]
+  };
+
+  try {
+      await transporter.sendMail(mailOptions);
+      return res.status(200).send('Email sent successfully');
+  } catch (error) {
+      const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
+      console.error(errorMessage);
+      return res.status(500).send(errorMessage);
+  }
+});
+
+app.post('/sendPassword', async (req, res) => {
+  console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const recipient = req.body.recipient;
+  console.log("recipient: " + recipient);
+
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if(!emailRegex.test(recipient)) {
+     return res.status(400).send("Malformed email");
+  }
+
+  const newPassword = crypto.randomBytes(4).toString('hex');
+  const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 salt rounds
+  
+  query = `UPDATE customer SET passwordHash = ? WHERE email = ?`;
+  await pool.query(query, [hashedPassword, recipient]);
+
+
+  let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: process.env.WELLMILL_EMAIL_ADDRESS,
+          pass: process.env.WELLMILL_EMAIL_APP_PASSWORD
+      }
+  });
+
+  const emailHTML = `
+<html>
+  <head>
+    <style>
+      /* Inline CSS here for styling */
+      table {
+        border-spacing: 0;
+      }
+      td {
+        padding: 0;
+      }
+      img {
+        border: 0;
+      }
+      .content {
+        width: 600px;
+        margin: 0 auto;
+      }
+      .newPassword {
+        background-color: #DDEEFF;
+        border: 1px solid #a8d4ff;
+        padding: 0.5rem 2rem;
+      }
+      .button {
+        background-color: #FFA500;
+        color: #FFFFFF;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block;
+      }
+      .footer-text {
+        font-size: 0.9rem;
+        color: #888;
+        padding: 0;
+      }
+      .footer-highlight {
+        color: #FFA500;
+      }
+    </style>
+  </head>
+  <body>
+    <table width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center">
+          <table class="content" cellspacing="0" cellpadding="0">
+            <!-- Logo -->
+            <tr>
+              <td align="left" style="padding-top: 2rem;">
+                <img src="cid:logo" alt="Logo" style="max-width: 100%;">
+              </td>
+            </tr>
+            <!-- Title -->
+            <tr>
+              <td align="left" style="font-size: 1.5rem; color: #000; padding: 1rem 0;">
+                パスワードのリセット
+              </td>
+            </tr>
+            <!-- Message -->
+            <tr>
+              <td align="left" style="color: #444; padding: 0;">
+              これが新しいパスワードです。 サイトにサインインして、できるだけ早く変更してください。
+              </td>
+            </tr>
+            <tr>
+              <td align="left" class="newPassword">
+                ${newPassword}
+              </td>
+            </tr>
+            <!-- Button -->
+            <tr>
+              <td align="left" style="padding: 1rem 0;">
+                <a href="https://cdehaan.ca/wellmill/login" class="button" style="color: #FFFFFF">
+                  今すぐサインイン
                 </a>
               </td>
             </tr>
@@ -1066,7 +1271,7 @@ async function GetCustomerDataFromCredentials(email, password) {
     // Passwords match, now fetch the customer's cart
     //console.log("Correct password");
 
-    const customer = GetCustomerDataFromCustomerKey(customer.customerKey);
+    const customer = GetCustomerDataFromCustomerKey(customerResults.customerKey);
 
     return customer;
   } catch (error) {

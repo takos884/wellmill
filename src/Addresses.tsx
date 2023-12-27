@@ -64,7 +64,7 @@ function Addresses() {
     <span className={styles.listMessage}>登録されている住所はありません</span>
   )
 
-  const defaultAddress = user?.addresses.find(address => {return address.defaultAddress === true});
+  const defaultAddress = user?.addresses?.find(address => {return address.defaultAddress === true});
   const defaultAddressBox = GenerateAddressBox(defaultAddress);
   const defaultAddressContent = (
     <>
@@ -73,7 +73,7 @@ function Addresses() {
     </>
   )
 
-  const otherAddresses = user?.addresses.filter(address => address.defaultAddress === false) || [];
+  const otherAddresses = user?.addresses?.filter(address => address.defaultAddress === false) || [];
   const otherAddressesBoxes = otherAddresses.map(address => { return GenerateAddressBox(address); });
   const otherAddressesContent = (
     <>
@@ -91,9 +91,9 @@ function Addresses() {
       {userLoading === false && (<button onClick={() => {setSelectedAddressKey(null); setShowNewAddress(true)}}>新しい住所を追加</button>)}
       <div className={styles.contentWrapper}>
         {userLoading === true && loadingAddressesMessage}
-        {userLoading === false && addresses.length === 0 && noAddressesMessage}
-        {addresses.length  >  0 && defaultAddressContent}
-        {addresses.length  >  1 && otherAddressesContent}
+        {userLoading === false && addresses?.length === 0 && noAddressesMessage}
+        {(addresses?.length || 0)  >  0 && defaultAddressContent}
+        {(addresses?.length || 0)  >  1 && otherAddressesContent}
       </div>
       <Footer />
     </>

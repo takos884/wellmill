@@ -21,7 +21,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   const [address, setAddress] = useState<Address>({});
   const [fetchingAddress, setFetchingAddress] = useState<Boolean>(false);
 
-  const currentAddress = addressKey ? user?.addresses.find(address => address.addressKey === addressKey) : null;
+  const currentAddress = addressKey ? user?.addresses?.find(address => address.addressKey === addressKey) : null;
 
 
   // If there is a current address (i.e. editing, not adding), display it on load

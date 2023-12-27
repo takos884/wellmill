@@ -16,7 +16,8 @@ interface UserContextValue {
   setUser: Dispatch<SetStateAction<Customer | null>>;
   cartLoading: boolean;
   setCartLoading: Dispatch<SetStateAction<boolean>>;
-  // Add other fields as needed
+  local: boolean | undefined;
+  setLocal: Dispatch<SetStateAction<boolean | undefined>>;
 }
 
 // Initialize the context with default values
@@ -24,8 +25,9 @@ const defaultContextValue: UserContextValue = {
   user: null,
   setUser: () => {},
   cartLoading: false,
-  setCartLoading: () => {}
-  // Default values for other fields
+  setCartLoading: () => {},
+  local: undefined,
+  setLocal: () => {},
 };
 
 // Create the context with the interface
@@ -35,7 +37,8 @@ const UserContext = createContext<UserContextValue>(defaultContextValue);
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Customer | null>(null);
   const [cartLoading, setCartLoading] = useState<boolean>(false);
-  const value = { user, setUser, cartLoading, setCartLoading };
+  const [local, setLocal] = useState<boolean | undefined>(undefined)
+  const value = { user, setUser, cartLoading, setCartLoading, local, setLocal };
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
@@ -45,7 +48,7 @@ export const useUserData = () => {
     throw new Error('useUserData must be used within a UserProvider');
   }
 
-  const { user, setUser, cartLoading, setCartLoading } = context;
+  const { user, setUser, cartLoading, setCartLoading, local, setLocal } = context;
   const [userLoading, setUserLoading] = useState(false);
 
 
@@ -105,7 +108,7 @@ export const useUserData = () => {
       return newUserData
     });
 
-    setUser(userData);
+    //setUser(userData);
     setUserLoading(false);
     return { data: APIResponse.data, error: null };  
   };
@@ -347,24 +350,26 @@ export const useUserData = () => {
 
 
   // This effect runs once on mount to check for existing user data
+  // Also sets if the customer is using local data, or has registered
   useEffect(() => {
-    const initializeUserData = async () => {
-
-      // Pull mock data for local development
-      if (process.env.NODE_ENV === 'development' && !user) {
-        const devUserData = {"id":"gid://shopify/Customer/7503719465252","firstName":"クリス","lastName":"デハーン","acceptsMarketing":true,"email":"chris@nextvision.co.jp","phone":null,"customerAccessToken":"0700f9f550f63d8a62cf36ed02285eca","cart":{"id":"gid://shopify/Cart/c1-ba75df257a837cbb05ec1c3910bced36","lines":{"edges":[{"node":{"id":"gid://shopify/CartLine/f610d779-65d4-4fb9-a105-9b298372fc4d?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":3,"merchandise":{"id":"gid://shopify/ProductVariant/44859100594468","title":"選べる３項目モニタリング検査","priceV2":{"amount":"13200.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"39600.0","currencyCode":"JPY"},"totalAmount":{"amount":"39600.0","currencyCode":"JPY"}}}},{"node":{"id":"gid://shopify/CartLine/1d2300a3-8a3e-4810-a458-ed267dac76f0?cart=c1-ba75df257a837cbb05ec1c3910bced36","quantity":1,"merchandise":{"id":"gid://shopify/ProductVariant/44859090796836","title":"選べる１項目モニタリング検査","priceV2":{"amount":"6600.0","currencyCode":"JPY"}},"cost":{"subtotalAmount":{"amount":"6600.0","currencyCode":"JPY"},"totalAmount":{"amount":"6600.0","currencyCode":"JPY"}}}}]},"cost":{"subtotalAmount":{"amount":"46200.0","currencyCode":"JPY"},"totalTaxAmount":null,"totalAmount":{"amount":"46200.0","currencyCode":"JPY"}}}};
-        console.log("Pulling mock data");
-        //saveShopifyData(devUserData);
-      }
-
+    async function initializeUserData() {
       setUserLoading(true);
       try{
         if (!user) {
           const token = Cookies.get('WellMillToken');
           if (token) {
+            setLocal(false);
             await loginUserFromToken(token);
+          } else {
+            setLocal(true);
           }
-        }  
+        } else {
+          if(user.customerKey) {
+            setLocal(false);
+          } else {
+            setLocal(true);
+          }
+        }
       }
       catch(error) {
         console.error("Failed to fetch user data:", error);
@@ -398,8 +403,9 @@ export const useUserData = () => {
   }, [user, setUser]);
 
   return {
-    user, userLoading, createUser, loginUser, updateUser, setUser,
-    cartLoading, addToCart, updateCartQuantity, deleteFromCart, cancelPurchase,
+    user, userLoading, cartLoading, local,
+    createUser, loginUser, updateUser, setUser, // Not available for non-registered customers
+    addToCart, updateCartQuantity, deleteFromCart, cancelPurchase,
     addAddress, deleteAddress
   };
 

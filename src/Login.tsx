@@ -56,6 +56,7 @@ const Login = () => {
         <input className="formField" type="email" placeholder="wellmill@example.com" value={username} onChange={(e) => {setUsername(e.target.value); setErrorMessage(null);}} />
         <span className={styles.loginSubheader}>パスワード</span>
         <input className="formField" type="password" placeholder="8文字以上、半角英数字で入力してください" value={password} onChange={(e) => {setPassword(e.target.value); setErrorMessage(null);}} />
+        <span className={styles.forgotPassword}><Link to="/password-recover">パスワードをお忘れの方はこちら</Link></span>
         <button onClick={handleLogin}>ログイン</button>
         {errorMessage && <span className={styles.errorMessage}>{errorMessage}</span>}
         <div className={styles.loginLine}></div>
@@ -69,4 +70,3 @@ const Login = () => {
 };
 
 export default Login;
-/*        <Link to='/'><span className={styles.loginRecovery}>パスワードをお忘れの方はこちら</span></Link>(Not implimented yet) */

@@ -107,3 +107,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: transparent;
 }
 
+div.passwordModalWrapper {
+  position: fixed;
+  top:0;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  background: rgba(0,0,0,0.5);
+}
+
+div.passwordModalContent {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 90%;
+  max-width: 20rem;
+}
+
+span.passwordModalX {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+span.passwordModalHeader {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #444;
+}
+
+span.passwordModalSubheader {
+  margin-top: 1.5rem;
+  font-weight: 300;
+  color: #444;  
+}
+
+input.passwordModalPassword {
+  margin-top: 0.5rem;
+}
+
+span.passwordModalInfo {
+  font-size: 0.9rem;
+  color: #444;
+}

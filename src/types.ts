@@ -102,9 +102,11 @@ export type Customer = {
     birthday?: string,
     phoneNumber?: string, 
     password?: string,
+    newPassword1?: string,
+    newPassword2?: string,
     token?: string,
     cart?: Cart,
-    addresses: Address[],
+    addresses?: Address[],
     purchases?: Purchase[] | PurchaseAndAddress[],
 }
 

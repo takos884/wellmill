@@ -27,6 +27,7 @@ import Privacy from './Privacy';
 import Faq from './Faq';
 import PurchaseDetails from './PurchaseDetails';
 import NewCustomer from './NewCustomer';
+import PasswordRecover from './PasswordRecover';
 
 function Layout() {
   const location = useLocation();
@@ -47,6 +48,7 @@ function Layout() {
       <Route path="/login" element={<Login />} />
       <Route path="/sign-up" element={<Signup />} />
       <Route path="/new-customer" element={<NewCustomer />} />
+      <Route path="/password-recover" element={<PasswordRecover />} />
 
       <Route path="/account" element={<MyPage />} />
       <Route path="/sample-registration" element={<SampleRegistration />} />
