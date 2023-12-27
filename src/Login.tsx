@@ -55,7 +55,7 @@ const Login = () => {
         <span className={styles.loginSubheader}>メールアドレス</span>
         <input className="formField" type="email" placeholder="wellmill@example.com" value={username} onChange={(e) => {setUsername(e.target.value); setErrorMessage(null);}} />
         <span className={styles.loginSubheader}>パスワード</span>
-        <input className="formField" type="password" placeholder="Password" value={password} onChange={(e) => {setPassword(e.target.value); setErrorMessage(null);}} />
+        <input className="formField" type="password" placeholder="8文字以上、半角英数字で入力してください" value={password} onChange={(e) => {setPassword(e.target.value); setErrorMessage(null);}} />
         <button onClick={handleLogin}>ログイン</button>
         {errorMessage && <span className={styles.errorMessage}>{errorMessage}</span>}
         <div className={styles.loginLine}></div>

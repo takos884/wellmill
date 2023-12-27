@@ -19,7 +19,7 @@ const breadcrumbs = [
 ];
 
 function Addresses() {
-  const { user, deleteAddress, userLoading, cartLoading } = useUserData();
+  const { user, deleteAddress, userLoading, /*cartLoading*/ } = useUserData();
   const addresses = user ? user.addresses : [];
 
   const [showNewAddress, setShowNewAddress] = useState(false);

@@ -35,3 +35,4 @@ ShopifyProducts.json
 WPPage.json
 scrap/
 *index.log
+index*.log

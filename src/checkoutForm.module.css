@@ -64,6 +64,28 @@ form.paymentForm {
   align-items: center;
 }
 
+div.email {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  margin-top: 1rem;
+}
+
+span.email {
+  color: #444;
+}
+
+input.email {
+  border-color: #bbb;
+  margin: 0;
+  font-size: 1rem;
+  color: #444;
+  box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.03), 0px 3px 6px rgba(0, 0, 0, 0.02);
+}
+
+input.emailError {
+  background-color: #fdd;
+}
 
 img.spinner {
   height: 2rem;
@@ -187,15 +209,18 @@ div.clickableAddress {
 div.addressActions {
   display: flex;
   justify-content: space-evenly;
+  background-color: #fef8ec;
+  border-top: 1px solid #fade9e;
 }
 
 span.addressAction {
   display: flex;
   justify-content: center;
   align-self: center;
-  margin-top: 1rem;
+  margin: 1rem 0;
   padding: 0.5rem;
   width: 8rem;
+  background-color: #fff;
   border: 1px solid #444;
   border-radius: 0.2rem;
   font-size: 0.8rem;

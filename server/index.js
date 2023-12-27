@@ -252,7 +252,6 @@ app.post('/updateUser', async (req, res) => {
     try {
       const [existingCustomerCount] = await pool.query(query, [email, customerKey]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
-        //return res.status(400).send("すでに登録されたメール"); // Email already registered
         return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
       }
     } catch(error) {
@@ -1108,6 +1107,13 @@ app.post("/verifyPayment", async (req, res) => {
   const defaultAddress = addresses[0];
 
 
+  // Validate the email
+  const email = req.body.data.email;
+  const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if(!regex.test(email)) { return res.status(400).send('Malformed email address'); }
+
+
+
   // I used their token to validate, not using this secret
   const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
 
@@ -1121,9 +1127,9 @@ app.post("/verifyPayment", async (req, res) => {
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
-      SET status = ?, purchaseTime = CURRENT_TIMESTAMP
+      SET status = ?, email = ?, purchaseTime = CURRENT_TIMESTAMP
       WHERE paymentIntentId = ? AND status != ?`;
-    values = [paymentStatus, paymentIntentId, paymentStatus];
+    values = [paymentStatus, email, paymentIntentId, paymentStatus];
 
     try {
       const [verifyPaymentResults] = await pool.query(query, values);
@@ -1200,11 +1206,14 @@ app.post("/verifyPayment", async (req, res) => {
 
         const [lineItemUpdatedResults] = await pool.query(query, values);
 
-
         console.log("lineItemUpdatedResults");
         console.log(lineItemUpdatedResults);
         console.log("products");
         console.log(products);
+
+        // TODO good place to send an email that this purchase was made.
+        // use email, lineItemUpdatedResults, and products
+
 
         const orderDetails = lineItemUpdatedResults.map(lineItem => {
           const product = products.find(product => {return lineItem.productKey === product.productKey});

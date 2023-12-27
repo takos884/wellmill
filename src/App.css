@@ -125,7 +125,7 @@ div.customCheckbox input[type="checkbox"]:checked + span.customCheckbox {
 }
 
 input[type="text"].formField,
-input[type="password"].formField,
+input[type="password"],
 select.formField {
   display: flex;
   width: 100%;
@@ -136,4 +136,8 @@ select.formField {
   border-radius: 0.5rem;
   border: 1px solid #888;
   box-sizing: border-box;
+}
+
+#payment-element {
+  width: 90% !important;
 }

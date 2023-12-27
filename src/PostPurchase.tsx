@@ -27,6 +27,7 @@ export default function PostPurchase() {
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
   const redirectStatus = params.get("redirect_status");
   const addressKey = params.get("ak");
+  const email = decodeURIComponent(params.get("email") || '');
 
   const header = (redirectStatus === "succeeded") ? <span className={styles.received}>ご注文を承りました</span> : <span>There was an error</span>
   const paymentInProgress = <span className={styles.wait}>お支払い処理中です、少々お待ちください</span>
@@ -41,14 +42,14 @@ export default function PostPurchase() {
     fetch("https://cdehaan.ca/wellmill/api/verifyPayment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({data: { customerKey: user.customerKey, token: user.token, addressKey: addressKey, paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }}),
+      body: JSON.stringify({data: { customerKey: user.customerKey, token: user.token, addressKey: addressKey, email: email, paymentIntentId: paymentIntentId, paymentIntentClientSecret: paymentIntentClientSecret }}),
     })
       .then((response) => response.json())
       .then((data) => {
         setPaymentStatus(data.paymentStatus);
         setUser(data.customerData);
       })
-  }, [user, addressKey, paymentIntentId, paymentIntentClientSecret]);
+  }, [user, addressKey, email, paymentIntentId, paymentIntentClientSecret]);
 
 
   return (
@@ -60,7 +61,7 @@ export default function PostPurchase() {
       {header}
       {(paymentStatus === null) && paymentInProgress}
       {paymentStatus === "succeeded" && PaymentSuccess}
-      {paymentStatus !== null && serverReply}
+      {paymentStatus !== null && paymentStatus !== "succeeded" && serverReply}
       <span></span>
       <Footer />
     </>

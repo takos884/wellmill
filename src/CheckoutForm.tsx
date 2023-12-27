@@ -30,6 +30,8 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   const defaultAddressKey = addresses.find(address => {return address.defaultAddress === true})?.addressKey || null;
 
   const [message, setMessage] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>(user?.email || "");
+  const [emailError, setEmailError] = useState<boolean>(false); // undefined means user tried to submit as empty
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(defaultAddressKey);
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -72,10 +74,14 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     // Already doing a purchase
     if(isLoading) { return; }
 
-    if(addressKey === null) {
-      setMessage("住所を入力してください。");
+    // If the email is not valid, set it as an error and return
+    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if(!regex.test(email)) {
+      setEmailError(true);
+      setMessage("正しいメールアドレスを入力してください。");
       return;
     }
+    const encodedEmail = encodeURIComponent(email);
 
     if(!address) {
       setMessage("住所を入力してください。");
@@ -87,7 +93,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}` },
+      confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
     });
 
     // This point will only be reached if there is an immediate error when
@@ -112,6 +118,12 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   const paymentElementOptions: StripePaymentElementOptions = {
     layout: "tabs"
   }
+
+  // When typing in the email field, remove error status from the field
+  function HandleEmailChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setEmailError(false);
+    setEmail(event.target.value);
+  };
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -235,6 +247,10 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
             <div className={styles.checkoutFormContent}>
               <form className={styles.paymentForm} id="payment-form" onSubmit={handleSubmit}>
                 <PaymentElement id="payment-element" options={paymentElementOptions} />
+                <div className={styles.email}>
+                  <span className={styles.email}>E-mail</span>
+                  <input type="email" className={`${styles.email} ${(emailError && styles.emailError)}`} value={email} onChange={HandleEmailChange} />
+                </div>
                 <button disabled={isLoading || !stripe || !elements} id="submit">
                   <span id="button-text">
                     {isLoading ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
