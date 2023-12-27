@@ -473,29 +473,207 @@ async function PullFreshAddresses(customerKey) {
 }
 
 app.post('/sendEmail', async (req, res) => {
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'cdehaan@gmail.com',
-            pass: process.env.EMAIL_PASSWORD
-        }
-    });
+  console.log("░▒▓█ Hit sendEmail. Time: " + CurrentTime());
+  console.log(req.body);
+  let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: 'cdehaan@gmail.com',
+          pass: process.env.EMAIL_PASSWORD
+      }
+  });
 
-    let mailOptions = {
-        from: 'cdehaan@gmail.com', 
-        to: 'cdehaan@gmail.com', 
-        subject: 'New Contact Form Submission',
-        text: `Name: ${req.body.name}\nEmail: ${req.body.email}\nPhone: ${req.body.phone}\nInquiry: ${req.body.inquiry}\nMessage: ${req.body.message}`
-    };
+  let mailOptions = {
+      from: 'cdehaan@gmail.com', 
+      to: 'cdehaan@gmail.com', 
+      subject: 'New Contact Form Submission',
+      text: `Name: ${req.body.name}\nEmail: ${req.body.email}\nPhone: ${req.body.phone}\nInquiry: ${req.body.inquiry}\nMessage: ${req.body.message}`
+  };
 
-    try {
-        await transporter.sendMail(mailOptions);
-        return res.status(200).send('Email sent successfully');
-    } catch (error) {
-        const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
-        console.error(errorMessage);
-        return res.status(500).send(errorMessage);
-    }
+  try {
+      await transporter.sendMail(mailOptions);
+      return res.status(200).send('Email sent successfully');
+  } catch (error) {
+      const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
+      console.error(errorMessage);
+      return res.status(500).send(errorMessage);
+  }
+});
+
+app.post('/sendWelcome', async (req, res) => {
+  console.log("░▒▓█ Hit sendWelcome. Time: " + CurrentTime());
+  console.log(req.body);
+
+  const recipient = req.body.recipient;
+  console.log("recipient: " + recipient);
+
+  let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: process.env.WELLMILL_EMAIL_ADDRESS,
+          pass: process.env.WELLMILL_EMAIL_APP_PASSWORD
+      }
+  });
+
+  const old_emailHTML = `
+  <html>
+      <head>
+          <style>
+              /* Inline CSS here */
+          </style>
+      </head>
+      <body>
+        <div style="display: flex; justify-content: center">
+          <div style="display: grid; width: 30rem; margin-top: 2rem; grid-template-columns: 1fr;">
+          <img src="cid:logo" alt="Logo">
+          <span style="font-size: 1.5rem; display: flex; margin-top: 1rem;">ウェルミル（デストサイト）へようこそ!</span>
+          <span style="color: #444; display: flex; margin: 1rem 0;">会員登録いただきありがとうございます。引き続きお買い物をお楽しみください。</span>
+          <a href="https://cdehaan.ca/wellmill/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
+          </div>
+        </div>
+        <hr/>
+        <div style="display: flex; justify-content: center">
+          <div style="display: grid; width: 30rem; margin-top: 2rem; grid-template-columns: 1fr;">
+            <span style="display: flex; font-size: 0.9rem; color: #444;">株式会社リプロセル 臨床検査室</span>
+            <span style="display: flex; font-size: 0.9rem; color: #444;">〒222-0033 神奈川県横浜市港北区新横浜3-8-11</span>
+            <span style="display: flex; font-size: 0.9rem; color: #FFA500;">0120-825-828</span>
+            <span style="display: flex; font-size: 0.9rem; color: #444;">(平日9:00~18:00 土日祝日休み)</span>
+          </div>
+        </div>
+      </body>
+  </html>
+  `;
+
+  const emailHTML = `
+<html>
+  <head>
+    <style>
+      /* Inline CSS here for styling */
+      table {
+        border-spacing: 0;
+      }
+      td {
+        padding: 0;
+      }
+      img {
+        border: 0;
+      }
+      .content {
+        width: 600px;
+        margin: 0 auto;
+      }
+      .button {
+        background-color: #FFA500;
+        color: #FFFFFF;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block;
+      }
+      .footer-text {
+        font-size: 0.9rem;
+        color: #888;
+        padding: 0;
+      }
+      .footer-highlight {
+        color: #FFA500;
+      }
+    </style>
+  </head>
+  <body>
+    <table width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center">
+          <table class="content" cellspacing="0" cellpadding="0">
+            <!-- Logo -->
+            <tr>
+              <td align="left" style="padding-top: 2rem;">
+                <img src="cid:logo" alt="Logo" style="max-width: 100%;">
+              </td>
+            </tr>
+            <!-- Title -->
+            <tr>
+              <td align="left" style="font-size: 1.5rem; color: #000; padding: 1rem 0;">
+                ウェルミル（デストサイト）へようこそ!
+              </td>
+            </tr>
+            <!-- Message -->
+            <tr>
+              <td align="left" style="color: #444; padding: 0;">
+                会員登録いただきありがとうございます。引き続きお買い物をお楽しみください。
+              </td>
+            </tr>
+            <!-- Button -->
+            <tr>
+              <td align="left" style="padding: 1rem 0;">
+                <a href="https://cdehaan.ca/wellmill/shop" class="button" style="color: #FFFFFF">
+                  ショッピングアクセスする
+                </a>
+              </td>
+            </tr>
+            <!-- Separator -->
+            <tr>
+              <td align="center" style="padding: 2rem 0;">
+                <hr/>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td align="left" style="padding-bottom: 2rem;">
+                <table width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td class="footer-text" align="left">
+                      株式会社リプロセル 臨床検査室
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text" align="left">
+                      〒222-0033 神奈川県横浜市港北区新横浜3-8-11
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text footer-highlight" align="left">
+                      0120-825-828
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="footer-text" align="left">
+                      (平日9:00~18:00 土日祝日休み)
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
+
+  let mailOptions = {
+      from: process.env.WELLMILL_EMAIL_ADDRESS, 
+      to: recipient, 
+      //to: "cdehaan@gmail.com", 
+      subject: '【ウェルミル】お客様アカウントの確認',
+      html: emailHTML,
+      attachments: [{
+        filename: 'logo.png',
+        path: __dirname + '/logo.png',
+        cid: 'logo'
+    }]
+  };
+
+  try {
+      await transporter.sendMail(mailOptions);
+      return res.status(200).send('Email sent successfully');
+  } catch (error) {
+      const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
+      console.error(errorMessage);
+      return res.status(500).send(errorMessage);
+  }
 });
 
 app.post('/login', async (req, res) => {
@@ -653,12 +831,115 @@ app.post('/deleteFromCart', async (req, res) => {
   }
 });
 
+app.post('/cancelPurchase', async (req, res) => {
+  console.log("░▒▓█ Hit cancelPurchase. Time: " + CurrentTime());
+  console.log(req.body); // { data: { customerKey: 1, token: "abc", purchaseKey: 193 } }
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in deleteFromCart: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  const purchaseKey = req.body.data.purchaseKey;
+
+  // Sanitize input
+  if (!Number.isInteger(purchaseKey) || purchaseKey.toString().length > 50) {
+      return res.status(400).send('Invalid input');
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    // Delete query for lineItem table
+    const deleteLineItemQuery = "DELETE FROM lineItem WHERE customerKey = ? AND purchaseKey = ?";
+    await connection.query(deleteLineItemQuery, [customerKey, purchaseKey]);
+
+    // Delete query for purchase table
+    const deletePurchaseQuery = "DELETE FROM purchase WHERE customerKey = ? AND purchaseKey = ?";
+    await connection.query(deletePurchaseQuery, [customerKey, purchaseKey]);
+
+    // Commit the transaction if both queries succeed
+    await connection.commit();
+  } catch (error) {
+    // If an error occurs, roll back the transaction
+    await connection.rollback();
+    console.log("Error while canceling purchase: ");
+    console.dir(error, { depth: null, colors: true });
+    return res.status(500).send("Error canceling purchase");
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
+
+  // Get updated customer data
+  const customerData = await GetCustomerDataFromCustomerKey(customerKey);
+  return res.json(customerData);
+});
+
+app.post('/deleteLineItem', async (req, res) => {
+  console.log("░▒▓█ Hit deleteLineItem. Time: " + CurrentTime());
+  console.log(req.body);
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in deleteFromCart: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  const lineItemKey = req.body.data?.lineItemKey;
+
+  // Sanitize input
+  if (!Number.isInteger(lineItemKey) || lineItemKey.toString().length > 50) {
+      return res.status(400).send('Invalid input');
+  }
+
+  query = `
+    SELECT p.newPurchaseJson 
+    FROM lineItem li
+    JOIN purchase p ON li.purchaseKey = p.purchaseKey
+    WHERE li.lineItemKey = ?;
+  `;
+
+  try {
+    const results = await pool.query(query, [lineItemKey]);
+    if (results.length > 0) {
+        const originalPurchaseJson = JSON.parse(results[0].newPurchaseJson);
+        console.log("originalPurchaseJson");
+        console.dir(originalPurchaseJson, { depth: null, colors: true });
+
+
+        // Now `originalPurchaseJson` is your object, and you can make changes to it
+    } else {
+      console.log("results.length > 0 failed when selecting newPurchaseJson using lineItemKey: " + lineItemKey);
+      return res.status(400).send('Purchase not found');
+    }
+  } catch (error) {
+    console.log("query failed when selecting newPurchaseJson using lineItemKey: " + lineItemKey + ", error:");
+    console.dir(error, { depth: null, colors: true });
+    return res.status(500).send('Purchase not found');
+  }
+
+
+  try {
+    // Delete line from the database
+    const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
+    await pool.query(deleteQuery, [customerKey, lineItemKey]);
+  
+    // Get updated cart data
+    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    return res.json(updatedCart);
+  } catch (error) {
+    console.error('Error in deleteFromCart:', error);
+    return res.status(500).send('An error occurred');
+  }
+});
+
 
 //#region Azure backup
 const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
 
 
-// Works a charm
+// This storeBackupData Works a charm
 /*
 app.post('/storeBackupData', async (req, res) => {
   console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
@@ -770,10 +1051,10 @@ async function GetCustomerDataFromCredentials(email, password) {
       return {error: "メールアドレスとパスワードが一致しません"};
     }
 
-    const [customer] = results;
+    const [customerResults] = results;
 
     // Compare the provided password with the stored hash
-    const match = await bcrypt.compare(password, customer.passwordHash);
+    const match = await bcrypt.compare(password, customerResults.passwordHash);
 
     // Passwords do not match
     if (!match) {
@@ -785,20 +1066,7 @@ async function GetCustomerDataFromCredentials(email, password) {
     // Passwords match, now fetch the customer's cart
     //console.log("Correct password");
 
-    // Pull customer's cart
-    const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
-    customer.cart = { lines: cartData };
-
-    // Pull customer's purchases
-    const purchases = await GetPurchasesFromCustomerKey(customer.customerKey);
-    customer.purchases = purchases;
-
-    // Pull customer's addresses
-    const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
-    customer.addresses = addresses;
-
-    // Remove sensitive data before sending the customer object
-    delete customer.passwordHash;
+    const customer = GetCustomerDataFromCustomerKey(customer.customerKey);
 
     return customer;
   } catch (error) {
@@ -821,7 +1089,30 @@ async function GetCustomerDataFromToken(token) {
       return {error: "Token not validated"};
     }
 
-    // If a token exists, the user is authenticated
+    // Token exists, the user is authenticated, get their customerKey
+    const customerKey = results[0].customerKey;
+
+    const customer = GetCustomerDataFromCustomerKey(customerKey);
+
+    return customer;
+  } catch (error) {
+    console.error('Error in GetCustomerDataFromToken:', error);
+    return {error: "Error validating token"};
+  }
+}
+
+async function GetCustomerDataFromCustomerKey(customerKey) {
+    query = `SELECT * FROM customer WHERE customerKey = ?`;
+
+    // Execute the query using the promisified pool.query and wait for the promise to resolve
+    const [results] = await pool.query(query, [customerKey]);
+
+    // If no results, the customer does not exist
+    if (results.length === 0) {
+      return {error: "Customer not found with customerKey"};
+    }
+
+    // A customer exists
     const customer = results[0];
 
     // Pull customer's cart
@@ -837,13 +1128,9 @@ async function GetCustomerDataFromToken(token) {
     customer.addresses = addresses;
 
     // Remove sensitive data before sending the customer object
-    delete customer.password_hash;
+    delete customer.passwordHash;
 
     return customer;
-  } catch (error) {
-    console.error('Error in GetCustomerDataFromToken:', error);
-    return {error: "Error validating token"};
-  }
 }
 
 async function GetCartDataFromCustomerKey(customerKey) {
@@ -1314,6 +1601,16 @@ app.post("/verifyPayment", async (req, res) => {
         const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
         console.log("backupResults");
         console.log(backupResults);
+
+        const backupDataJSON = JSON.stringify(backupData);
+        query = "UPDATE purchase SET newPurchaseJson = ? WHERE paymentIntentId = ?;";
+        try {
+          await pool.query(query, [backupDataJSON, paymentIntentId]);
+        } catch (error) {
+          console.log("Error while updating newPurchaseJson:");
+          console.dir(error, { depth: null, colors: true });
+        }
+
       } // Only runs on "succeeded"
     } catch (error) {
       console.error('Error updating payment: ', error);

@@ -187,6 +187,13 @@ export const useUserData = () => {
     //console.log("Add to cart with requestBody:");
     //console.log(requestBody);
     const APIResponse = await CallAPI(requestBody, "addToCart");
+
+    if(APIResponse.error) {
+      console.log("Error in addToCart in useUserData:");
+      console.dir(APIResponse, { depth: null, colors: true });
+      return { data: null, error: APIResponse.error };
+    }
+
     //console.log("APIResponse.data:");
     //console.log(APIResponse.data);
     UpdateUser(undefined, APIResponse.data);
@@ -198,6 +205,11 @@ export const useUserData = () => {
     setCartLoading(true);
     const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey, quantity: quantity};
     const APIResponse = await CallAPI(requestBody, "updateCartQuantity");
+    if(APIResponse.error) {
+      console.log("Error in updateCartQuantity in useUserData:");
+      console.dir(APIResponse, { depth: null, colors: true });
+      return { data: null, error: APIResponse.error };
+    }
     UpdateUser(undefined, APIResponse.data);
     setCartLoading(false);
     return APIResponse.data;
@@ -206,11 +218,33 @@ export const useUserData = () => {
   const deleteFromCart = useCallback(async (customerKey: number, token: string, lineItemKey: number) => {
     setCartLoading(true);
     const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey};
-    //console.log(requestBody); // Object { customerKey: 1, token: "e667da5e811ec9383c3e34f8282707b6e520e75975bad95f96a37f4abacdcf835a9a440e31d2685541efec86b50c44c6", lineItemKey: 1 }
+    //console.log(requestBody); // Object { customerKey: 1, token: "e66...44c6", lineItemKey: 1 }
     const APIResponse = await CallAPI(requestBody, "deleteFromCart");
+    if(APIResponse.error) {
+      console.log("Error in deleteFromCart in useUserData:");
+      console.dir(APIResponse, { depth: null, colors: true });
+      return { data: null, error: APIResponse.error };
+    }
+
     UpdateUser(undefined, APIResponse.data);
     setCartLoading(false);
     return APIResponse.data;
+  }, [])
+
+  const cancelPurchase = useCallback(async (customerKey: number, token: string, purchaseKey: number) => {
+    setUserLoading(true);
+    const requestBody = {customerKey: customerKey, token: token, purchaseKey: purchaseKey};
+    //console.log(requestBody); // Object { customerKey: 1, token: "e66...44c6", purchaseKey: 193 }
+    const APIResponse = await CallAPI(requestBody, "cancelPurchase");
+    if(APIResponse.error) {
+      console.log("Error in cancelPurchase in useUserData:");
+      console.dir(APIResponse, { depth: null, colors: true });
+      return { data: null, error: APIResponse.error };
+    }
+
+    UpdateUser(APIResponse.data);
+    setUserLoading(false);
+    return { data: APIResponse.data, error: null };
   }, [])
 
   async function CallAPI(data:object, endpoint: string) {
@@ -341,8 +375,13 @@ export const useUserData = () => {
 
     async function loginUserFromToken(token: string): Promise<Customer | null> {
       const APIResponse = await CallAPI({token: token}, "login");
-
-      if (APIResponse.data && APIResponse.data.token) {
+      if(APIResponse.error) {
+        console.log("Error in loginUserFromToken in useUserData:");
+        console.dir(APIResponse, { depth: null, colors: true });
+        return null;
+      }
+  
+      if (APIResponse.data?.token) {
         Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
 
@@ -360,7 +399,7 @@ export const useUserData = () => {
 
   return {
     user, userLoading, createUser, loginUser, updateUser, setUser,
-    cartLoading, addToCart, updateCartQuantity, deleteFromCart,
+    cartLoading, addToCart, updateCartQuantity, deleteFromCart, cancelPurchase,
     addAddress, deleteAddress
   };
 

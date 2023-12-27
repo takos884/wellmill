@@ -21,6 +21,23 @@ span.listMessage {
 }
 
 div.lineItem {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding-bottom: 2rem;
+  justify-items: center;
+  color: #444;
+  font-size: 1.2rem;
+  font-weight: 300;
+  align-items: end;
+  border-bottom: 1px solid #ddd;
+}
+
+span.lineItemKeyLink {
+  color: #af3e92;
+}
+
+/*
+div.lineItem {
   display: flex;
   border: 1px solid #bbb;
   border-radius: 0.5rem;
@@ -54,3 +71,4 @@ img.lineItem {
   width: auto;
   height: auto;  
 }
+*/

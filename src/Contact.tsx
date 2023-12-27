@@ -117,7 +117,6 @@ function Contact() {
         </div>
 
         <button onClick={handleSubmit}>送信</button>
-
       </div>
       <Footer />
     </>

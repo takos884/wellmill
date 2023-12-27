@@ -105,7 +105,7 @@ export type Customer = {
     token?: string,
     cart?: Cart,
     addresses: Address[],
-    purchases?: Purchase[],
+    purchases?: Purchase[] | PurchaseAndAddress[],
 }
 
 export type Cart = {
@@ -175,6 +175,8 @@ export type Purchase = {
     amount: number,
     shippingStatus?: string,
 }
+
+export type PurchaseAndAddress = Purchase & Address;
 
 interface CredentialsWithEmail {
     email: string;

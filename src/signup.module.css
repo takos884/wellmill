@@ -108,6 +108,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: transparent;
 }
 
+span.duplicateEmailError {
+  color: #b33;
+}
 
 span.passwordInfo {
   font-weight: bold;
@@ -126,6 +129,14 @@ button.register:hover {
   color: #fba800;
   background-color: transparent;
   border: 1px solid #fba800;
+}
+
+button.processing {
+  color: transparent;
+  background: #fba800 url(../public/spinner.svg);
+  background-size: 3rem;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
 div.success {

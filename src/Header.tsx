@@ -73,7 +73,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
             <div className={styles.breadcrumbs}>
                 {breadcrumbs.map((breadcrumb, index) => (
                     <span key={index}>
-                        <Link to={breadcrumb.url}>{breadcrumb.text}</Link>
+                        {breadcrumb.url ? <Link to={breadcrumb.url}>{breadcrumb.text}</Link> : breadcrumb.text}
                         {index < breadcrumbs.length - 1 && " ›› "}
                     </span>
                 ))}

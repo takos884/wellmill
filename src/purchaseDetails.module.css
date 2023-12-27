@@ -1,0 +1,112 @@
+div.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 50rem;
+}
+
+span.purchaseKey {
+  font-size: 2rem;
+  color: #af3e92;
+}
+
+div.lineItemsGrid {
+  margin: 4rem 0;
+}
+
+div.detailsHeader {
+  color: #444;
+  display: grid;
+  grid-template-columns: 50% 15% 15% 20%;
+}
+
+div.lineItem {
+  display: grid;
+  grid-template-columns: 50% 15% 15% 20%;
+  border-top: 1px solid #bbb;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  margin-top: 1rem;
+  color: #444;
+}
+
+div.detailsFooter {
+  margin-top: 2rem;
+}
+
+div.detailsFooters {
+  display: grid;
+  grid-template-columns: 50% 25% 5% 20%;
+  margin-top: 1rem;
+  white-space: nowrap;
+}
+
+div.cancelFooter {
+  display: grid;
+  grid-template-columns: 50% 25% 5% 20%;
+  white-space: nowrap;
+}
+
+span.cancelOrder {
+  font-size: 0.8rem;
+  color: #af3e92;
+  grid-column: 3 / span 2;
+  text-align: center;
+  cursor: pointer;
+}
+
+span.cancelSpinner {
+  grid-column: 3 / span 2;
+  text-align: center;
+}
+
+img.cancelSpinner {
+  height: 1.5rem;
+  filter: invert(1);
+}
+
+span.cancelMessage {
+  font-size: 0.9rem;
+  color: #444;
+  grid-column: 3 / span 2;
+  text-align: center;
+}
+
+span.cancelError {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #af3e92;
+  grid-column: 3 / span 2;
+  text-align: center;
+}
+
+.thirdColumn {
+  grid-column: 3;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignEnd {
+  text-align: end;
+}
+
+span.shippingAddress {
+  display: flex;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+div.addressesBox {
+  display: flex;
+  gap: 4rem;
+  font-weight: 200;
+  font-size: 0.9rem;
+}
+
+div.addressBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

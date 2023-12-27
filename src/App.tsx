@@ -25,6 +25,8 @@ import Profile from './Profile';
 import PostPurchase from './PostPurchase';
 import Privacy from './Privacy';
 import Faq from './Faq';
+import PurchaseDetails from './PurchaseDetails';
+import NewCustomer from './NewCustomer';
 
 function Layout() {
   const location = useLocation();
@@ -44,6 +46,7 @@ function Layout() {
       <Route path="/post-purchase" element={<PostPurchase />} />
       <Route path="/login" element={<Login />} />
       <Route path="/sign-up" element={<Signup />} />
+      <Route path="/new-customer" element={<NewCustomer />} />
 
       <Route path="/account" element={<MyPage />} />
       <Route path="/sample-registration" element={<SampleRegistration />} />
@@ -51,6 +54,7 @@ function Layout() {
       <Route path="/result-list" element={<ResultList />} />
       <Route path="/how_to" element={<HowTo />} />
       <Route path="/order-list" element={<OrderList />} />
+      <Route path="/purchaseDetails/:purchaseKey" element={<PurchaseDetails />} />
       <Route path="/address" element={<Addresses />} />
       <Route path="/profile" element={<Profile />} />
 

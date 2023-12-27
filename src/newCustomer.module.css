@@ -1,0 +1,10 @@
+div.contentWrapper {
+  width: 90%;
+  max-width: 50rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 4rem;
+  color: #444;
+}
