@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 import { useProducts } from "./ProductContext";
 
 import { prefectures } from "./addressData"
@@ -16,10 +16,11 @@ type CheckoutFormProps = {
 
 
 export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) {
+  console.log("Rendering CheckoutForm")
   const stripe = useStripe();
   const elements = useElements();
 
-  const { user, userLoading, cartLoading } = useUserData();
+  const { user } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const addresses = (user?.addresses || []).sort((a, b) => {
     if (a.defaultAddress) return -1;
@@ -32,7 +33,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(user?.email || "");
   const [emailError, setEmailError] = useState<boolean>(false); // undefined means user tried to submit as empty
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSendingPayment, setIsSendingPayment] = useState(false);
   const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(defaultAddressKey);
   const [showNewAddress, setShowNewAddress] = useState(false);
 
@@ -72,7 +73,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     if (!stripe || !elements) { return; }
 
     // Already doing a purchase
-    if(isLoading) { return; }
+    if(isSendingPayment) { return; }
 
     // If the email is not valid, set it as an error and return
     const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -88,7 +89,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
       return;
     }
 
-    setIsLoading(true);
+    setIsSendingPayment(true);
     setMessage(null);
 
     const { error } = await stripe.confirmPayment({
@@ -107,7 +108,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
       setMessage("An unexpected error occurred during confirmPayment.");
     }
 
-    setIsLoading(false);
+    setIsSendingPayment(false);
   };
 
   function ToYen(value: number | undefined) {
@@ -129,13 +130,13 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     const style = document.createElement('style');
     style.id = 'loading-cursor-style';
     style.textContent = 'body { cursor: wait; }';
-    if (isLoading) {
+    if (isSendingPayment) {
       document.head.appendChild(style);
     } else {
       const existingStyleTag = document.getElementById('loading-cursor-style');
       if (existingStyleTag) { existingStyleTag.remove(); }
     }
-  }, [isLoading]);
+  }, [isSendingPayment]);
 
   const headings = (
     <div className={styles.headings}>
@@ -251,9 +252,9 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
                   <span className={styles.email}>E-mail</span>
                   <input type="email" className={`${styles.email} ${(emailError && styles.emailError)}`} value={email} onChange={HandleEmailChange} />
                 </div>
-                <button disabled={isLoading || !stripe || !elements} id="submit">
+                <button disabled={isSendingPayment || !stripe || !elements} id="submit">
                   <span id="button-text">
-                    {isLoading ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
+                    {isSendingPayment ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
                   </span>
                 </button>
                 {message && <div id="payment-message" className={styles.paymentMessage}>{message}</div>}

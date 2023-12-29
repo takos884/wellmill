@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+import { useContext, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+import { UserContext } from './UserContext';
 import Cookies from 'js-cookie';
 import { Customer, UserCredentials, Cart, CartLine, Address, Product } from './types';
 import { useProducts } from "./ProductContext";
@@ -9,55 +10,27 @@ type APIResponse = {
   error: string | null;
 };
 
-type UserProviderProps = {
-    children: React.ReactNode;
-};
+// This is pretty big
+type UseUserDataReturnType = {
+  createUser: (userData: Customer) => Promise<APIResponse>;
+  updateUser: (userData: Customer) => Promise<APIResponse>;
+  loginUser: (credentials: UserCredentials) => Promise<APIResponse>;
+  addAddress: (address: Address) => Promise<APIResponse>;
+  deleteAddress: (addressKey: number) => Promise<APIResponse>;
 
-type UserContextValue = {
-  user: Customer | null;
-  setUser: Dispatch<SetStateAction<Customer | null>>;
-  cartLoading: boolean;
-  setCartLoading: Dispatch<SetStateAction<boolean>>;
-  userLoading: boolean;
-  setUserLoading: Dispatch<SetStateAction<boolean>>;
-  local: boolean | undefined;
-  setLocal: Dispatch<SetStateAction<boolean | undefined>>;
-}
+  addToCart: (productKey: number, quantity: number) => Promise<APIResponse>;
+  updateCartQuantity: (lineItemKey: number, quantity: number) => Promise<APIResponse>;
+  deleteFromCart: (lineItemKey: number) => Promise<APIResponse>;
+  cancelPurchase: (customerKey: number, token: string, purchaseKey: number) => Promise<APIResponse>;
+};
 //#endregion Type definitions
 
 
-//#region create the context
-// Initialize the context with default values
-const defaultContextValue: UserContextValue = {
-  user: null,
-  setUser: () => {},
-  cartLoading: false,
-  setCartLoading: () => {},
-  userLoading: true,
-  setUserLoading: () => {},
-  local: undefined,
-  setLocal: () => {},
-};
-
-// Create the context with the interface
-const UserContext = createContext<UserContextValue>(defaultContextValue);
-
-export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<Customer | null>(null);
-  const [cartLoading, setCartLoading] = useState<boolean>(false);
-  const [userLoading, setUserLoading] = useState(false);
-  const [local, setLocal] = useState<boolean | undefined>(undefined)
-  const value = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, local, setLocal };
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};
-//#endregion
-
-
-export const useUserData = () => {
+export const useUserData = (): UseUserDataReturnType => {
   const context = useContext(UserContext);
   if (!context) { throw new Error('useUserData must be used within a UserProvider'); }
 
-  const { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, local, setLocal } = context;
+  const { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, local, setLocal } = context;
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
 
@@ -144,8 +117,6 @@ export const useUserData = () => {
   const updateUser = async (userData: Customer): Promise<APIResponse> => {
     setUserLoading(true);
     const APIResponse = await CallAPI({...userData, customerKey: user?.customerKey, token: user?.token}, "updateUser");
-    //console.log("APIResponse after create API call:");
-    //console.log(APIResponse);
 
     if(APIResponse.error) {
       console.log(APIResponse.error);
@@ -165,7 +136,6 @@ export const useUserData = () => {
       return newUserData
     });
 
-    //setUser(userData);
     setUserLoading(false);
     return { data: APIResponse.data, error: null };  
   };
@@ -618,6 +588,29 @@ export const useUserData = () => {
     return updatedCartLines;
   }
 
+  useEffect(() => {
+    setUserMeaningful(isMeaningfulData(user));
+  }, [user]);
+
+  function isMeaningfulData(obj: any): boolean {
+    if (obj === null) return false;
+
+    for (const key in obj) {
+        const value = obj[key];
+
+        if (Array.isArray(value)) {
+            if (value.length > 0) { return true; }
+        } else if (typeof value === 'object') {
+            if (isMeaningfulData(value)) { return true; }
+        } else if (typeof value === 'string' && value.trim() !== '') {
+            return true;
+        } else if (typeof value === 'number' && value !== null && value !== 0) {
+            return true;
+        }
+    }
+    return false;
+  }
+
   const emptyCustomer = {
     customerKey: null,
     cart: {
@@ -638,9 +631,9 @@ export const useUserData = () => {
 
 
   return {
-    user, userLoading, cartLoading, local, setCartLoading,
-    createUser, loginUser, updateUser, setUser, // Not available for non-registered customers
-    addToCart, updateCartQuantity, deleteFromCart, cancelPurchase,
+    createUser, loginUser, updateUser, // Not available for non-registered customers
+    addToCart, updateCartQuantity, deleteFromCart,
+    cancelPurchase,
     addAddress, deleteAddress
   };
 

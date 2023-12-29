@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "./ProductContext";
@@ -8,6 +8,7 @@ import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
 import ProductTile from "./ProductTile";
+import { UserContext } from "./UserContext";
 import { useUserData } from "./useUserData";
 
 function Product() {
@@ -15,7 +16,8 @@ function Product() {
     const { productId } = useParams<{ productId: string }>();
     const productIdNum = productId ? parseInt(productId) : undefined;
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
-    const { user, cartLoading, setCartLoading, addToCart } = useUserData();
+    const { user, cartLoading } = useContext(UserContext);
+    const { addToCart } = useUserData();
 
     const [productQuantity, setProductQuantity] = useState(1);
     const [showModal, setShowModal] = useState(false);

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useUserData } from './useUserData';
+import React, { useContext, useState } from "react";
+import { UserContext } from "./UserContext";
 import { Link } from "react-router-dom";
 import Header from "./Header";
 
@@ -16,8 +16,7 @@ const breadcrumbs = [
 
 
 function SampleRegistration() {
-  //const {user, setUser, userLoading} = useUserData();
-  const {user} = useUserData();
+  const { user } = useContext(UserContext);
   const [researchAgreement, setResearchAgreement] = useState(true);
   const [kentaiId, setKentaiId] = useState(''); //W2023022001000
   const [kentaiSaishubi, setKentaiSaishubi] = useState(getFormattedDate());

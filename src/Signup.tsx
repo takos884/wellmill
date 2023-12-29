@@ -48,7 +48,7 @@ interface InputErrors {
 
 function Signup() {
   const navigate = useNavigate();
-  const { createUser, setUser, loginUser } = useUserData();
+  const { createUser, loginUser } = useUserData();
   const { backupCustomerData, data: customerBackupData, error: customerBackupError } = useBackupDB<any>();
 
   const [createUserResponse, setCreateUserResponse] = useState<CreateUserResponse | null>(null);

@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useUserData } from "./useUserData";
+import { useContext, useState } from 'react';
+import { UserContext } from './UserContext';
 
 const localEndpoint = 'https://cdehaan.ca/wellmill/api/storeBackupData';
 
 export const useBackupDB = <T extends unknown>() => {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { user, userLoading, cartLoading, setUser } = useUserData();
+  const { user } = useContext(UserContext);
 
 
   async function postBackupData(body: string) {

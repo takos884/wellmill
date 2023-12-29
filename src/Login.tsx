@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { UserContext } from "./UserContext";
 import { useUserData } from './useUserData';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -17,7 +18,8 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const {user, setUser, loginUser} = useUserData();
+  const { user, setUser } = useContext(UserContext);
+  const { loginUser} = useUserData();
 
   const navigate = useNavigate();
 

@@ -1,7 +1,5 @@
 import React from "react";
 
-import { useUserData } from "./useUserData";
-
 import './App.css';
 import styles from "./newCustomer.module.css"
 import Header from "./Header";

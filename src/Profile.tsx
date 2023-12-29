@@ -1,10 +1,11 @@
-import React, { ChangeEvent, MouseEventHandler, useEffect, useState } from "react";
+import React, { ChangeEvent, MouseEventHandler, useContext, useEffect, useState } from "react";
 
 import './App.css';
 import styles from "./profile.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 
+import { UserContext } from "./UserContext";
 import { useUserData } from './useUserData';
 import { useBackupDB } from "./useBackupDB";
 import { Customer } from "./types";
@@ -54,7 +55,8 @@ interface InputErrors {
 }
 
 function Profile() {
-  const {user, loginUser, updateUser, userLoading} = useUserData();
+  const { user } = useContext(UserContext);
+  const { loginUser, updateUser } = useUserData();
   const {backupCustomerData, data: customerBackupData, error: customerBackupError} = useBackupDB<any>();
   const [updateUserResponse, setUpdateUserResponse] = useState<UpdateUserResponse | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);

@@ -63,16 +63,12 @@ span.link:hover {
 }
 
 
-button.logout {
-  width: 30rem;
-  color: #fff;
-  background-color: #fba800;
-  border: 1px solid transparent;
-  transition: background-color 0.25s;
-}
-
-button.logout:hover {
-  color: #fba800;
-  background-color: transparent;
-  border: 1px solid #fba800;
+div.advice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  top: 1.5rem;
+  font-size: 0.8rem;
+  color: #444;
 }

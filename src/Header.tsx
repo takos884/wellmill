@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import './App.css';
 import styles from './header.module.css'
 import { Link } from "react-router-dom";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 import { Breadcrumb } from "./types";
 
 // Specify the prop type for the Header component
@@ -14,17 +14,14 @@ interface HeaderProps {
 function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const [showMenu, setShowMenu] = useState(false);
 
-    const {user, cartLoading} = useUserData();
+    const { user, cartLoading, userMeaningful } = useContext(UserContext);
     const cart = user ? user.cart : undefined;
-
-    // If not logged in AND there is nothing meaningful stored locally, show the "login" button. Otherwise, show "My Page" button.
-    const showLogin = (user === null || (user.customerKey === null && user.cart.lines.length === 0 && user.addresses.length === 0 && user.purchases.length === 0));
 
     const spinner = <img className={styles.cartDotSpinnerSpinner} src="spinner.svg" alt="Spinner"/>;
     const cartDotContent = cartLoading ? spinner : cart?.quantity;
     const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
     const headerButtonLink = (
-      showLogin ? <Link to="/login">ログイン</Link> : <Link to="/account">マイページ</Link>
+        userMeaningful ? <Link to="/account">マイページ</Link> : <Link to="/login">ログイン</Link>
     )
 
     const handleHomeClick = () => {
@@ -48,9 +45,9 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
             <span className={styles.mainMenu}><Link to="/remote-examination">リモート検査とは？</Link></span>
             <span className={styles.mainMenu}><Link to="/shop">SHOP</Link></span>
             <span className={styles.mainMenu}><Link to="/contact">お問い合わせ</Link></span>
-            {showLogin ?
-                <span className={styles.mainMenu}><Link to="/login">ログイン</Link></span> :
-                <span className={styles.mainMenu}><Link to="/account">マイページ</Link></span>
+            {userMeaningful ?
+                <span className={styles.mainMenu}><Link to="/account">マイページ</Link></span> :
+                <span className={styles.mainMenu}><Link to="/login">ログイン</Link></span>
             }
         </div>          
     )

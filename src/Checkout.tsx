@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Helmet } from 'react-helmet';
 import CheckoutForm from "./CheckoutForm";
 import styles from './checkout.module.css';
 import { Elements } from "@stripe/react-stripe-js";
 import { Appearance, StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 import { AddressStateArray } from "./types";
 
 
@@ -17,7 +17,8 @@ type CheckoutProps = {
 const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
 function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
-  const { user, userLoading, cartLoading } = useUserData();
+  console.log("Rendering Checkout")
+  const { user } = useContext(UserContext);
   const [clientSecret, setClientSecret] = useState("");
 
   function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {

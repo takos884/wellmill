@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useUserData } from "./useUserData";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { UserContext } from "./UserContext";
 
 import './App.css';
 import Header from "./Header";
@@ -14,7 +14,7 @@ const breadcrumbs = [
 ];
 
 export default function PostPurchase() {
-  const { user, userLoading, cartLoading, setUser } = useUserData();
+  const { user, setUser } = useContext(UserContext);
   const prevCustomerKey = useRef<number | undefined>();
 
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);

@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { UserContext } from "./UserContext";
 import { useUserData } from "./useUserData";
 
 import { Address } from "./types";
@@ -14,7 +15,8 @@ type NewAddressProps = {
 };
 
 export default function NewAddress({ addressKey, setShowNewAddress }: NewAddressProps) {
-  const { user, addAddress } = useUserData();
+  const { user } = useContext(UserContext);
+  const { addAddress } = useUserData();
   const [postalCode, setPostalCode] = useState<string>("");
   const [displayedPostalCode, setDisplayedPostalCode] = useState<string>("");
   const postalCodeRef = useRef(null);

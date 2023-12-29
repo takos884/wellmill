@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Header from "./Header";
 import { Breadcrumb } from "./types";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 import styles from './home.module.css'
 import { Link } from "react-router-dom";
 
@@ -16,7 +16,7 @@ function Home() {
     setIframeSrc(`https://well-mill.com/?datetime=${new Date().getTime()}`);
   };
 
-  const { user } = useUserData();
+  const { user } = useContext(UserContext);
 
   const hamburgerIcon = (
     <div className={`${styles.hamburgerWrapper} ${showMenu ? styles.invertChildren : null}`}>

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 
+import { UserContext } from "./UserContext";
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
 import { Link } from "react-router-dom";
@@ -17,8 +18,13 @@ const breadcrumbs = [
   { text: "カートを見る", url: "/cart" },
 ];
 
-function Cart() {
-  const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
+export default function Cart() {
+  console.log("Rendering Cart");
+
+  //const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
+  const { user, userLoading, cartLoading } = useContext(UserContext);
+  const { updateCartQuantity, deleteFromCart } = useUserData();
+
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const cart = user ? user.cart : undefined;
   const addresses = (user?.addresses || []).sort((a, b) => {
@@ -30,7 +36,6 @@ function Cart() {
   const [displayCheckout, setDisplayCheckout] = useState(false);
   const [addressesState, setAddressesState] = useState<AddressStateArray>([]);
   const [lastUpdatedLineItemKey, setLastUpdatedLineItemKey] = useState<number | null>(null);
-  const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -326,13 +331,14 @@ function Cart() {
   })
   }
 
-  function HandleCheckoutClick() {
+  function HandleGoToCheckoutClick() {
     const addressSelects = document.querySelectorAll('select[name="addressSelect"]');
     const noAddressSelect = Array.from(addressSelects).find(addressSelect => {
       const currentSelect = addressSelect as HTMLSelectElement;
       return currentSelect.value === "0"
     });
-    if(noAddressSelect) { setErrorMessage("商品ごとに住所を選択してください。"); return; }
+    if(noAddressSelect) { console.log("Some error"); setErrorMessage("商品ごとに住所を選択してください。"); return; }
+    console.log("Let's setDisplayCheckout");
     setDisplayCheckout(true);
   }
 
@@ -430,7 +436,7 @@ function Cart() {
   const subTotal = (cart && cartQuantity > 0) ? (
     <>
       <span className={styles.subTotal}>小計<span className={styles.subTotalValue}>{cartCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>（税込）</span>
-      <button className={styles.checkout} onClick={() => {HandleCheckoutClick();}}>{checkoutButtonContent}</button>
+      <button className={styles.checkout} onClick={HandleGoToCheckoutClick}>{checkoutButtonContent}</button>
     </>
   ) : null;
 
@@ -468,6 +474,3 @@ function Cart() {
     </>
   )
 }
-
-export default Cart
-

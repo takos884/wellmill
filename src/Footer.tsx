@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import styles from './footer.module.css'
 import { Link } from "react-router-dom";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 
 function Footer() {
-    const {user} = useUserData();
+    const { user } = useContext(UserContext);
 
     const userLink = (
         user === null ? <Link to="/login">ログイン</Link> : <Link to="/account">マイページ</Link>

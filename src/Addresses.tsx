@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
+import { UserContext } from "./UserContext";
 import { useUserData } from "./useUserData";
 
 import './App.css';
@@ -19,7 +20,8 @@ const breadcrumbs = [
 ];
 
 function Addresses() {
-  const { user, deleteAddress, userLoading, /*cartLoading*/ } = useUserData();
+  const { user, userLoading } = useContext(UserContext);
+  const { deleteAddress } = useUserData();
   const addresses = user ? user.addresses : [];
 
   const [showNewAddress, setShowNewAddress] = useState(false);

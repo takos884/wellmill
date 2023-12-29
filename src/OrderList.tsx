@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 
-import { useUserData } from "./useUserData";
+import { UserContext } from "./UserContext";
 import { useProducts } from "./ProductContext";
 
 import './App.css';
@@ -16,7 +16,7 @@ const breadcrumbs = [
 ];
 
 function OrderList() {
-  const { user, userLoading } = useUserData();
+  const { user, userLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   // This is actually better described as a "Line item", since they aren't grouped into purchase. I'll group later.

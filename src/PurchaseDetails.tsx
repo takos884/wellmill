@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 
+import { UserContext } from "./UserContext";
 import { useUserData } from "./useUserData";
 import { useProducts } from "./ProductContext";
 
@@ -18,7 +19,8 @@ const breadcrumbs = [
 ];
 
 export default function PurchaseDetails() {
-  const { user, userLoading, cancelPurchase } = useUserData();
+  const { user, userLoading } = useContext(UserContext);
+  const { cancelPurchase } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const purchaseKey = (parseInt(useParams().purchaseKey || ""));
   const [cancelError, setCancelError] = useState("");
