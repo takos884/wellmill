@@ -166,8 +166,9 @@ function Profile() {
       gender: inputs.gender,
       birthday: inputs.birthday,
       email: inputs.email,
-      addresses: [],
-      purchases: [],
+      cart: user.cart,
+      addresses: user.addresses,
+      purchases: user.purchases,
     };
 
     // This is my database update
@@ -227,14 +228,19 @@ function Profile() {
       return;
     }
 
+    // TODO need a better way to send password updates
     const userData: Customer = {
+      customerKey: user.customerKey,
       password: inputs.password,
       newPassword1: inputs.newPassword1,
       newPassword2: inputs.newPassword2,
+      cart: user.cart,
+      addresses: user.addresses,
+      purchases: user.purchases,
     };
 
     // This is my database update
-    // A user code (i.e. NV-198) comes back after creating a user, but only a token is returned after an update
+    // A user code (e.g. NV-198) comes back after creating a user, but only a token is returned after an update
     console.log("Update, with userData:")
     console.dir(userData, { depth: null, colors: true });
     const response = await updateUser(userData);

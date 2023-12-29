@@ -16,14 +16,15 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
 
     const {user, cartLoading} = useUserData();
     const cart = user ? user.cart : undefined;
-    const cartQuantity = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0) : 0;
-    //const cartCost = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0) : 0;
+
+    // If not logged in AND there is nothing meaningful stored locally, show the "login" button. Otherwise, show "My Page" button.
+    const showLogin = (user === null || (user.customerKey === null && user.cart.lines.length === 0 && user.addresses.length === 0 && user.purchases.length === 0));
 
     const spinner = <img className={styles.cartDotSpinnerSpinner} src="spinner.svg" alt="Spinner"/>;
-    const cartDotContent = cartLoading ? spinner : cartQuantity;
-    const cartDot = (cartQuantity && cartQuantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
+    const cartDotContent = cartLoading ? spinner : cart?.quantity;
+    const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
     const headerButtonLink = (
-        user === null ? <Link to="/login">ログイン</Link> : <Link to="/account">マイページ</Link>
+      showLogin ? <Link to="/login">ログイン</Link> : <Link to="/account">マイページ</Link>
     )
 
     const handleHomeClick = () => {
@@ -39,7 +40,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
             </svg>
             <span className={styles.hamburger}>{showMenu ? "close" : "menu"}</span>
         </div>
-    )    
+    )
 
     const mainMenu = (
         <div className={styles.mainMenu} style={{transform: showMenu ? "translateX(0)" : "translateX(100vw)"}}>
@@ -47,9 +48,9 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
             <span className={styles.mainMenu}><Link to="/remote-examination">リモート検査とは？</Link></span>
             <span className={styles.mainMenu}><Link to="/shop">SHOP</Link></span>
             <span className={styles.mainMenu}><Link to="/contact">お問い合わせ</Link></span>
-            {user === null ?
-            <span className={styles.mainMenu}><Link to="/login">ログイン</Link></span> :
-            <span className={styles.mainMenu}><Link to="/account">マイページ</Link></span>
+            {showLogin ?
+                <span className={styles.mainMenu}><Link to="/login">ログイン</Link></span> :
+                <span className={styles.mainMenu}><Link to="/account">マイページ</Link></span>
             }
         </div>          
     )

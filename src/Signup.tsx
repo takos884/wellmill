@@ -160,6 +160,7 @@ function Signup() {
         gender: inputs.gender,
         birthday: inputs.birthday, 
         password: inputs.password,
+        cart: {quantity: 0, cost: 0, includedTax: 0, lines: []},
         addresses: [],
         purchases: [],
       };

@@ -15,7 +15,7 @@ function Product() {
     const { productId } = useParams<{ productId: string }>();
     const productIdNum = productId ? parseInt(productId) : undefined;
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
-    const { user, cartLoading, addToCart } = useUserData();
+    const { user, cartLoading, setCartLoading, addToCart } = useUserData();
 
     const [productQuantity, setProductQuantity] = useState(1);
     const [showModal, setShowModal] = useState(false);
@@ -32,20 +32,20 @@ function Product() {
     }, []);
 
     async function handleAddToCart() {
-      if(!user) {
+      if(false && !user) {
         setShowModal(true);
         return;
       }
 
-      if(!currentProduct || !user.customerKey) {
-        console.log(`addToCart called without either currentProduct (${currentProduct}), user (${user}), or customerKey (see user).`);
+      if(!currentProduct) {
+        console.log(`addToCart called without currentProduct (${currentProduct}).`);
         return;
       }
 
-      //console.log("Adding Product to cart:");
-      const returnedCart = await addToCart(currentProduct.productKey, user.customerKey, currentProduct.price, currentProduct.taxRate, productQuantity);
-      //console.log("Cart returned after adding to cart:");
-      //console.log(returnedCart);
+      const returnedCart = await addToCart(currentProduct.productKey, productQuantity);
+      if(returnedCart.error) {
+        console.log("Add to cart error: " + returnedCart.error);
+      }
     };
 
     const breadcrumbs = [

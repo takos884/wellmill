@@ -48,8 +48,6 @@ function Cart() {
   }, [cart, addressesState.length]);
 
 
-
-
   // Things to do every time "user" updates:
   // 1 - Remove the error message
   // 2 - Update the select if it was used to make a new address
@@ -100,7 +98,7 @@ function Cart() {
     const newLineItemQuantity = lineItemAddress?.addresses?.reduce((acc, address) => acc + address.quantity, 0) || 0;
 
     if (newLineItemQuantity > 0) {
-        updateCartQuantity(user.customerKey, user.token, lastUpdatedLineItemKey, newLineItemQuantity);
+      updateCartQuantity(lastUpdatedLineItemKey, newLineItemQuantity);
     }
 
     setLastUpdatedLineItemKey(null); // Reset the tracker
@@ -116,8 +114,6 @@ function Cart() {
 
 
   async function HandleQuantityClick(lineItemKey: number, quantity: number) {
-    if(!user?.customerKey) return;
-    if(!user?.token) return;
     if(quantity < 1 || quantity > 10) return;
 
     // If the quantity of a lineItem is changed while it isn't split into addresses, remove all split addresses info
@@ -135,8 +131,7 @@ function Cart() {
     });
 
 
-    // eslint-disable-next-line
-    const returnedCart = await updateCartQuantity(user.customerKey, user.token, lineItemKey, quantity);
+    const returnedCart = await updateCartQuantity(lineItemKey, quantity);
     //console.log(returnedCart);
   }
 
@@ -233,7 +228,7 @@ function Cart() {
           if(updatedAddresses.length > 0) { updatedAddresses[0].quantity += removedQuantity }
           return {
             ...li,
-            quantity: updatedAddresses.length > 0 ? undefined : removedQuantity,
+            quantity: updatedAddresses.length > 0 ? 0 : removedQuantity,
             addresses: updatedAddresses.length > 0 ? updatedAddresses : null
           };
         }
@@ -285,13 +280,10 @@ function Cart() {
 
 
   async function HandleRemoveClick(lineItemKey: number) {
-    if(!user?.customerKey) { return null; }
-    if(!user?.token) { return null; }
-
-    // eslint-disable-next-line
-    const returnedCart = await deleteFromCart(user.customerKey, user.token, lineItemKey);
-    //console.log("Cart returned after deleting from cart:");
-    //console.log(returnedCart);
+    const returnedData = await deleteFromCart(lineItemKey);
+    if(returnedData.error) {
+      console.log("Delete from cart error: " + returnedData.error)
+    }
   }
 
   function HandleSplitToggleClick(lineItemKey: number) {
@@ -313,14 +305,14 @@ function Cart() {
                   // If quantity is 1, create a single address object
                   return {
                       ...lineItem,
-                      quantity: undefined,
+                      quantity: 1,
                       addresses: [{ addressKey: addresses[0]?.addressKey || null, quantity: 1, addressIndex: 1 }]
                   };
               } else if (lineItem.quantity && lineItem.quantity > 1) {
                   // If quantity is 2 or more, create two address objects
                   return {
                       ...lineItem,
-                      quantity: undefined,
+                      quantity: lineItem.quantity,
                       addresses: [
                           { addressKey: addresses[0]?.addressKey || null, quantity: lineItem.quantity - 1, addressIndex: 1 },
                           { addressKey: addresses[1]?.addressKey || addresses[0]?.addressKey || null, quantity: 1, addressIndex: 2 }
@@ -354,7 +346,7 @@ function Cart() {
 
   const cartLineElements = cart?.lines ? cart.lines.map((line, lineIndex) => {
     if(!user) { return null; }
-    if(!user.customerKey) { return null; }
+    if(!user.customerKey) { /* We're using local cart data */ }
     if(!products) { return null; }
     const product = products.find(product => {return product.productKey === line.productKey});
     if(!product) { return null; }
@@ -365,7 +357,7 @@ function Cart() {
     const lineCost = Math.round(unitCost * line.quantity);
     const topImage = product.images.sort((a, b) => a.displayOrder - b.displayOrder)[0];
     const addressState = addressesState.find((as) => {return as.lineItemKey === line.lineItemKey});
-    console.log(addressState);
+    //console.log(addressState);
     const addressSplit = (addressState && !(addressState.addresses === null));
     const totalQuantity = addressSplit ? addressState?.addresses?.reduce((acc, address) => acc + address.quantity, 0) || 0 : line.quantity;
 

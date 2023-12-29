@@ -12,18 +12,21 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const {user, setUser, userLoading} = useUserData();
+  const {user, setUser, userLoading, local} = useUserData();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     setUser(null);
     Cookies.remove('WellMillToken');
+    if(local) { localStorage.removeItem('userLocal'); }
     navigate('/login');
   }
 
   if(userLoading) return <span>Loading...</span>
 
   if (!user) return <p>Please <Link to='/login'>log in</Link> first.</p>;
+
+  const logoutText = local ? "買い物データ削除" : "ログアウト"
 
   return (
     <>
@@ -40,7 +43,7 @@ const MyPage = () => {
           <Link to="/address"><span className={styles.link}>お届け先住所</span></Link>
           <Link to="/profile"><span className={styles.link}>アカウント情報</span></Link>
         </div>
-        <button className={styles.logout} onClick={handleLogout}>ログアウト</button>
+        <button className={styles.logout} onClick={handleLogout}>{logoutText}</button>
       </div>
       <Footer />
     </>

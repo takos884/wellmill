@@ -177,7 +177,11 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
       addressKey: addressKey,
     };
 
-    await addAddress(addressData);
+    const addressResults = await addAddress(addressData);
+    if(addressResults.error) {
+      console.log("Error adding/updating an address" + addressResults.error);
+    }
+
     setShowNewAddress(false);
   }
 

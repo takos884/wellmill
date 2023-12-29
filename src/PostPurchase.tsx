@@ -35,7 +35,7 @@ export default function PostPurchase() {
   const serverReply = <span className={styles.message}>サーバーからのメッセージ: {paymentStatus}</span>
 
   useEffect(() => {
-    if(!user) return;
+    if(!user?.customerKey) return;
     if(user.customerKey === prevCustomerKey.current) return;
     prevCustomerKey.current = user.customerKey;
 

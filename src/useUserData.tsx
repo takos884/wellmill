@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import Cookies from 'js-cookie';
-import { Customer, UserCredentials, Cart, CartLine, Address } from './types';
+import { Customer, UserCredentials, Cart, CartLine, Address, Product } from './types';
+import { useProducts } from "./ProductContext";
 
+//#region Type definitions
 type APIResponse = {
   data: any | null;
   error: string | null;
@@ -11,21 +13,28 @@ type UserProviderProps = {
     children: React.ReactNode;
 };
 
-interface UserContextValue {
+type UserContextValue = {
   user: Customer | null;
   setUser: Dispatch<SetStateAction<Customer | null>>;
   cartLoading: boolean;
   setCartLoading: Dispatch<SetStateAction<boolean>>;
+  userLoading: boolean;
+  setUserLoading: Dispatch<SetStateAction<boolean>>;
   local: boolean | undefined;
   setLocal: Dispatch<SetStateAction<boolean | undefined>>;
 }
+//#endregion Type definitions
 
+
+//#region create the context
 // Initialize the context with default values
 const defaultContextValue: UserContextValue = {
   user: null,
   setUser: () => {},
   cartLoading: false,
   setCartLoading: () => {},
+  userLoading: true,
+  setUserLoading: () => {},
   local: undefined,
   setLocal: () => {},
 };
@@ -33,25 +42,73 @@ const defaultContextValue: UserContextValue = {
 // Create the context with the interface
 const UserContext = createContext<UserContextValue>(defaultContextValue);
 
-
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Customer | null>(null);
   const [cartLoading, setCartLoading] = useState<boolean>(false);
+  const [userLoading, setUserLoading] = useState(false);
   const [local, setLocal] = useState<boolean | undefined>(undefined)
-  const value = { user, setUser, cartLoading, setCartLoading, local, setLocal };
+  const value = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, local, setLocal };
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
+//#endregion
+
 
 export const useUserData = () => {
   const context = useContext(UserContext);
-  if (!context) {
-    throw new Error('useUserData must be used within a UserProvider');
-  }
+  if (!context) { throw new Error('useUserData must be used within a UserProvider'); }
 
-  const { user, setUser, cartLoading, setCartLoading, local, setLocal } = context;
-  const [userLoading, setUserLoading] = useState(false);
+  const { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, local, setLocal } = context;
+  const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
 
+  // This effect runs once on mount to check for existing user data, first on the server, then locally
+  useEffect(() => {
+    async function initializeUserData() {
+      if (!user) { // First time the site is loading / after refresh
+        const token = Cookies.get('WellMillToken');
+        if (token) {
+          try{
+            await loginUserFromToken(token);
+            setLocal(false);
+          }
+          catch(error) {
+            console.error("Failed to fetch remote user data:", error);
+            console.error("Falling back to local data");
+            pullUserLocal();
+            setLocal(true);
+          }
+        } else {
+          pullUserLocal();
+          setLocal(true);
+        }
+      }
+    }
+
+    async function loginUserFromToken(token: string) {
+      const APIResponse = await CallAPI({token: token}, "login");
+      if(APIResponse.error) {
+        console.log("Error in loginUserFromToken in useUserData:");
+        throw new Error(APIResponse.error);
+      }
+
+      if (APIResponse.data?.token) {
+        Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
+      }
+
+      // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
+      if(APIResponse?.data?.customerData?.cart?.lines) {
+        APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
+      }
+
+      UpdateUser(APIResponse.data.customerData);
+      return;
+    }  
+
+    setUserLoading(true);
+    initializeUserData().then(() => {
+      setUserLoading(false);
+    });
+  }, []);
 
 
   const createUser = async (userData: Customer): Promise<APIResponse> => {
@@ -61,7 +118,7 @@ export const useUserData = () => {
     //console.log(APIResponse);
 
     if(APIResponse.error) {
-      console.dir(APIResponse, { depth: null, colors: true });
+      console.log(APIResponse);
       //console.log(APIResponse.error);
       return { data: null, error: APIResponse.error };
     }
@@ -113,53 +170,6 @@ export const useUserData = () => {
     return { data: APIResponse.data, error: null };  
   };
 
-  // Add can also be used to update, if an addressKey is present in the address data
-  async function addAddress(address: Address) {
-    setUserLoading(true);
-    const APIResponse = await CallAPI({...address, customerKey: user?.customerKey, token: user?.token}, "addAddress");
-
-    // Error returned in response
-    if(APIResponse.error) {
-      const errorMessage = "APIResponse error: " + APIResponse.error
-      console.log(errorMessage);
-      return { data: null, error: errorMessage };
-    }
-
-    // Got a reply, but no addresses data
-    if(!APIResponse.data?.addresses) {
-      const errorMessage = "No address data returned after editing customer addresses. Error message: " + APIResponse.error;
-      console.log(errorMessage);
-      return { data: null, error: errorMessage };
-    }
-
-    // Update the user's address data, then store the user's data
-    const freshUser = { ...user, addresses: APIResponse.data.addresses }
-    UpdateUser(freshUser);
-  }
-
-  async function deleteAddress(addressKey: number) {
-    setUserLoading(true);
-    const APIResponse = await CallAPI({addressKey: addressKey, customerKey: user?.customerKey, token: user?.token}, "deleteAddress");
-
-    // Error returned in response
-    if(APIResponse.error) {
-      const errorMessage = "APIResponse error: " + APIResponse.error
-      console.log(errorMessage);
-      return { data: null, error: errorMessage };
-    }
-
-    // Got a reply, but no addresses data
-    if(!APIResponse.data?.addresses) {
-      const errorMessage = "No address data returned after deleting customer addresses. Error message: " + APIResponse.error;
-      console.log(errorMessage);
-      return { data: null, error: errorMessage };
-    }
-
-    // Update the user's address data, then store the user's data
-    const freshUser = { ...user, addresses: APIResponse.data.addresses }
-    UpdateUser(freshUser);    
-  }
-
   const loginUser = async (credentials: UserCredentials): Promise<APIResponse> => {
     setUserLoading(true);
     const APIResponse = await CallAPI(credentials, "login");
@@ -179,60 +189,320 @@ export const useUserData = () => {
     APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
 
     UpdateUser(APIResponse.data.customerData)
-    //setUser(APIResponse.data.customerData);
     setUserLoading(false);
     return{ data: APIResponse.data.customerData, error: null };
+  };
+
+
+
+
+
+  //#region Add address
+  // Add can also be used to update, if an addressKey is present in the address data
+  async function addAddress(address: Address) {
+    setUserLoading(true);
+    const addAddressResults = addAddressFunction(address);
+    setUserLoading(false);
+    return addAddressResults;
+
+    async function addAddressFunction(address: Address) {
+      if(local) {
+        return addAddressLocal(address);
+      }
+
+      if(!user)             return { data: null, error: "No user data available when adding remote address" };
+      if(!user.customerKey) return { data: null, error: "No customerKey available when adding remote address" };
+      if(!user.token)       return { data: null, error: "No token available when adding remote address" };
+
+      const APIResponse = await CallAPI({...address, customerKey: user.customerKey, token: user.token}, "addAddress");
+
+      // Error returned in response
+      if(APIResponse.error) {
+        console.log("APIResponse error in addAddress:")
+        console.log(APIResponse.error);
+        return { data: null, error: APIResponse.error };
+      }
+
+      // Got a reply, but no addresses data
+      if(!APIResponse.data?.addresses) {
+        console.log("No address data returned after editing customer addresses. Error message: ")
+        console.log(APIResponse.error);
+        return { data: null, error: APIResponse.error };
+      }
+
+      // Update the user's address data, then store the user's data
+      const freshUser = { ...user, addresses: APIResponse.data.addresses }
+      UpdateUser(freshUser);
+      return { data: freshUser, error: null };  
+    }
   }
 
-  const addToCart = useCallback(async (productKey: number, customerKey: number, unitPrice: number, taxRate: number, quantity: number) => {
-    setCartLoading(true);
-    const requestBody = {productKey: productKey, customerKey: customerKey, token: user?.token, unitPrice: unitPrice, taxRate: taxRate, quantity: quantity};
-    //console.log("Add to cart with requestBody:");
-    //console.log(requestBody);
-    const APIResponse = await CallAPI(requestBody, "addToCart");
+  const addAddressLocal = useCallback((address: Address) => {
+    if(!user) return { data: null, error: "No user data available when adding local address" };
 
-    if(APIResponse.error) {
-      console.log("Error in addToCart in useUserData:");
-      console.dir(APIResponse, { depth: null, colors: true });
-      return { data: null, error: APIResponse.error };
+    const addressesClone = [ ...user.addresses ];
+
+    // If an address with the same key exists, update that
+    // If not, make a new address
+    let existingAddress = addressesClone.find(ads => {return ads.addressKey === address.addressKey});
+    if(existingAddress) {
+      existingAddress = { ...existingAddress, ...address };
+    }
+    else {
+      // random (more than a million) lineItemKey while it's stored locally
+      const addressKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+      addressesClone.push({ ...address, addressKey: addressKeyLocal});
     }
 
-    //console.log("APIResponse.data:");
-    //console.log(APIResponse.data);
-    UpdateUser(undefined, APIResponse.data);
-    setCartLoading(false);
-    return APIResponse.data;
-  }, []);
+    const userClone = { ...user, addresses: addressesClone};
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    return { data: userClone, error: null };
+  }, [user]);
+  //#endregion
 
-  const updateCartQuantity = useCallback(async (customerKey: number, token: string, lineItemKey: number, quantity: number) => {
-    setCartLoading(true);
-    const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey, quantity: quantity};
-    const APIResponse = await CallAPI(requestBody, "updateCartQuantity");
-    if(APIResponse.error) {
-      console.log("Error in updateCartQuantity in useUserData:");
-      console.dir(APIResponse, { depth: null, colors: true });
-      return { data: null, error: APIResponse.error };
+
+  //#region Delete address
+  async function deleteAddress(addressKey: number) {
+    setUserLoading(true);
+    const deleteAddressResults = deleteAddressFunction(addressKey);
+    setUserLoading(false);
+    return deleteAddressResults;
+
+    async function deleteAddressFunction(addressKey: number) {
+      if(local) {
+        return deleteAddressLocal(addressKey);
+      }
+
+      if(!user)             return { data: null, error: "No user data available when deleting address" };
+      if(!user.customerKey) return { data: null, error: "No customerKey available when deleting address" };
+      if(!user.token)       return { data: null, error: "No token available when deleting address" };
+
+      const APIResponse = await CallAPI({addressKey: addressKey, customerKey: user.customerKey, token: user.token}, "deleteAddress");
+
+      // Error returned in response
+      if(APIResponse.error) {
+        const errorMessage = "APIResponse error: " + APIResponse.error
+        console.log(errorMessage);
+        return { data: null, error: errorMessage };
+      }
+
+      // Got a reply, but no addresses data
+      if(!APIResponse.data?.addresses) {
+        const errorMessage = "No address data returned after deleting customer addresses. Error message: " + APIResponse.error;
+        console.log(errorMessage);
+        return { data: null, error: errorMessage };
+      }
+
+      // Update the user's address data, then store the user's data
+      const freshUser = { ...user, addresses: APIResponse.data.addresses }
+      UpdateUser(freshUser);
+      return { data: freshUser, error: null };
     }
-    UpdateUser(undefined, APIResponse.data);
-    setCartLoading(false);
-    return APIResponse.data;
-  }, [])
+  }
 
-  const deleteFromCart = useCallback(async (customerKey: number, token: string, lineItemKey: number) => {
+  const deleteAddressLocal = useCallback((addressKey: number) => {
+    if(!user) return { data: null, error: "No user data available when deleting local address" };
+
+    const addressesClone = user.addresses.filter(ads => {return ads.addressKey !== addressKey});
+    const userClone = { ...user, addresses: addressesClone};
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    return { data: userClone, error: null };
+  }, [user]);
+  //#endregion
+
+
+  //#region Add to cart
+  const addToCart = useCallback(async (productKey: number, quantity: number) => {
     setCartLoading(true);
-    const requestBody = {customerKey: customerKey, token: token, lineItemKey: lineItemKey};
-    //console.log(requestBody); // Object { customerKey: 1, token: "e66...44c6", lineItemKey: 1 }
-    const APIResponse = await CallAPI(requestBody, "deleteFromCart");
-    if(APIResponse.error) {
-      console.log("Error in deleteFromCart in useUserData:");
-      console.dir(APIResponse, { depth: null, colors: true });
-      return { data: null, error: APIResponse.error };
+    const updatedCart = addToCartFunction(productKey, quantity);
+    setCartLoading(false);
+    return updatedCart;
+
+    async function addToCartFunction(productKey: number, quantity: number) {
+      const product = products?.find(product => {return product.productKey === productKey});
+      if(!product) {
+        console.log(`Error in addToCart in useUserData - product not found. productKey: ${productKey}, products:`);
+        console.log(products);
+        return { data: null, error: "Product not found" };
+      }
+  
+      if(local) {
+        return addToCartLocal(product, quantity);
+      }
+  
+      if(!user)              return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!user?.customerKey) return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!user?.token)       return { data: null, error: "No token available when adding to remote cart" };
+      const requestBody = {productKey: productKey, customerKey: user.customerKey, token: user.token, unitPrice: product.price, taxRate: product.taxRate, quantity: quantity};
+      const APIResponse = await CallAPI(requestBody, "addToCart");
+  
+      if(APIResponse.error) {
+        console.log("Error in addToCart in useUserData:");
+        console.log(APIResponse);
+        return { data: null, error: APIResponse.error };
+      }
+  
+      UpdateUser(undefined, APIResponse.data);
+      return { data: APIResponse.data, error: null };
+    }
+  }, [products, local, user]);
+
+  const addToCartLocal = useCallback((product: Product, quantity: number) => {
+    // No cart or no lines is ok for add to cart
+    if(!user) return { data: null, error: "No user data available when adding to local cart" };
+
+    const cartClone = user.cart ? { ...user.cart } : {quantity: 0, cost: 0, includedTax: 0, lines: []};
+    const linesClone = cartClone.lines;
+
+    // If an identical item is already in the cart, add to its quantity
+    // If no identical item is found, make a new line item
+    const existingLineItem = linesClone.find(line => {
+      return (
+        line.productKey === product.productKey &&
+        line.unitPrice === product.price &&
+        line.taxRate === product.taxRate
+      )
+    });
+    if(existingLineItem) {
+      existingLineItem.quantity += quantity;
+    }
+    else {
+      // random (more than a million) lineItemKey while it's stored locally
+      const lineItemKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+      linesClone.push({lineItemKey: lineItemKeyLocal, productKey: product.productKey, unitPrice: product.price, taxRate: product.taxRate, quantity})
     }
 
-    UpdateUser(undefined, APIResponse.data);
+    // Update cart meta-data
+    const updatedCart = UpdateCartMetadata(cartClone)
+
+    const userClone = { ...user, cart: updatedCart};
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    return { data: updatedCart, error: null };
+  }, [user]);
+  //#endregion
+
+
+
+
+
+  //#region Update cart quantity
+  const updateCartQuantity = useCallback(async (lineItemKey: number, quantity: number) => {
+    setCartLoading(true);
+    const updatedCart = await updateCartQuantityFunction(lineItemKey, quantity);
     setCartLoading(false);
-    return APIResponse.data;
-  }, [])
+    return updatedCart;
+
+    async function updateCartQuantityFunction(lineItemKey: number, quantity: number) {
+      if(local) {
+        return updateCartQuantityLocal(lineItemKey, quantity); // { data: xxx, error: yyy }
+      }
+  
+      if(!user)              return { data: null, error: "No user data available when updating remote cart quantity" };
+      if(!user?.customerKey) return { data: null, error: "No customer key available when updating remote cart quantity" };
+      if(!user?.token)       return { data: null, error: "No token available when updating remote cart quantity" };
+      const requestBody = {customerKey: user.customerKey, token: user.token, lineItemKey: lineItemKey, quantity: quantity};
+      const APIResponse = await CallAPI(requestBody, "updateCartQuantity");
+
+      if(APIResponse.error) {
+        console.log("Error in updateCartQuantity in useUserData:");
+        console.log(APIResponse);
+        return { data: null, error: APIResponse.error };
+      }
+
+      UpdateUser(undefined, APIResponse.data);
+      return {data: APIResponse.data, error: null };
+    }
+  }, [local, user])
+
+  const updateCartQuantityLocal = useCallback((lineItemKey: number, quantity: number) => {
+    if(!user)            return { data: null, error: "No user data available when updating local cart quantity" };
+    if(!user.cart)       return { data: null, error: "No cart data available when updating local cart quantity" };
+    if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when updating local cart quantity" };
+
+    const cartClone = { ...user.cart };
+    const linesClone = cartClone.lines;
+
+    const existingLineItem = linesClone.find(line => {return line.lineItemKey === lineItemKey});
+    if(!existingLineItem) return { data: null, error: "Item not found when updating local cart quantity" };
+    existingLineItem.quantity = quantity;
+
+    // Update cart meta-data
+    const updatedCart = UpdateCartMetadata(cartClone);
+
+    const userClone = { ...user, cart: updatedCart};
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    return {data: updatedCart, error: null };
+  }, [user]);
+  //#endregion
+
+
+  //#region Delete from cart
+  const deleteFromCart = useCallback(async (lineItemKey: number) => {
+    setCartLoading(true);
+    const updatedCart = await deleteFromCartFunction(lineItemKey);
+    setCartLoading(false);
+    return updatedCart;
+
+    async function deleteFromCartFunction(lineItemKey: number) {
+      if(local) {
+        return deleteFromCartLocal(lineItemKey); // { data: xxx, error: yyy }
+      }
+  
+      if(!user)              return { data: null, error: "No user data available when deleting from remote cart" };
+      if(!user?.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
+      if(!user?.token)       return { data: null, error: "No token available when deleting from remote cart" };
+      const requestBody = {customerKey: user.customerKey, token: user.token, lineItemKey: lineItemKey};
+      const APIResponse = await CallAPI(requestBody, "deleteFromCart");
+
+      if(APIResponse.error) {
+        console.log("Error in deleteFromCart in useUserData:");
+        console.log(APIResponse);
+        return { data: null, error: APIResponse.error };
+      }
+  
+      UpdateUser(undefined, APIResponse.data);
+      return { data: APIResponse.data, error: null };
+    }
+  }, [local, user])
+
+  const deleteFromCartLocal = useCallback((lineItemKey: number) => {
+    if(!user)            return { data: null, error: "No user data available when deleting from local cart" };
+    if(!user.cart)       return { data: null, error: "No cart data available when deleting from local cart" };
+    if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when deleting from local cart" };
+
+    const cartClone = { ...user.cart };
+    cartClone.lines = cartClone.lines.filter(line => {return line.lineItemKey !== lineItemKey});
+
+    // Update cart meta-data
+    const updatedCart = UpdateCartMetadata(cartClone)
+
+    const userClone = { ...user, cart: updatedCart};
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    return {data: updatedCart, error: null};
+  }, [user]);
+  //#endregion
+
+
+  function UpdateCartMetadata(cart: Cart) {
+    const newCart = {...cart};
+    const lines = newCart.lines;
+    if(!lines) return cart;
+
+    const cartQuantity = lines.reduce((sum, lineItem) => sum + lineItem.quantity, 0);
+    const cartCost = lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0);
+    const cartTax = lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0);
+    newCart.quantity = cartQuantity;
+    newCart.cost = cartCost;
+    newCart.includedTax = cartTax;
+
+    return newCart;
+  }
+
 
   const cancelPurchase = useCallback(async (customerKey: number, token: string, purchaseKey: number) => {
     setUserLoading(true);
@@ -241,7 +511,7 @@ export const useUserData = () => {
     const APIResponse = await CallAPI(requestBody, "cancelPurchase");
     if(APIResponse.error) {
       console.log("Error in cancelPurchase in useUserData:");
-      console.dir(APIResponse, { depth: null, colors: true });
+      console.log(APIResponse);
       return { data: null, error: APIResponse.error };
     }
 
@@ -263,17 +533,17 @@ export const useUserData = () => {
         // Attempt to parse the error message from the response
         try {
             const errorDataJson = await response.json();
-            console.dir(errorDataJson, { depth: null, colors: true });
+            console.log(errorDataJson);
             return { data: null, error: errorDataJson.error || `HTTP error. Status: ${response.status}` };
         } catch (jsonParseError) {
           try{
             // If didn't find Json error data, look for a text error message
             const errorDataText = await response.text();
-            console.dir(errorDataText, { depth: null, colors: true });
+            console.log(errorDataText);
             return { data: null, error: errorDataText };
           } catch (textParseError){
             // If parsing json AND text fails, return a generic error message
-            console.dir(response, { depth: null, colors: true });
+            console.log(response);
             return { data: null, error: `HTTP error! Status: ${response.status}` };
           }
         }
@@ -348,62 +618,27 @@ export const useUserData = () => {
     return updatedCartLines;
   }
 
+  const emptyCustomer = {
+    customerKey: null,
+    cart: {
+      quantity: 0,
+      cost: 0,
+      includedTax: 0,
+      lines: [],  
+    },
+    addresses: [],
+    purchases: [],
+  }
 
-  // This effect runs once on mount to check for existing user data
-  // Also sets if the customer is using local data, or has registered
-  useEffect(() => {
-    async function initializeUserData() {
-      setUserLoading(true);
-      try{
-        if (!user) {
-          const token = Cookies.get('WellMillToken');
-          if (token) {
-            setLocal(false);
-            await loginUserFromToken(token);
-          } else {
-            setLocal(true);
-          }
-        } else {
-          if(user.customerKey) {
-            setLocal(false);
-          } else {
-            setLocal(true);
-          }
-        }
-      }
-      catch(error) {
-        console.error("Failed to fetch user data:", error);
-      } finally {
-        setUserLoading(false); // Stop loading regardless of the outcome
-      }
-    };
+  function pullUserLocal() {
+    const localStorageUser = localStorage.getItem('userLocal')
+    let userLocal = (localStorageUser ? JSON.parse(localStorageUser) : emptyCustomer) as Customer;
+    setUser(userLocal);
+  }
 
-    async function loginUserFromToken(token: string): Promise<Customer | null> {
-      const APIResponse = await CallAPI({token: token}, "login");
-      if(APIResponse.error) {
-        console.log("Error in loginUserFromToken in useUserData:");
-        console.dir(APIResponse, { depth: null, colors: true });
-        return null;
-      }
-  
-      if (APIResponse.data?.token) {
-        Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
-      }
-
-      // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
-      if(APIResponse?.data?.customerData?.cart?.lines) {
-        APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
-      }
-
-      UpdateUser(APIResponse.data.customerData);
-      return null;
-    }  
-
-    initializeUserData();
-  }, [user, setUser]);
 
   return {
-    user, userLoading, cartLoading, local,
+    user, userLoading, cartLoading, local, setCartLoading,
     createUser, loginUser, updateUser, setUser, // Not available for non-registered customers
     addToCart, updateCartQuantity, deleteFromCart, cancelPurchase,
     addAddress, deleteAddress

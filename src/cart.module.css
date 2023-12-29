@@ -150,6 +150,7 @@ img.quantitySpinner {
 span.quantityTrash {
   font-size: 1.5rem;
   width: 3rem;
+  cursor: pointer;
 }
 
 span.lineCost {

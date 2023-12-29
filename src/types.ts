@@ -91,8 +91,8 @@ type image = {
 }
 
 export type Customer = {
-    customerKey?: number, // For my MySQL database
-    code?: string,        // For the company Azure backup database
+    customerKey?: number | null, // For my MySQL database (null means its stored locally, undefined means not yet sent to server)
+    code?: string,               // For the company Azure backup database
     email?: string,
     lastName?: string,
     firstName?: string,
@@ -102,12 +102,12 @@ export type Customer = {
     birthday?: string,
     phoneNumber?: string, 
     password?: string,
-    newPassword1?: string,
+    newPassword1?: string, // TODO this needs to go, it's a hack for password updates
     newPassword2?: string,
     token?: string,
-    cart?: Cart,
-    addresses?: Address[],
-    purchases?: Purchase[] | PurchaseAndAddress[],
+    cart: Cart,
+    addresses: Address[],
+    purchases: Purchase[] | PurchaseAndAddress[],
 }
 
 export type Cart = {
@@ -133,7 +133,7 @@ type LineItemAddress = {
   
 type LineItem = {
     lineItemKey: number;
-    quantity?: number;
+    quantity: number;
     addresses: LineItemAddress[] | null;
 };
   
@@ -192,7 +192,7 @@ interface CredentialsWithToken {
 
 export type UserCredentials = CredentialsWithEmail | CredentialsWithToken;
 
-// Define a TypeScript interface for the breadcrumb object
+// Define a TypeScript interface for the breadcrumb object used in the Header component
 export interface Breadcrumb {
     text: string;
     url: string;
