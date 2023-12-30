@@ -2,8 +2,8 @@ import React, { useContext, useState } from "react";
 import './App.css';
 import styles from './header.module.css'
 import { Link } from "react-router-dom";
-import { UserContext } from "./Hooks/UserContext";
-import { Breadcrumb } from "./types";
+import { UserContext } from "../Hooks/UserContext";
+import { Breadcrumb } from "../types";
 
 // Specify the prop type for the Header component
 interface HeaderProps {

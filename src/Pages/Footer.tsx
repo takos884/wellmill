@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import styles from './footer.module.css'
 import { Link } from "react-router-dom";
-import { UserContext } from "./Hooks/UserContext";
+import { UserContext } from "../Hooks/UserContext";
 
 function Footer() {
     const { user } = useContext(UserContext);

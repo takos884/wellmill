@@ -1,15 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
-import { useProducts } from "./ProductContext";
+import { useProducts } from "../ProductContext";
 import Header from "./Header";
 
 import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
 import ProductTile from "./ProductTile";
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from "./Hooks/useUserData";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from "../Hooks/useUserData";
 
 function Product() {
     const navigate = useNavigate();

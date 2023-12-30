@@ -2,8 +2,8 @@ import React from "react";
 import './App.css';
 import styles from './infoPage.module.css'
 
-import Header from "./Header";
-import Footer from "./Footer";
+import Header from "./Pages/Header";
+import Footer from "./Pages/Footer";
 
 function Payment() {
   const breadcrumbs = [

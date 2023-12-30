@@ -1,15 +1,15 @@
 import React, { useContext, useState } from "react";
 
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from "./Hooks/useUserData";
-import { useProducts } from "./ProductContext";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from "../Hooks/useUserData";
+import { useProducts } from "../ProductContext";
 
 import './App.css';
 import styles from "./purchaseDetails.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 import { useNavigate, useParams } from "react-router-dom";
-import { Address, PurchaseAndAddress } from "./types";
+import { Address, PurchaseAndAddress } from "../types";
 import { Helmet } from "react-helmet";
 
 const breadcrumbs = [

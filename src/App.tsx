@@ -1,33 +1,33 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
-import Shop from './Shop';
-import Product from './Product';
+import Shop from './Pages/Shop';
+import Product from './Pages/Product';
 import { ProductProvider } from './ProductContext';
 import Payment from './Payment';
-import Delivery from './Delivery';
-import ReturnPolicy from './ReturnPolicy';
+import Delivery from './Pages/Delivery';
+import ReturnPolicy from './Pages/ReturnPolicy';
 import Home from './Home';
-import Remote from './Remote';
+import Remote from './Pages/Remote';
 import { UserProvider } from './Hooks/UserContext';
-import MyPage from './MyPage';
-import Login from './Login';
-import Signup from './Signup';
-import Contact from './Contact';
-import Cart from './Cart';
-import SampleRegistration from './sampleRegistration';
-import Research from './research';
-import ResultList from './ResultList';
-import HowTo from './HowTo';
-import OrderList from './OrderList';
-import Addresses from './Addresses'
-import Profile from './Profile';
-import PostPurchase from './PostPurchase';
-import Privacy from './Privacy';
-import Faq from './Faq';
-import PurchaseDetails from './PurchaseDetails';
-import NewCustomer from './NewCustomer';
-import PasswordRecover from './PasswordRecover';
+import MyPage from './Pages/MyPage';
+import Login from './Pages/Login';
+import Signup from './Pages/Signup';
+import Contact from './Pages/Contact';
+import Cart from './Pages/Cart';
+import SampleRegistration from './Pages/sampleRegistration';
+import Research from './Pages/research';
+import ResultList from './Pages/ResultList';
+import HowTo from './Pages/HowTo';
+import OrderList from './Pages/OrderList';
+import Addresses from './Pages/Addresses'
+import Profile from './Pages/Profile';
+import PostPurchase from './Pages/PostPurchase';
+import Privacy from './Pages/Privacy';
+import Faq from './Pages/Faq';
+import PurchaseDetails from './Pages/PurchaseDetails';
+import NewCustomer from './Pages/NewCustomer';
+import PasswordRecover from './Pages/PasswordRecover';
 
 function Layout() {
   const location = useLocation();

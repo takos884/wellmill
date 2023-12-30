@@ -1,12 +1,12 @@
 import React, { ChangeEvent, useState } from "react";
-import { useUserData } from './Hooks/useUserData';
+import { useUserData } from '../Hooks/useUserData';
 import Header from "./Header";
-import { Customer } from "./types";
+import { Customer } from "../types";
 
 import styles from './signup.module.css'
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
-import { useBackupDB } from "./Hooks/useBackupDB";
+import { useBackupDB } from "../Hooks/useBackupDB";
 import Cookies from "js-cookie";
 
 const breadcrumbs = [

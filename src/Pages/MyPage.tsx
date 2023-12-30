@@ -1,4 +1,4 @@
-import { UserContext } from "./Hooks/UserContext";
+import { UserContext } from "../Hooks/UserContext";
 import Header from './Header';
 import './App.css';
 import styles from './mypage.module.css'

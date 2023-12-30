@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from "./Hooks/useUserData";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from "../Hooks/useUserData";
 
-import { Address } from "./types";
+import { Address } from "../types";
 
 import styles from "./newAddress.module.css"
 import './App.css';
 
-import { prefectures } from "./addressData"
+import { prefectures } from "../addressData"
 
 type NewAddressProps = {
   addressKey: number | null;

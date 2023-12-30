@@ -5,10 +5,10 @@ import styles from "./profile.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from './Hooks/useUserData';
-import { useBackupDB } from "./Hooks/useBackupDB";
-import { Customer } from "./types";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from '../Hooks/useUserData';
+import { useBackupDB } from "../Hooks/useBackupDB";
+import { Customer } from "../types";
 import Cookies from "js-cookie";
 
 const breadcrumbs = [

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import Header from "./Header";
+import Header from "./Pages/Header";
 import { Breadcrumb } from "./types";
 import { UserContext } from "./Hooks/UserContext";
 import styles from './home.module.css'

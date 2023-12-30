@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from "react";
 
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from "./Hooks/useUserData";
-import { useProducts } from "./ProductContext";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from "../Hooks/useUserData";
+import { useProducts } from "../ProductContext";
 import { Link } from "react-router-dom";
 
 import './App.css';
@@ -10,7 +10,7 @@ import styles from './cart.module.css'
 import Header from "./Header";
 import Footer from "./Footer";
 import Checkout from "./Checkout";
-import { AddressStateArray } from "./types";
+import { AddressStateArray } from "../types";
 import NewAddress from "./NewAddress";
 
 const breadcrumbs = [

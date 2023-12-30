@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 
-import { UserContext } from "./Hooks/UserContext";
-import { useProducts } from "./ProductContext";
+import { UserContext } from "../Hooks/UserContext";
+import { useProducts } from "../ProductContext";
 
 import './App.css';
 import styles from "./orderList.module.css"

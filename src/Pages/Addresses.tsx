@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 
-import { UserContext } from "./Hooks/UserContext";
-import { useUserData } from "./Hooks/useUserData";
+import { UserContext } from "../Hooks/UserContext";
+import { useUserData } from "../Hooks/useUserData";
 
 import './App.css';
 import styles from "./addresses.module.css"
@@ -9,8 +9,8 @@ import Header from "./Header";
 import Footer from "./Footer";
 import NewAddress from "./NewAddress";
 
-import { Address } from "./types";
-import { prefectures } from "./addressData"
+import { Address } from "../types";
+import { prefectures } from "../addressData"
 
 
 const breadcrumbs = [
