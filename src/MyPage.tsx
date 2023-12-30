@@ -1,4 +1,4 @@
-import { UserContext } from "./UserContext";
+import { UserContext } from "./Hooks/UserContext";
 import Header from './Header';
 import './App.css';
 import styles from './mypage.module.css'
@@ -13,13 +13,14 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const { user, setUser, userLoading, local } = useContext(UserContext);
+  const { user, setUser, userLoading, local, setLocal } = useContext(UserContext);
   const navigate = useNavigate();
 
   function handleLogout() {
     if(!local) {
       Cookies.remove('WellMillToken');
       setUser(null);
+      setLocal(true);
       navigate('/login');
     }
 

@@ -1,8 +1,9 @@
-import { useContext, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+import { useContext, useEffect, useCallback } from 'react';
 import { UserContext } from './UserContext';
-import Cookies from 'js-cookie';
-import { Customer, UserCredentials, Cart, CartLine, Address, Product } from './types';
-import { useProducts } from "./ProductContext";
+import CallAPI from '../Utilities/CallAPI';
+import { Customer, UserCredentials, Cart, CartLine, Address, Product } from '../types';
+import { useProducts } from "../ProductContext";
+import ProcessCustomer from '../Utilities/ProcessCustomer';
 
 //#region Type definitions
 type APIResponse = {
@@ -10,7 +11,6 @@ type APIResponse = {
   error: string | null;
 };
 
-// This is pretty big
 type UseUserDataReturnType = {
   createUser: (userData: Customer) => Promise<APIResponse>;
   updateUser: (userData: Customer) => Promise<APIResponse>;
@@ -32,57 +32,6 @@ export const useUserData = (): UseUserDataReturnType => {
 
   const { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, local, setLocal } = context;
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
-
-
-  // This effect runs once on mount to check for existing user data, first on the server, then locally
-  useEffect(() => {
-    async function initializeUserData() {
-      if (!user) { // First time the site is loading / after refresh
-        const token = Cookies.get('WellMillToken');
-        if (token) {
-          try{
-            await loginUserFromToken(token);
-            setLocal(false);
-          }
-          catch(error) {
-            console.error("Failed to fetch remote user data:", error);
-            console.error("Falling back to local data");
-            pullUserLocal();
-            setLocal(true);
-          }
-        } else {
-          pullUserLocal();
-          setLocal(true);
-        }
-      }
-    }
-
-    async function loginUserFromToken(token: string) {
-      const APIResponse = await CallAPI({token: token}, "login");
-      if(APIResponse.error) {
-        console.log("Error in loginUserFromToken in useUserData:");
-        throw new Error(APIResponse.error);
-      }
-
-      if (APIResponse.data?.token) {
-        Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
-      }
-
-      // Returned values are all strings, so convert cart numbers to actual numbers // TODO could move to server
-      if(APIResponse?.data?.customerData?.cart?.lines) {
-        APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
-      }
-
-      UpdateUser(APIResponse.data.customerData);
-      return;
-    }  
-
-    setUserLoading(true);
-    initializeUserData().then(() => {
-      setUserLoading(false);
-    });
-  }, []);
-
 
   const createUser = async (userData: Customer): Promise<APIResponse> => {
     setUserLoading(true);
@@ -154,9 +103,6 @@ export const useUserData = (): UseUserDataReturnType => {
 
     //console.log("Set user after login:");
     //console.log(APIResponse.data.customerData);
-
-    // Returned values are all strings, so convert numbers to actual numbers
-    APIResponse.data.customerData.cart.lines = ProcessCartLines(APIResponse.data.customerData.cart.lines);
 
     UpdateUser(APIResponse.data.customerData)
     setUserLoading(false);
@@ -286,7 +232,7 @@ export const useUserData = (): UseUserDataReturnType => {
   //#region Add to cart
   const addToCart = useCallback(async (productKey: number, quantity: number) => {
     setCartLoading(true);
-    const updatedCart = addToCartFunction(productKey, quantity);
+    const updatedCart = await addToCartFunction(productKey, quantity);
     setCartLoading(false);
     return updatedCart;
 
@@ -307,14 +253,14 @@ export const useUserData = (): UseUserDataReturnType => {
       if(!user?.token)       return { data: null, error: "No token available when adding to remote cart" };
       const requestBody = {productKey: productKey, customerKey: user.customerKey, token: user.token, unitPrice: product.price, taxRate: product.taxRate, quantity: quantity};
       const APIResponse = await CallAPI(requestBody, "addToCart");
-  
+
       if(APIResponse.error) {
         console.log("Error in addToCart in useUserData:");
         console.log(APIResponse);
         return { data: null, error: APIResponse.error };
       }
   
-      UpdateUser(undefined, APIResponse.data);
+      UpdateUser(APIResponse.data);
       return { data: APIResponse.data, error: null };
     }
   }, [products, local, user]);
@@ -323,7 +269,7 @@ export const useUserData = (): UseUserDataReturnType => {
     // No cart or no lines is ok for add to cart
     if(!user) return { data: null, error: "No user data available when adding to local cart" };
 
-    const cartClone = user.cart ? { ...user.cart } : {quantity: 0, cost: 0, includedTax: 0, lines: []};
+    const cartClone = { ...user.cart };
     const linesClone = cartClone.lines;
 
     // If an identical item is already in the cart, add to its quantity
@@ -341,7 +287,7 @@ export const useUserData = (): UseUserDataReturnType => {
     else {
       // random (more than a million) lineItemKey while it's stored locally
       const lineItemKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
-      linesClone.push({lineItemKey: lineItemKeyLocal, productKey: product.productKey, unitPrice: product.price, taxRate: product.taxRate, quantity})
+      linesClone.push({type: 'cartLine',lineItemKey: lineItemKeyLocal, productKey: product.productKey, unitPrice: product.price, taxRate: product.taxRate, quantity})
     }
 
     // Update cart meta-data
@@ -382,7 +328,7 @@ export const useUserData = (): UseUserDataReturnType => {
         return { data: null, error: APIResponse.error };
       }
 
-      UpdateUser(undefined, APIResponse.data);
+      UpdateUser(APIResponse.data);
       return {data: APIResponse.data, error: null };
     }
   }, [local, user])
@@ -434,7 +380,7 @@ export const useUserData = (): UseUserDataReturnType => {
         return { data: null, error: APIResponse.error };
       }
   
-      UpdateUser(undefined, APIResponse.data);
+      UpdateUser(APIResponse.data);
       return { data: APIResponse.data, error: null };
     }
   }, [local, user])
@@ -490,102 +436,44 @@ export const useUserData = (): UseUserDataReturnType => {
     return { data: APIResponse.data, error: null };
   }, [])
 
-  async function CallAPI(data:object, endpoint: string) {
-    const requestBody = JSON.stringify({data: data});
-    try {
-      const response = await fetch(`https://cdehaan.ca/wellmill/api/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', },
-        body: requestBody,
-      });
-
-      if (!response.ok) {
-        // Attempt to parse the error message from the response
-        try {
-            const errorDataJson = await response.json();
-            console.log(errorDataJson);
-            return { data: null, error: errorDataJson.error || `HTTP error. Status: ${response.status}` };
-        } catch (jsonParseError) {
-          try{
-            // If didn't find Json error data, look for a text error message
-            const errorDataText = await response.text();
-            console.log(errorDataText);
-            return { data: null, error: errorDataText };
-          } catch (textParseError){
-            // If parsing json AND text fails, return a generic error message
-            console.log(response);
-            return { data: null, error: `HTTP error! Status: ${response.status}` };
-          }
-        }
-      }
-
-      const data = await response.json();
-      return { data: data, error: null };
-
-    } catch (error: any) {
-      return { data: null, error: error.message };
-    }
-  }
-
-  // TODO this can be broken up into UpdateUser and UpdateCart
-  function UpdateUser(newUser?:Customer, cartLines?: CartLine[]) {
-
-    // If nothing is passed to the function, leave
-    if(!newUser && !cartLines) return;
-
+  /**
+   * Updates the user state based on the provided data.
+   * The function can handle different types of input: Customer, Cart, or CartLine[].
+   * Depending on the type of the input, the user's state is updated accordingly.
+   * 
+   * @param newData - The new data to update the user. This can be a Customer, a Cart, or an array of CartLine.
+   */
+  function UpdateUser(newData:(Customer | Cart | CartLine[])) {
     setUser((previousUser: Customer | null) => {
 
-      // If there's no existing user and no new user, we need to quit (cart data needs a user)
-      if(!previousUser && !newUser) return null;
+      let newUser: Customer;
 
-      // User data is what was passed in, or what existed already as a fallback
-      const currentUser = newUser || previousUser;
-      if(!currentUser) return null;
-
-      // If new cart lines aren't passed in (e.g. during login), use existing cart lines if they exist
-      if (!cartLines) { cartLines = currentUser.cart?.lines || []; }
-
-      // Cart needs strings converted to numbers, and calculate some metadata
-      const updatedCartLines = ProcessCartLines(cartLines);
-      const cartQuantity = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0);
-      const cartCost = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0);
-      const includedTax = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * lineItem.taxRate * lineItem.quantity; }, 0);
-
-      // Make the object that will be the new user
-      const updatedUser = {
-        ...currentUser,
-        cart: {
-          quantity: cartQuantity,
-          cost: cartCost,
-          includedTax: includedTax,
-          lines: updatedCartLines,
-        }
-      };
-
-      return updatedUser;
-    });
-  }
-
-  function ProcessCartLines(cartLines: CartLine[]) {
-    const updatedCartLines = cartLines.map(line => {
-      // Cast then validate relevant values to numbers
-      const quantity = parseInt(line.quantity.toString());
-      const unitPrice = parseFloat(line.unitPrice.toString());
-      const taxRate = parseFloat(line.taxRate.toString());
-
-      if (isNaN(quantity) || isNaN(unitPrice) || isNaN(taxRate)) {
-        throw new Error(`Invalid quantity (${quantity}), unit price (${unitPrice}), or tax rate (${taxRate})`);
+      if (!Array.isArray(newData) && newData.type === 'customer') {
+        newUser = {...newData};
       }
 
-      return {
-        ...line,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        taxRate: taxRate,
-      };
-    });
+      else if (!Array.isArray(newData) && newData.type === "cart") {
+        if(previousUser === null) { return null; } // Can't update the cart if there's no user
+        const newCart = {...newData}
+        newUser = {
+          ...previousUser,
+          cart: newCart
+        };
+      }
 
-    return updatedCartLines;
+      else if (Array.isArray(newData) && newData.every(item => item.type === "cartLine")) {
+        if(previousUser === null) { return null; } // Can't update the cart liens if there's no user
+        const newCartLines = [...newData];
+        newUser = {...previousUser, cart: {...previousUser.cart, lines: newCartLines}}
+      }
+
+      else {
+        // Handle invalid input
+        return null;
+      }
+
+      return ProcessCustomer(newUser);
+    });
   }
 
   useEffect(() => {
@@ -610,25 +498,6 @@ export const useUserData = (): UseUserDataReturnType => {
     }
     return false;
   }
-
-  const emptyCustomer = {
-    customerKey: null,
-    cart: {
-      quantity: 0,
-      cost: 0,
-      includedTax: 0,
-      lines: [],  
-    },
-    addresses: [],
-    purchases: [],
-  }
-
-  function pullUserLocal() {
-    const localStorageUser = localStorage.getItem('userLocal')
-    let userLocal = (localStorageUser ? JSON.parse(localStorageUser) : emptyCustomer) as Customer;
-    setUser(userLocal);
-  }
-
 
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers

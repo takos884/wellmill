@@ -5,9 +5,9 @@ import styles from "./profile.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 
-import { UserContext } from "./UserContext";
-import { useUserData } from './useUserData';
-import { useBackupDB } from "./useBackupDB";
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from './Hooks/useUserData';
+import { useBackupDB } from "./Hooks/useBackupDB";
 import { Customer } from "./types";
 import Cookies from "js-cookie";
 
@@ -161,6 +161,7 @@ function Profile() {
     }
 
     const userData: Customer = {
+      type: 'customer',
       lastName: inputs.lastName,
       firstName: inputs.firstName,
       lastNameKana: inputs.lastNameKana,
@@ -232,6 +233,7 @@ function Profile() {
 
     // TODO need a better way to send password updates
     const userData: Customer = {
+      type: 'customer',
       customerKey: user.customerKey,
       password: inputs.password,
       newPassword1: inputs.newPassword1,

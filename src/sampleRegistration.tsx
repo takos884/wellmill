@@ -1,11 +1,11 @@
 import React, { useContext, useState } from "react";
-import { UserContext } from "./UserContext";
+import { UserContext } from "./Hooks/UserContext";
 import { Link } from "react-router-dom";
 import Header from "./Header";
 
 import './App.css';
 import styles from "./sampleRegistration.module.css"
-import { useBackupDB } from "./useBackupDB";
+import { useBackupDB } from "./Hooks/useBackupDB";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },

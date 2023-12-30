@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
-import { UserContext } from "./UserContext";
-import { useUserData } from './useUserData';
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from './Hooks/useUserData';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
@@ -18,7 +18,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, local, setLocal } = useContext(UserContext);
   const { loginUser} = useUserData();
 
   const navigate = useNavigate();
@@ -36,6 +36,7 @@ const Login = () => {
 
     if (data && data.token) {
       Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
+      setLocal(false);
 
       setTimeout(() => {
         navigate('/account');
@@ -46,6 +47,7 @@ const Login = () => {
   const handleLogout = async () => {
     Cookies.remove('WellMillToken');
     setUser(null);
+    setLocal(true);
   }
 
   return (
@@ -65,7 +67,7 @@ const Login = () => {
         <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
       </div>
 
-      {user && <span>You are already signed in {user.firstName}. Go to <Link to='/account'>My Page</Link> or <button onClick={handleLogout}>Logout</button>.</span>}
+      {!local && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}
       <Footer />
     </>
   );

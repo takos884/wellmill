@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 
-import { UserContext } from "./UserContext";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from "./Hooks/useUserData";
 
 import './App.css';
 import styles from "./addresses.module.css"

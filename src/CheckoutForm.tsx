@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
-import { UserContext } from "./UserContext";
+import { UserContext } from "./Hooks/UserContext";
 import { useProducts } from "./ProductContext";
 
 import { prefectures } from "./addressData"

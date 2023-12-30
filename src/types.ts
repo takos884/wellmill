@@ -91,6 +91,7 @@ type image = {
 }
 
 export type Customer = {
+    type: "customer",
     customerKey?: number | null, // For my MySQL database (null means its stored locally, undefined means not yet sent to server)
     code?: string,               // For the company Azure backup database
     email?: string,
@@ -111,6 +112,7 @@ export type Customer = {
 }
 
 export type Cart = {
+    type: 'cart',
     quantity: number,
     cost: number,
     includedTax: number,
@@ -118,6 +120,7 @@ export type Cart = {
 }
 
 export type CartLine = {
+    type: 'cartLine',
     lineItemKey: number,
     productKey: number,
     unitPrice: number,

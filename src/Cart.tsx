@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 
-import { UserContext } from "./UserContext";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from "./Hooks/useUserData";
 import { useProducts } from "./ProductContext";
 import { Link } from "react-router-dom";
 
@@ -19,9 +19,6 @@ const breadcrumbs = [
 ];
 
 export default function Cart() {
-  console.log("Rendering Cart");
-
-  //const { user, updateCartQuantity, deleteFromCart, userLoading, cartLoading } = useUserData();
   const { user, userLoading, cartLoading } = useContext(UserContext);
   const { updateCartQuantity, deleteFromCart } = useUserData();
 

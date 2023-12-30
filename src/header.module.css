@@ -83,6 +83,10 @@ div.loginButton {
   border-radius: 0.25rem;
 }
 
+div.loginButtonGlow {
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.5) 100%);
+}
+
 .cart {
   position: relative;
   margin-top: 0.2rem;

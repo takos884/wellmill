@@ -8,8 +8,8 @@ import './App.css';
 import styles from './product.module.css'
 import Footer from "./Footer";
 import ProductTile from "./ProductTile";
-import { UserContext } from "./UserContext";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from "./Hooks/useUserData";
 
 function Product() {
     const navigate = useNavigate();

@@ -1,12 +1,12 @@
 import React, { ChangeEvent, useState } from "react";
-import { useUserData } from './useUserData';
+import { useUserData } from './Hooks/useUserData';
 import Header from "./Header";
 import { Customer } from "./types";
 
 import styles from './signup.module.css'
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
-import { useBackupDB } from "./useBackupDB";
+import { useBackupDB } from "./Hooks/useBackupDB";
 import Cookies from "js-cookie";
 
 const breadcrumbs = [
@@ -152,6 +152,7 @@ function Signup() {
       alert('Please fill in all required fields.');
     } else {
       const userData: Customer = {
+        type: 'customer',
         email: inputs.email,
         lastName: inputs.lastName.replace(validNameRegex, ''),
         firstName: inputs.firstName.replace(validNameRegex, ''),
@@ -160,7 +161,7 @@ function Signup() {
         gender: inputs.gender,
         birthday: inputs.birthday, 
         password: inputs.password,
-        cart: {quantity: 0, cost: 0, includedTax: 0, lines: []},
+        cart: {type: 'cart', quantity: 0, cost: 0, includedTax: 0, lines: []},
         addresses: [],
         purchases: [],
       };

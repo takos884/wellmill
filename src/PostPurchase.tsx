@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { UserContext } from "./UserContext";
+import { UserContext } from "./Hooks/UserContext";
 
 import './App.css';
 import Header from "./Header";
@@ -35,8 +35,8 @@ export default function PostPurchase() {
   const serverReply = <span className={styles.message}>サーバーからのメッセージ: {paymentStatus}</span>
 
   useEffect(() => {
-    if(!user?.customerKey) return;
-    if(user.customerKey === prevCustomerKey.current) return;
+    if(!user?.customerKey) { console.log("No Customer Key"); return; }
+    if(user.customerKey === prevCustomerKey.current) { console.log("Don't verify on re-render"); return; }
     prevCustomerKey.current = user.customerKey;
 
     fetch("https://cdehaan.ca/wellmill/api/verifyPayment", {

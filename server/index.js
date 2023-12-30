@@ -963,7 +963,7 @@ app.post('/addToCart', async (req, res) => {
     }
   
     // Get updated cart data
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in addToCart:', error);
@@ -996,7 +996,7 @@ app.post('/updateCartQuantity', async (req, res) => {
     await pool.query(updateQuery, [quantity, customerKey, lineItemKey]);
   
     // Get updated cart data
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in updateCartQuantity:', error);
@@ -1028,7 +1028,7 @@ app.post('/deleteFromCart', async (req, res) => {
     await pool.query(deleteQuery, [customerKey, lineItemKey]);
   
     // Get updated cart data
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in deleteFromCart:', error);
@@ -1131,7 +1131,7 @@ app.post('/deleteLineItem', async (req, res) => {
     await pool.query(deleteQuery, [customerKey, lineItemKey]);
   
     // Get updated cart data
-    const updatedCart = await GetCartDataFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in deleteFromCart:', error);
@@ -1321,8 +1321,8 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
     const customer = results[0];
 
     // Pull customer's cart
-    const cartData = await GetCartDataFromCustomerKey(customer.customerKey);
-    customer.cart = { lines: cartData };
+    const cartData = await GetCartFromCustomerKey(customer.customerKey);
+    customer.cart = cartData;
 
     // Pull customer's purchases
     const purchases = await GetPurchasesFromCustomerKey(customer.customerKey);
@@ -1334,11 +1334,12 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
 
     // Remove sensitive data before sending the customer object
     delete customer.passwordHash;
+    customer.type = "customer";
 
     return customer;
 }
 
-async function GetCartDataFromCustomerKey(customerKey) {
+async function GetCartFromCustomerKey(customerKey) {
   // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
     SELECT lineItem.*, purchase.status
@@ -1347,10 +1348,18 @@ async function GetCartDataFromCustomerKey(customerKey) {
     WHERE lineItem.customerKey = ?
     AND (lineItem.purchaseKey IS NULL OR purchase.status = 'created');`;
 
-  // Execute the query using the promisified pool.query and wait for the promise to resolve
+  // Execute the query then calculate metadata
   try {
-    const [currentCart] = (await pool.query(selectQuery, [customerKey]));
-    return currentCart;
+    const [linesResults] = (await pool.query(selectQuery, [customerKey]));
+
+    linesResults.forEach(line => {line.type = "lineItem"});
+    const cartQuantity = linesResults.reduce((sum, lineItem) => sum + lineItem.quantity, 0);
+    const cartCost = linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0);
+    const cartTax = linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0);
+
+    const cart = {type: "cart", quantity: cartQuantity, cost: cartCost, includedTax: cartTax, lines: linesResults }
+
+    return cart;
   } catch (error) {
     console.error('Error in GetCartDataFromCustomerKey: ', error);
     throw error;
@@ -1824,8 +1833,8 @@ app.post("/verifyPayment", async (req, res) => {
   }
 
   // Pull customer's cart
-  const cartData = await GetCartDataFromCustomerKey(customerKey);
-  customer.cart = { lines: cartData };
+  const cartData = await GetCartFromCustomerKey(customerKey);
+  customer.cart = cartData;
 
   // Pull customer's purchases
   const purchases = await GetPurchasesFromCustomerKey(customerKey);

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { UserContext } from "./UserContext";
-import { useUserData } from "./useUserData";
+import { UserContext } from "./Hooks/UserContext";
+import { useUserData } from "./Hooks/useUserData";
 
 import { Address } from "./types";
 
