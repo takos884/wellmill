@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { UserContext } from "../Hooks/UserContext";
+import { UserContext } from "../Contexts/UserContext";
 import { useUserData } from '../Hooks/useUserData';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';

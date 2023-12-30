@@ -4,7 +4,7 @@ import CheckoutForm from "./CheckoutForm";
 import styles from './checkout.module.css';
 import { Elements } from "@stripe/react-stripe-js";
 import { Appearance, StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
-import { UserContext } from "../Hooks/UserContext";
+import { UserContext } from "../Contexts/UserContext";
 import { AddressStateArray } from "../types";
 
 

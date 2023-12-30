@@ -3,10 +3,10 @@ import React, { useContext, useEffect, useState } from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
-import { UserContext } from "../Hooks/UserContext";
-import { useProducts } from "../ProductContext";
+import { UserContext } from "../Contexts/UserContext";
+import { useProducts } from "../Contexts/ProductContext";
 
-import { prefectures } from "../addressData"
+import { prefectures } from "../Utilities/addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
 

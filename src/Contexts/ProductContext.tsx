@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from './types';
+import { Product } from '../types';
 
 type ProductContextType = {
   products: Product[] | undefined;

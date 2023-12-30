@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from "react";
 
-import { UserContext } from "../Hooks/UserContext";
+import { UserContext } from "../Contexts/UserContext";
 import { useUserData } from "../Hooks/useUserData";
-import { useProducts } from "../ProductContext";
+import { useProducts } from "../Contexts/ProductContext";
 import { Link } from "react-router-dom";
 
 import './App.css';

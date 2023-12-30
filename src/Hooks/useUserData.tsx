@@ -1,8 +1,8 @@
 import { useContext, useEffect, useCallback } from 'react';
-import { UserContext } from './UserContext';
+import { UserContext } from '../Contexts/UserContext';
 import CallAPI from '../Utilities/CallAPI';
 import { Customer, UserCredentials, Cart, CartLine, Address, Product } from '../types';
-import { useProducts } from "../ProductContext";
+import { useProducts } from "../Contexts/ProductContext";
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 
 //#region Type definitions

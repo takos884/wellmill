@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import styles from './shop.module.css'
 
-import { useProducts } from '../ProductContext';
+import { useProducts } from '../Contexts/ProductContext';
 import Header from './Header';
 import ProductTile from './ProductTile';
 import Footer from './Footer';

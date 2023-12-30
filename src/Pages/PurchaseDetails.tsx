@@ -1,8 +1,8 @@
 import React, { useContext, useState } from "react";
 
-import { UserContext } from "../Hooks/UserContext";
+import { UserContext } from "../Contexts/UserContext";
 import { useUserData } from "../Hooks/useUserData";
-import { useProducts } from "../ProductContext";
+import { useProducts } from "../Contexts/ProductContext";
 
 import './App.css';
 import styles from "./purchaseDetails.module.css"
