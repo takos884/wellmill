@@ -36,6 +36,7 @@ export default function PostPurchase() {
 
   useEffect(() => {
     if(!user?.customerKey) { console.log("No Customer Key"); return; }
+    console.log("Yes Customer Key");
     if(user.customerKey === prevCustomerKey.current) { console.log("Don't verify on re-render"); return; }
     prevCustomerKey.current = user.customerKey;
 
@@ -46,6 +47,7 @@ export default function PostPurchase() {
     })
       .then((response) => response.json())
       .then((data) => {
+        console.log(data);
         setPaymentStatus(data.paymentStatus);
         setUser(data.customerData); // TODO working on this, this screen kills the user data
       })

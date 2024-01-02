@@ -10,7 +10,7 @@ import styles from './cart.module.css'
 import Header from "./Header";
 import Footer from "./Footer";
 import Checkout from "./Checkout";
-import { AddressStateArray } from "../types";
+import { LineItemAddressesArray, LineItemAddresses } from "../types";
 import NewAddress from "./NewAddress";
 
 const breadcrumbs = [
@@ -31,11 +31,12 @@ export default function Cart() {
   });
 
   const [displayCheckout, setDisplayCheckout] = useState(false);
-  const [addressesState, setAddressesState] = useState<AddressStateArray>([]);
+  const [addressesState, setAddressesState] = useState<LineItemAddressesArray>([]);
   const [lastUpdatedLineItemKey, setLastUpdatedLineItemKey] = useState<number | null>(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  console.log(addressesState);
 
   // Set multiple addresses state to all-default to start
   // If the cart isn't ready, or there is already addresses state data, exit
@@ -132,8 +133,11 @@ export default function Cart() {
 
 
     const returnedCart = await updateCartQuantity(lineItemKey, quantity);
-    //console.log(returnedCart);
+    if(returnedCart.error) {
+      console.log("returnedCart error: " + returnedCart.error);
+    }
   }
+
 
   function HandleAddressQuantityClick(lineItemKey: number, addressIndex: number, quantity:number) {
     if(quantity < 1 || quantity > 10) { return; }
@@ -178,6 +182,7 @@ export default function Cart() {
   }
  
 
+  // If there is only "Add new address" in the select, then just clicking on it must open the "New Address" component
   function HandleAddressSelectClick(event: React.MouseEvent<HTMLSelectElement>) {
     setErrorMessage(null);
     if (event.target instanceof HTMLSelectElement) {
@@ -188,6 +193,7 @@ export default function Cart() {
       }
     }
   }
+
 
   function HandleAddressSelectChange(lineItemKey: number, addressIndex: number | null, event: React.ChangeEvent<HTMLSelectElement>) {
     if(!user?.customerKey) return;
@@ -219,6 +225,7 @@ export default function Cart() {
     })
   }
 
+
   function HandleRemoveAddressClick(lineItemKey: number, addressIndex: number) {
     setAddressesState(prev => {
       return prev.map(li => {
@@ -236,6 +243,7 @@ export default function Cart() {
       });
     });
   }
+
 
   function HandleAddAddressClick(lineItemKey: number) {
     setAddressesState(prev => {
@@ -286,8 +294,10 @@ export default function Cart() {
     }
   }
 
+
+  // Click the text to split (or un-split) a lineItem into seperate addresses (複数の配送先を指定する)
   function HandleSplitToggleClick(lineItemKey: number) {
-    console.log(addressesState);
+    //console.log(addressesState);
     setAddressesState((prevState) => {
       return prevState.map(lineItem => {
           if (lineItem.lineItemKey !== lineItemKey) {
@@ -295,29 +305,37 @@ export default function Cart() {
               return lineItem;
           }
 
+          // lineItem was already split into seperate addresses, fold it back into one
           if (lineItem.addresses) {
               // Sum up quantities in addresses array and set addresses to null
               const totalQuantity = lineItem.addresses.reduce((acc, address) => acc + address.quantity, 0);
               return { ...lineItem, quantity: totalQuantity, addresses: null };
-          } else {
-              // Handle the case when addresses is null
+          }
+
+          // split lineItem into separate addresses (addresses is null)
+          else {
+
+              // If quantity is 1, create a single address object
               if (lineItem.quantity === 1) {
-                  // If quantity is 1, create a single address object
-                  return {
-                      ...lineItem,
-                      quantity: 1,
-                      addresses: [{ addressKey: addresses[0]?.addressKey || null, quantity: 1, addressIndex: 1 }]
-                  };
-              } else if (lineItem.quantity && lineItem.quantity > 1) {
-                  // If quantity is 2 or more, create two address objects
-                  return {
-                      ...lineItem,
-                      quantity: lineItem.quantity,
-                      addresses: [
-                          { addressKey: addresses[0]?.addressKey || null, quantity: lineItem.quantity - 1, addressIndex: 1 },
-                          { addressKey: addresses[1]?.addressKey || addresses[0]?.addressKey || null, quantity: 1, addressIndex: 2 }
-                      ]
-                  };
+                const returnedLineItem:LineItemAddresses = {
+                  ...lineItem,
+                  quantity: 1,
+                  addresses: [{ addressKey: addresses[0]?.addressKey || null, quantity: 1, addressIndex: 1 }]
+                };
+                return returnedLineItem;
+              }
+
+              // If quantity is 2 or more, create two address objects
+              else if (lineItem.quantity && lineItem.quantity > 1) {
+                const returnedLineItem:LineItemAddresses = {
+                  ...lineItem,
+                  quantity: lineItem.quantity,
+                  addresses: [
+                      { addressKey: addresses[0]?.addressKey || null, quantity: lineItem.quantity - 1, addressIndex: 1 },
+                      { addressKey: addresses[1]?.addressKey || addresses[0]?.addressKey || null, quantity: 1, addressIndex: 2 }
+                  ]
+                };
+                return returnedLineItem;
               }
           }
 
@@ -326,16 +344,19 @@ export default function Cart() {
   })
   }
 
+
   function HandleGoToCheckoutClick() {
     const addressSelects = document.querySelectorAll('select[name="addressSelect"]');
     const noAddressSelect = Array.from(addressSelects).find(addressSelect => {
       const currentSelect = addressSelect as HTMLSelectElement;
       return currentSelect.value === "0"
     });
-    if(noAddressSelect) { console.log("Some error"); setErrorMessage("商品ごとに住所を選択してください。"); return; }
+    if(noAddressSelect) { console.log("Some seperated lineItems have no address"); setErrorMessage("商品ごとに住所を選択してください。"); return; }
     console.log("Let's setDisplayCheckout");
     setDisplayCheckout(true);
   }
+
+
 
   const headings = (cart && cartQuantity > 0) ? (
     <div className={styles.headings}>

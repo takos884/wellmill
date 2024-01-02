@@ -1379,9 +1379,34 @@ async function GetPurchasesFromCustomerKey(customerKey) {
   // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
     const [purchaseHistory] = await pool.query(selectQuery, [customerKey]);
-    //console.log("ProcessPurchaseHistory(purchaseHistory)");
-    //console.log(ProcessPurchaseHistory(purchaseHistory));
-    return ProcessPurchaseHistory(purchaseHistory);
+
+    // Organize purchases and line items into a 2D array
+    const purchases = [];
+
+    // Create a map to group line items by purchase ID
+    const purchaseMap = new Map();
+
+    purchaseHistory.forEach((row) => {
+      const purchaseKey = row.purchase.purchaseKey;
+
+      // Check if the purchase is already in the map
+      if (!purchaseMap.has(purchaseKey)) {
+        // If not, add it to the map and initialize the line items array
+        purchaseMap.set(purchaseKey, {
+          purchase: row.purchase,
+          lineItems: [],
+        });
+      }
+
+      // Add the line item to the corresponding purchase in the map
+      purchaseMap.get(purchaseKey).lineItems.push(row.lineItem);
+    });
+
+    // Convert the map values to an array of purchases
+    purchases.push(...purchaseMap.values());
+
+    // All values in purchases come from MySQL as strings, but I want the numbers to be real numbers
+    return ProcessPurchases(purchases)
   } catch (error) {
     console.error('Error in GetPurchasesFromCustomerKey: ', error);
     throw error;
@@ -1414,11 +1439,12 @@ function ProcessAddresses(addresses) {
 }
 
 // All values in Purchase History come from MySQL as strings, but I want the numbers to be real numbers
-function ProcessPurchaseHistory(purchaseHistory) {
+function ProcessPurchases(purchaseHistory) {
   return purchaseHistory.map(oneHistory => {
-    oneHistory.unitPrice = Math.round(Number(oneHistory.unitPrice));
-    oneHistory.taxRate = Math.round(Number(oneHistory.taxRate)*100)/100;
-    return oneHistory;
+    return oneHistory.map(line => {
+      line.unitPrice = Math.round(Number(oneHistory.unitPrice));
+      line.taxRate = Math.round(Number(oneHistory.taxRate)*100)/100;        
+    })
   });
 }
 
@@ -1435,12 +1461,8 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
   console.log(req.body);
   console.dir(req.body, { depth: null, colors: true });
-  const validation = await ValidatePayload(req.body.data);
-  if(validation.valid === false) {
-    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
-    return res.status(400).send("Validation error");
-  }
-  const customerKey = validation.customerKey;
+
+  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
 
   const cartLines = req.body.data.cartLines;
   const purchaseTotal = calculateOrderAmount(cartLines);
@@ -1449,6 +1471,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   const addressesState = req.body.data.addressesState;
 
   // Create a PaymentIntent with the order amount and currency
+  // Make a purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
   const paymentIntent = await stripe.paymentIntents.create({
     amount: purchaseTotal,
     currency: "jpy",
@@ -1457,7 +1480,19 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("Created paymentIntent:");
   //console.log(paymentIntent);
 
-  // Make the purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
+  if(req.body.data.local === true) {
+    return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+  }
+
+  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  // Save the purchase intention
   query = `
     INSERT INTO purchase (customerKey, paymentIntentId, amount)
     VALUES (?, ?, ?)`;
@@ -1822,7 +1857,9 @@ app.post("/verifyPayment", async (req, res) => {
     }
   } // paymentStatus === "created" or "succeeded"
 
-  return res.json({customerData: GetCustomerDataFromCustomerKey(customerKey), paymentStatus: paymentStatus});
+  const customerData = await GetCustomerDataFromCustomerKey(customerKey);
+
+  return res.json({customerData: customerData, paymentStatus: paymentStatus});
 });
 //#endregion Stripe
 

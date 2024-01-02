@@ -9,7 +9,7 @@ import styles from "./purchaseDetails.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 import { useNavigate, useParams } from "react-router-dom";
-import { Address, PurchaseAndAddress } from "../types";
+import { Address } from "../types";
 import { Helmet } from "react-helmet";
 
 const breadcrumbs = [
@@ -27,12 +27,16 @@ export default function PurchaseDetails() {
   const [cancelMessage, setCancelMessage] = useState("");
   const navigate = useNavigate();
 
-  const lineItems = user ? user.purchases as PurchaseAndAddress[]: undefined;
-  const purchaseLineItems = lineItems?.filter(lineItem => {return lineItem.purchaseKey === purchaseKey});
-  const hasShipped = purchaseLineItems?.some(item => item.shippingStatus === "shipped");
+  const purchase = user?.purchases.find(pur => {return pur.purchaseKey === purchaseKey});
+  if(!purchase) return <span>Loading purchases</span>;
 
-  console.log("purchaseLineItems");
-  console.log(purchaseLineItems);
+  const lineItems = purchase.lineItems;
+  if(lineItems.length === 0) return <span>Loading purchases</span>;
+
+  const hasShipped = lineItems?.some(item => item.shippingStatus === "shipped");
+
+  console.log("lineItems");
+  console.log(lineItems);
   console.log("user");
   console.dir(user, { depth: null, colors: true });
 
@@ -46,7 +50,7 @@ export default function PurchaseDetails() {
     </div>
   )
 
-  const lineItemRows = purchaseLineItems?.map(line => {
+  const lineItemRows = lineItems?.map(line => {
     const product = products?.find(product => {return (line.productKey === product.productKey)});
     if(product === undefined) return null;
     const quantity = line.quantity;
@@ -63,7 +67,7 @@ export default function PurchaseDetails() {
     )
   });
 
-  const subtotal = purchaseLineItems?.reduce((total, item) => {
+  const subtotal = lineItems?.reduce((total, item) => {
     const itemTotal = item.unitPrice * (1 + item.taxRate) * item.quantity;
     return total + itemTotal;
   }, 0);
@@ -120,7 +124,7 @@ export default function PurchaseDetails() {
 
   const uniqueAddresses:Address[] = [];
   const seen = new Set();
-  purchaseLineItems?.forEach(line => {
+  lineItems.forEach(line => {
     const addressKey = [ line.firstName, line.lastName, line.postalCode, line.prefCode, line.pref, line.city, line.ward, line.address2, line.phoneNumber].join('|');
     if (!seen.has(addressKey)) {
       seen.add(addressKey);

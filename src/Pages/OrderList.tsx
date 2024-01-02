@@ -8,6 +8,7 @@ import styles from "./orderList.module.css"
 import Header from "./Header";
 import Footer from "./Footer";
 import { Link } from "react-router-dom";
+import { Purchase } from "../types";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -19,13 +20,10 @@ function OrderList() {
   const { user, userLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
-  // This is actually better described as a "Line item", since they aren't grouped into purchase. I'll group later.
-  const lineItems = user ? user.purchases : undefined;
-  const nolineItemsMessage = (lineItems?.length === 0) ? (<span className={styles.listMessage}>購入履歴はありません</span>) : null;
-  const quantityMessage = <span className={styles.listMessage}>Line Items Quantity: {lineItems?.length}</span>;
+  const purchases: Purchase[] = user ? user.purchases : []
 
-  console.log("lineItems");
-  console.log(lineItems);
+  const noPurchasesMessage = (purchases?.length === 0) ? (<span className={styles.listMessage}>購入履歴はありません</span>) : null;
+  const quantityMessage = <span className={styles.listMessage}>Purchases Quantity: {purchases?.length}</span>;
 
   function UtcTimeToJapanTime(dateString: string) {
     const date = new Date(dateString);
@@ -62,7 +60,7 @@ function OrderList() {
 
 
   // The header is created if there's a list if lineItems
-  const purchaseLinesHeader = (lineItems?.length) && (lineItems?.length > 0) && (
+  const purchaseLinesHeader = (purchases?.length) && (purchases?.length > 0) && (
     <div className={styles.lineItem}>
       <span>注文番号</span>
       <span>注文日</span>
@@ -72,17 +70,16 @@ function OrderList() {
     </div>
   )
 
-  const purchaseKeys = Array.from(new Set(lineItems?.map(item => item.purchaseKey)));
-  const purchaseLines = purchaseKeys?.map(purchaseKey => {
-    const purchaseLineItems = lineItems?.filter(lineItem => {return lineItem.purchaseKey === purchaseKey});
+  const purchaseLines = purchases.map(purchase => {
+    const purchaseKey = purchase.purchaseKey;
+    const purchaseLineItems = purchase.lineItems.filter(lineItem => {return lineItem.purchaseKey === purchaseKey});
     if(!purchaseLineItems) return null;
 
     // Like a switch, but allows strict equality and const
-    const line = purchaseLineItems[0];
     const orderStatus =
-      line.status === "created" ? "作成した" :
-      line.status === "succeeded" ? "支払い済み" :
-      (line.status) ? line.status : "不明";
+      purchase.status === "created" ? "作成した" :
+      purchase.status === "succeeded" ? "支払い済み" :
+      (purchase.status) ? purchase.status : "不明";
 
     const purchaseShippingStatuses = Array.from(new Set(purchaseLineItems?.map(item => item.shippingStatus)));
     const shippingStatus =
@@ -92,15 +89,15 @@ function OrderList() {
       (purchaseShippingStatuses[0] === "shipped") ? "発送済み" :
       (purchaseShippingStatuses[0]) ? purchaseShippingStatuses[0] : "不明";
 
-    const totalCost = purchaseLineItems?.reduce((total, item) => {
+    const totalCost = purchaseLineItems.reduce((total, item) => {
       const itemTotal = item.unitPrice * (1 + item.taxRate) * item.quantity;
       return total + itemTotal;
     }, 0);
-    
+
     return(
       <div key={purchaseKey} className={styles.lineItem}>
         <span className={styles.lineItemKeyLink}><Link to={`/purchaseDetails/${purchaseKey}`}>#{purchaseKey}</Link></span>
-        <span className={styles.orderTime}>{UtcTimeToDotTime(line.purchaseTime)}</span>
+        <span className={styles.orderTime}>{UtcTimeToDotTime(purchase.purchaseTime)}</span>
         <span className={styles.orderStatus}>{orderStatus}</span>
         <span className={styles.orderStatus}>{shippingStatus}</span>
         <span className={styles.totalCost}>{totalCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
@@ -108,7 +105,8 @@ function OrderList() {
     )
   });
 
-  const lineItemLines = lineItems?.map(line => {
+  /*
+  const lineItemLines = purchases?.map(line => {
     const product = products?.find(product => {return (line.productKey === product.productKey)});
     if(product === undefined) return null;
     const topImage = product.images.sort((a, b) => a.displayOrder - b.displayOrder)[0];
@@ -153,6 +151,7 @@ function OrderList() {
       </div>
     );
   });
+  */
 
   return(
     <>
@@ -161,9 +160,8 @@ function OrderList() {
       <span className="topHeader">購入履歴</span>
       <div className={styles.contentWrapper}>
         <span className={styles.header}>履歴の一覧</span>
-        {nolineItemsMessage}
+        {noPurchasesMessage}
         {purchaseLinesHeader}
-        {false && lineItemLines}
         {purchaseLines}
       </div>
       <Footer />

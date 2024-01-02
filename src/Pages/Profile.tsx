@@ -201,7 +201,7 @@ function Profile() {
     const address = (user.addresses && user.addresses.length > 0) ? user.addresses.find(address => address.defaultAddress === true) || user.addresses[0] : null;
 
     // This does the Azure backup. Take input data if available, or existing data, or blank
-    backupCustomerData(user.customerKey || 0, user.token || "", `NV${user.customerKey}`, userData.lastName || user.lastName || "", userData.firstName || user.firstName || "", userData.lastNameKana || user.lastNameKana || "", userData.firstNameKana || user.firstNameKana || "", address?.postalCode?.toString() || "", address?.prefCode || "", address?.pref || "", address?.city || "", address?.ward || "", address?.address2 || "", user.phoneNumber || "", userData.email || user.email || "", 1, genderNumber, userData.birthday || "");
+    backupCustomerData(user.customerKey || 0, user.token || "", `NV${user.customerKey}`, userData.lastName || user.lastName || "", userData.firstName || user.firstName || "", userData.lastNameKana || user.lastNameKana || "", userData.firstNameKana || user.firstNameKana || "", address?.postalCode?.toString() || "", address?.prefCode?.toString() || "", address?.pref || "", address?.city || "", address?.ward || "", address?.address2 || "", user.phoneNumber || "", userData.email || user.email || "", 1, genderNumber, userData.birthday || "");
 
     setTimeout(() => { window.location.reload(); }, 1000);    
   }
@@ -271,7 +271,7 @@ function Profile() {
     const address = (user.addresses && user.addresses.length > 0) ? user.addresses.find(address => address.defaultAddress === true) || user.addresses[0] : null;
 
     // This does the Azure backup. Take input data if available, or existing data, or blank
-    backupCustomerData(user.customerKey || 0, user.token || "", `NV${user.customerKey}`, userData.lastName || user.lastName || "", userData.firstName || user.firstName || "", userData.lastNameKana || user.lastNameKana || "", userData.firstNameKana || user.firstNameKana || "", address?.postalCode?.toString() || "", address?.prefCode || "", address?.pref || "", address?.city || "", address?.ward || "", address?.address2 || "", user.phoneNumber || "", userData.email || user.email || "", 1, genderNumber, userData.birthday || "");
+    backupCustomerData(user.customerKey || 0, user.token || "", `NV${user.customerKey}`, userData.lastName || user.lastName || "", userData.firstName || user.firstName || "", userData.lastNameKana || user.lastNameKana || "", userData.firstNameKana || user.firstNameKana || "", address?.postalCode?.toString() || "", address?.prefCode?.toString() || "", address?.pref || "", address?.city || "", address?.ward || "", address?.address2 || "", user.phoneNumber || "", userData.email || user.email || "", 1, genderNumber, userData.birthday || "");
 
     setTimeout(() => { window.location.reload(); }, 1000);    
   }

@@ -1,5 +1,3 @@
-import { type } from "os";
-
 // types.ts
 export type FakeProduct = {
     id: string;
@@ -58,7 +56,7 @@ export type WellMillAzureAddress = {
     city: string, //"Kobe",
     ward: string, //"Chuoku",
     address2: string, //"Building 1",
-    renrakusaki: string, //"Building 1",   (連絡先): This term translates to "contact information"
+    renrakusaki: string, //"08012348765",   (連絡先): This term translates to "contact information" i.e. phone number
     mail_address: string, //"Building 1",
     seibetsu: number, //1,   (性別): This term represents gender.
     seinengappi: string, //"2023/10/24",   (生年月日): This term represents the date of birth.
@@ -108,7 +106,7 @@ export type Customer = {
     token?: string,
     cart: Cart,
     addresses: Address[],
-    purchases: Purchase[] | PurchaseAndAddress[],
+    purchases: Purchase[],
 }
 
 export type Cart = {
@@ -128,19 +126,27 @@ export type CartLine = {
     quantity: number,  
 }
 
+/**
+ * Represents a line item address.
+ *
+ * @property {number | null} addressKey - The address key for this line item. Null means no address chosen yet.
+ * @property {number} quantity - The quantity going to this address only.
+ * @property {number} addressIndex - The order of the addresses in the array of addresses
+ *   for split items from a lineItem that was originally a single entry. Not an address key.
+ */
 type LineItemAddress = {
     addressKey: number | null;
     quantity: number;
     addressIndex: number;
 };
   
-type LineItem = {
+export type LineItemAddresses = {
     lineItemKey: number;
     quantity: number;
     addresses: LineItemAddress[] | null;
 };
-  
-export type AddressStateArray = LineItem[];
+
+export type LineItemAddressesArray = LineItemAddresses[];
   
   
 
@@ -150,8 +156,8 @@ export type Address = {
     lastName?: string, //"デハーン",
     firstName?: string, //"クリス",
     registrationType?: number, //0,   (登録区分): This term likely represents a registration category or type.
-    postalCode?: number, //"1234567",
-    prefCode?: string, //"JPHYG",
+    postalCode?: number, // 1234567,
+    prefCode?: number, // 7,
     pref?: string, //"Hyogo",
     city?: string, //"Kobe",
     ward?: string, //"Chuoku",
@@ -160,28 +166,43 @@ export type Address = {
     defaultAddress?: boolean, // true
 }
 
-export type Purchase = {
+export type LineItem = {
     lineItemKey: number,
     productKey: number,
+    customerKey: number,
     purchaseKey: number,
+    addressKey: number,
     quantity: number,
     addedAt: string,
     unitPrice: number,
     taxRate: number,
+    firstName: string,
+    lastName: string,
+    postalCode: number,
+    prefCode: number,
+    pref: string,
+    city: string,
+    ward: string,
+    address2: string,
+    phoneNumber: string,
+    shippingStatus?: string,
+}
+
+export type Purchase = {
+    purchaseKey: number,
     customerKey: number,
-    addressKey: number,
     status: string,
     creationTime: string,
     purchaseTime: string,
     shippedTime: string,
     refundTime: string,
-    paymentIntentId: number,
+    paymentIntentId: string,
     note: string,
     amount: number,
-    shippingStatus?: string,
+    email: string,
+    newPurchaseJson: string,
+    lineItems: LineItem[],
 }
-
-export type PurchaseAndAddress = Purchase & Address;
 
 interface CredentialsWithEmail {
     email: string;

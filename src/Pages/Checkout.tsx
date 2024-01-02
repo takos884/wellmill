@@ -5,12 +5,12 @@ import styles from './checkout.module.css';
 import { Elements } from "@stripe/react-stripe-js";
 import { Appearance, StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
 import { UserContext } from "../Contexts/UserContext";
-import { AddressStateArray } from "../types";
+import { LineItemAddressesArray } from "../types";
 
 
 type CheckoutProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
-  addressesState: AddressStateArray;
+  addressesState: LineItemAddressesArray;
 };
 
 // This is our *publishable* test API key.
@@ -18,7 +18,7 @@ const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv
 
 function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
   console.log("Rendering Checkout")
-  const { user } = useContext(UserContext);
+  const { user, local } = useContext(UserContext);
   const [clientSecret, setClientSecret] = useState("");
 
   function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -40,20 +40,21 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
   };
 
   useEffect(() => {
-    // If required data isn't available, return
-    if(!user?.customerKey || !user?.cart?.lines) return;
-  
-    const cartLines = user?.cart?.lines;
-  
+    if(!user) return;
+
     // From here, a customer cannot set item-specific addresses.
     // If an item-specific address (including mailing address and addressKey) is set, use that.
     // If not, use the default address. (Existing site can't do this. Should we?)
+
+    const cartLines = user.cart.lines;
+    const requestBody = {data: { customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState }};
+
     async function fetchData() {
       try {
         const response = await fetch("https://cdehaan.ca/wellmill/api/createPaymentIntent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({data: { customerKey: user?.customerKey, token: user?.token, cartLines: cartLines, addressesState: addressesState }}),
+          body: JSON.stringify(requestBody),
         });
   
         const data = await response.json();

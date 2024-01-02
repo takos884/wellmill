@@ -1,7 +1,7 @@
 import { useContext, useEffect, useCallback } from 'react';
 import { UserContext } from '../Contexts/UserContext';
 import CallAPI from '../Utilities/CallAPI';
-import { Customer, UserCredentials, Cart, CartLine, Address, Product } from '../types';
+import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem } from '../types';
 import { useProducts } from "../Contexts/ProductContext";
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 
@@ -21,6 +21,8 @@ type UseUserDataReturnType = {
   addToCart: (productKey: number, quantity: number) => Promise<APIResponse>;
   updateCartQuantity: (lineItemKey: number, quantity: number) => Promise<APIResponse>;
   deleteFromCart: (lineItemKey: number) => Promise<APIResponse>;
+
+  createPaymentIntent: (cartLines: CartLine[], addressesState: LineItemAddressesArray) => Promise<APIResponse>;
   cancelPurchase: (customerKey: number, token: string, purchaseKey: number) => Promise<APIResponse>;
 };
 //#endregion Type definitions
@@ -419,10 +421,71 @@ export const useUserData = (): UseUserDataReturnType => {
     return newCart;
   }
 
+  const createPaymentIntent = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
+    setCartLoading(true);
+    const updatedCart = await createPaymentIntentFunction(cartLines, addressesState);
+    setCartLoading(true);
+    return updatedCart;
 
-  const cancelPurchase = useCallback(async (customerKey: number, token: string, purchaseKey: number) => {
+    async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
+      if(local) {
+        return createPaymentIntentLocal(cartLines, addressesState); // { data: xxx, error: yyy }
+      }
+
+      if(!user)              return { data: null, error: "No user data available when creating payment intent" };
+      if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
+      if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
+      const requestBody = {data: { customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState }};
+      const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
+
+      if(APIResponse.error) {
+        console.log("Error in createPaymentIntent in useUserData:");
+        console.log(APIResponse);
+        return { data: null, error: APIResponse.error };
+      }
+
+      UpdateUser(APIResponse.data);
+      return { data: APIResponse.data, error: null };
+    }
+  }, [local, user])
+
+  const createPaymentIntentLocal = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
+    if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
+    if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
+    if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when creating payment intent locally" };
+
+    const requestBody = {cartLines: cartLines, addressesState: addressesState, local: true};
+    const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
+    if(APIResponse.error) {
+      console.log("Error in createPaymentIntentLocal in useUserData:");
+      console.log(APIResponse);
+      return { data: null, error: APIResponse.error };
+    }
+
+    // make purchase in user "purchase array, include my paymentIntentId + amount"
+    //const paymentIntentId = (Date.now().toString(36) + Math.random().toString(36).substring(2)).substring(0, 16);
+    const paymentKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+
+    //const newPayment: LineItem = {}
+
+    const userClone: Customer = JSON.parse(JSON.stringify(user));
+    //userClone.purchases.push()
+
+    cartLines.forEach(line => {
+      const lineAddress = user.addresses.find(address => {});
+    });
+    return { data: null, error: "Not written yet"};
+  }, [user]);
+
+
+
+  const cancelPurchase = useCallback(async (purchaseKey: number) => {
+    if(!user)              return { data: null, error: "No user data available when deleting from remote cart" };
+    if(!user?.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
+    if(!user?.token)       return { data: null, error: "No token available when deleting from remote cart" };
+
     setUserLoading(true);
-    const requestBody = {customerKey: customerKey, token: token, purchaseKey: purchaseKey};
+    const requestBody = {customerKey: user.customerKey, token: user.token, purchaseKey: purchaseKey};
     //console.log(requestBody); // Object { customerKey: 1, token: "e66...44c6", purchaseKey: 193 }
     const APIResponse = await CallAPI(requestBody, "cancelPurchase");
     if(APIResponse.error) {
@@ -478,8 +541,8 @@ export const useUserData = (): UseUserDataReturnType => {
 
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers
-    addToCart, updateCartQuantity, deleteFromCart,
-    cancelPurchase,
+    addToCart, updateCartQuantity, deleteFromCart, 
+    createPaymentIntent, cancelPurchase,
     addAddress, deleteAddress
   };
 
