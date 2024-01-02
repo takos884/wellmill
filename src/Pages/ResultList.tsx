@@ -1,6 +1,6 @@
 import React from "react";
 
-import './App.css';
+import '../App.css';
 import Header from "./Header";
 import styles from "./resultList.module.css"
 import { Link } from "react-router-dom";

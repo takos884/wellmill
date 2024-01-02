@@ -133,7 +133,7 @@ button.register:hover {
 
 button.processing {
   color: transparent;
-  background: #fba800 url(../public/spinner.svg);
+  background: #fba800 url(../../public/spinner.svg);
   background-size: 3rem;
   background-position: center center;
   background-repeat: no-repeat;

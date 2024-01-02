@@ -1,6 +1,6 @@
 import React from "react"
 
-import './App.css';
+import '../App.css';
 import styles from "./howTo.module.css"
 import Header from "./Header";
 import Footer from "./Footer";

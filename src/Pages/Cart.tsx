@@ -5,7 +5,7 @@ import { useUserData } from "../Hooks/useUserData";
 import { useProducts } from "../Contexts/ProductContext";
 import { Link } from "react-router-dom";
 
-import './App.css';
+import '../App.css';
 import styles from './cart.module.css'
 import Header from "./Header";
 import Footer from "./Footer";
@@ -93,8 +93,6 @@ export default function Cart() {
   // Sends updates to the server when address-specific quantities are updated
   useEffect(() => {
     if (lastUpdatedLineItemKey === null) return;
-    if(!user?.customerKey) return;
-    if(!user?.token) return;
 
     const lineItemAddress = addressesState.find(li => li.lineItemKey === lastUpdatedLineItemKey);
     const newLineItemQuantity = lineItemAddress?.addresses?.reduce((acc, address) => acc + address.quantity, 0) || 0;
@@ -104,7 +102,7 @@ export default function Cart() {
     }
 
     setLastUpdatedLineItemKey(null); // Reset the tracker
-  }, [lastUpdatedLineItemKey, addressesState, user?.customerKey, user?.token]);
+  }, [lastUpdatedLineItemKey, addressesState]);
 
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
@@ -451,7 +449,7 @@ export default function Cart() {
     </div>
   );
 
-  const requestMessage = (!user) ? loggedOutMessage : (cartQuantity === 0) ? emptyCartMessage : null;
+  const requestMessage = (!user && !userLoading) ? loggedOutMessage : (cartQuantity === 0) ? emptyCartMessage : null;
 
   return(
     <>

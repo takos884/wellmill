@@ -3,7 +3,7 @@ import { UserContext } from "../Contexts/UserContext";
 import { Link } from "react-router-dom";
 import Header from "./Header";
 
-import './App.css';
+import '../App.css';
 import styles from "./sampleRegistration.module.css"
 import { useBackupDB } from "../Hooks/useBackupDB";
 

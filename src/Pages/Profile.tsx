@@ -1,6 +1,6 @@
 import React, { ChangeEvent, MouseEventHandler, useContext, useEffect, useState } from "react";
 
-import './App.css';
+import '../App.css';
 import styles from "./profile.module.css"
 import Header from "./Header";
 import Footer from "./Footer";

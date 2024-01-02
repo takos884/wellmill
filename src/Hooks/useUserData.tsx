@@ -476,29 +476,6 @@ export const useUserData = (): UseUserDataReturnType => {
     });
   }
 
-  useEffect(() => {
-    setUserMeaningful(isMeaningfulData(user));
-  }, [user]);
-
-  function isMeaningfulData(obj: any): boolean {
-    if (obj === null) return false;
-
-    for (const key in obj) {
-        const value = obj[key];
-
-        if (Array.isArray(value)) {
-            if (value.length > 0) { return true; }
-        } else if (typeof value === 'object') {
-            if (isMeaningfulData(value)) { return true; }
-        } else if (typeof value === 'string' && value.trim() !== '') {
-            return true;
-        } else if (typeof value === 'number' && value !== null && value !== 0) {
-            return true;
-        }
-    }
-    return false;
-  }
-
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers
     addToCart, updateCartQuantity, deleteFromCart,

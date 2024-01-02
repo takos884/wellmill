@@ -4,7 +4,7 @@ import { useUserData } from '../Hooks/useUserData';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
-import './App.css';
+import '../App.css';
 import styles from './login.module.css'
 import Header from './Header';
 import Footer from './Footer';

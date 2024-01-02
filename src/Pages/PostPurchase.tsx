@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { UserContext } from "../Contexts/UserContext";
 
-import './App.css';
+import '../App.css';
 import Header from "./Header";
 import Footer from "./Footer";
 
@@ -47,7 +47,7 @@ export default function PostPurchase() {
       .then((response) => response.json())
       .then((data) => {
         setPaymentStatus(data.paymentStatus);
-        setUser(data.customerData);
+        setUser(data.customerData); // TODO working on this, this screen kills the user data
       })
   }, [user, addressKey, email, paymentIntentId, paymentIntentClientSecret]);
 

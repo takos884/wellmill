@@ -1,6 +1,6 @@
 import { UserContext } from "../Contexts/UserContext";
 import Header from './Header';
-import './App.css';
+import '../App.css';
 import styles from './mypage.module.css'
 import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';

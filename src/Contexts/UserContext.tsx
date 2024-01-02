@@ -71,24 +71,29 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // This effect runs once on mount to check for existing user data, first on the server, then locally
   useEffect(() => {
+    if(user) { return } // Only run first time the site is loading / after refresh
+
+    setUserLoading(true);
+    initializeUserData().then(() => {
+      setUserLoading(false);  
+    });
+
     async function initializeUserData() {
-      if (!user) { // First time the site is loading / after refresh
-        const token = Cookies.get('WellMillToken');
-        if (token) {
-          try{
-            await loginUserFromToken(token);
-            setLocal(false);
-          }
-          catch(error) {
-            console.error("Failed to fetch remote user data:", error);
-            console.error("Falling back to local data");
-            pullUserLocal();
-            setLocal(true);
-          }
-        } else {
+      const token = Cookies.get('WellMillToken');
+      if (token) {
+        try{
+          await loginUserFromToken(token);
+          setLocal(false);
+        }
+        catch(error) {
+          console.error("Failed to fetch remote user data:", error);
+          console.error("Falling back to local data");
           pullUserLocal();
           setLocal(true);
         }
+      } else {
+        pullUserLocal();
+        setLocal(true);
       }
     }
 
@@ -106,7 +111,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.log(APIResponse.data.customerData);
 
       setUser(ProcessCustomer(APIResponse.data.customerData))
-      return;
     }
 
     function pullUserLocal() {
@@ -114,12 +118,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       let userLocal = (localStorageUser ? JSON.parse(localStorageUser) : emptyCustomer) as Customer;
       setUser(userLocal);
     }
+  }, [user]);
 
-    setUserLoading(true);
-    initializeUserData().then(() => {
-      setUserLoading(false);
-    });
-  }, []);
+  useEffect(() => {
+    setUserMeaningful(isMeaningfulData(user));
+  }, [user]);
+
+  function isMeaningfulData(obj: any): boolean {
+    if (obj === null) return false;
+
+    for (const key in obj) {
+        const value = obj[key];
+
+        if (Array.isArray(value)) {
+            if (value.length > 0) { return true; }
+        } else if (typeof value === 'object') {
+            if (isMeaningfulData(value)) { return true; }
+        } else if (typeof value === 'string' && value.trim() !== '') {
+            return true;
+        } else if (typeof value === 'number' && value !== null && value !== 0) {
+            return true;
+        }
+    }
+    return false;
+  }
 
   const value: UserContextValue = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, local, setLocal };
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

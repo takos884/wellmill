@@ -1,5 +1,5 @@
 import React from 'react';
-import './App.css';
+import '../App.css';
 import styles from './shop.module.css'
 
 import { useProducts } from '../Contexts/ProductContext';

@@ -138,7 +138,6 @@ span.quantityValue {
   font-size: 1.5rem;
   flex-grow: 1;
   min-width: 3rem;
-/*  background-image: url(/public/spinner.svg);*/
 }
 
 img.quantitySpinner {

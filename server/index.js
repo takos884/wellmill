@@ -1670,7 +1670,7 @@ app.post("/verifyPayment", async (req, res) => {
 
         const [lineItemResults] = await pool.query(query, values);
 
-        // If no results, the purchase isn't found
+        // If no results, no item in the purchase is found
         if (lineItemResults.length === 0) {
           console.log("Thrown out at lineItemResults.length === 0");
           console.log(`purchase.purchaseKey: ${purchase.purchaseKey}`);
@@ -1712,10 +1712,19 @@ app.post("/verifyPayment", async (req, res) => {
         console.log("products");
         console.log(products);
 
+        const uniqueAddressKeysSet = new Set();
+        for (const item of lineItemUpdatedResults) {
+          uniqueAddressKeysSet.add(item.addressKey);
+        }
+        const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+        console.log("uniqueAddressKeys");
+        console.dir(uniqueAddressKeys, { depth: null, colors: true });
+
         // TODO good place to send an email that this purchase was made.
         // use email, lineItemUpdatedResults, and products
 
 
+        //#region send purchase to Azure
         const orderDetails = lineItemUpdatedResults.map(lineItem => {
           const product = products.find(product => {return lineItem.productKey === product.productKey});
           return({
@@ -1735,16 +1744,7 @@ app.post("/verifyPayment", async (req, res) => {
         console.log("orderDetails");
         console.dir(orderDetails, { depth: null, colors: true });
 
-
         
-        const uniqueAddressKeysSet = new Set();
-        for (const item of lineItemUpdatedResults) {
-          uniqueAddressKeysSet.add(item.addressKey);
-        }
-        const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
-        console.log("uniqueAddressKeys");
-        console.dir(uniqueAddressKeys, { depth: null, colors: true });
-
         //haiso
         const delivery = uniqueAddressKeys.map(addressKey => {
           const address = addresses.find(ad => {return ad.addressKey === addressKey});
@@ -1779,19 +1779,6 @@ app.post("/verifyPayment", async (req, res) => {
         console.log("delivery");
         console.dir(delivery, { depth: null, colors: true });
 
-        /*
-        const shippingDetails = lineItemUpdatedResults.map(lineItem => {
-          const product = products.find(product => {return lineItem.productKey === product.productKey});
-          return ({
-            "haiso_meisai_no": 12, // must be a number
-            "shohin_code": product?.id,
-            "shohin_name": product?.title,
-            "suryo": lineItem.quantity,
-            "chumon_meisai_no": lineItem.lineItemKey
-          })
-        })
-        */
-
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
           "chumon_no2": "NVP-" + purchase.purchaseKey,
@@ -1815,7 +1802,10 @@ app.post("/verifyPayment", async (req, res) => {
         const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
         console.log("backupResults");
         console.log(backupResults);
+        //#endregion
 
+
+        // Make a copy of the exact data sent to Azure
         const backupDataJSON = JSON.stringify(backupData);
         query = "UPDATE purchase SET newPurchaseJson = ? WHERE paymentIntentId = ?;";
         try {
@@ -1830,25 +1820,9 @@ app.post("/verifyPayment", async (req, res) => {
       console.error('Error updating payment: ', error);
       return res.status(500).send('Error updating payment: ' + error);
     }
-  }
+  } // paymentStatus === "created" or "succeeded"
 
-  // Pull customer's cart
-  const cartData = await GetCartFromCustomerKey(customerKey);
-  customer.cart = cartData;
-
-  // Pull customer's purchases
-  const purchases = await GetPurchasesFromCustomerKey(customerKey);
-  customer.purchases = purchases;
-
-  // Attach customer's addresses
-  // We already pulled addresses
-  //const addresses = await GetAddressesFromCustomerKey(customerKey);
-  customer.addresses = addresses;
-
-  // Remove sensitive data before sending the customer object
-  delete customer.password_hash;
-
-  return res.json({customerData: customer, paymentStatus: paymentStatus});
+  return res.json({customerData: GetCustomerDataFromCustomerKey(customerKey), paymentStatus: paymentStatus});
 });
 //#endregion Stripe
 

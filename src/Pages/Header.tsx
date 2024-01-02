@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import './App.css';
+import '../App.css';
 import styles from './header.module.css'
 import { Link } from "react-router-dom";
 import { UserContext } from "../Contexts/UserContext";
@@ -20,9 +20,11 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const spinner = <img className={styles.cartDotSpinnerSpinner} src="spinner.svg" alt="Spinner"/>;
     const cartDotContent = cartLoading ? spinner : cart?.quantity;
     const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
-    const headerButtonLink = (
-        userMeaningful ? <Link to="/account">マイページ</Link> : <Link to="/login">ログイン</Link>
-    )
+    const headerButton = (
+        userMeaningful ? 
+            <Link to="/account"><div className={`${styles.navItem} ${styles.loginButton} ${local && styles.loginButtonGlow}`}>マイページ</div></Link> :
+            <Link to="/login"><div className={`${styles.navItem} ${styles.loginButton} ${local && styles.loginButtonGlow}`}>ログイン</div></Link>
+        )
 
     const handleHomeClick = () => {
         if (onHomeClick) { onHomeClick(); }
@@ -61,7 +63,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
                     <div className={styles.navItem}><Link to="/remote-examination">モータリング検索は?</Link></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><Link to="/shop">SHOP</Link></div>
                     <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
-                    <div className={`${styles.navItem} ${styles.loginButton} ${local && styles.loginButtonGlow}`}>{headerButtonLink}</div>
+                    {headerButton}
                     <div className={`${styles.navItem} ${styles.cart}`}>
                         <Link to="/cart"><img className={styles.cart} src="cart.png" alt="Cart" />{cartDot}</Link>
                     </div>
