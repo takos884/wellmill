@@ -20,7 +20,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   const [postalCode, setPostalCode] = useState<string>("");
   const [displayedPostalCode, setDisplayedPostalCode] = useState<string>("");
   const postalCodeRef = useRef(null);
-  const [address, setAddress] = useState<Address>({});
+  const [address, setAddress] = useState<Address>({defaultAddress: false});
   const [fetchingAddress, setFetchingAddress] = useState<Boolean>(false);
 
   const currentAddress = addressKey ? user?.addresses?.find(address => address.addressKey === addressKey) : null;

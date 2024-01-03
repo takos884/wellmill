@@ -8,6 +8,7 @@ import '../App.css';
 import styles from './login.module.css'
 import Header from './Header';
 import Footer from './Footer';
+import { emptyCustomer } from '../types';
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -50,6 +51,19 @@ const Login = () => {
     setLocal(true);
   }
 
+  function handleNewGuest() {
+    if(user) {
+      setUser(prev => {
+        let newCustomer
+        if(!prev) { newCustomer = { ...emptyCustomer, guest: true}; }
+        else      { newCustomer = { ...prev,          guest: true}; }
+        localStorage.setItem('userLocal', JSON.stringify(newCustomer));
+        return newCustomer;
+      });
+    }
+    navigate('/account');
+  }
+
   return (
     <>
       <div className="topDots" />
@@ -63,6 +77,8 @@ const Login = () => {
         <span className={styles.forgotPassword}><Link to="/password-recover">パスワードをお忘れの方はこちら</Link></span>
         <button onClick={handleLogin}>ログイン</button>
         {errorMessage && <span className={styles.errorMessage}>{errorMessage}</span>}
+        <div className={styles.loginLine}></div>
+        <button className={styles.loginSignup} onClick={handleNewGuest}>ゲストとして続ける</button>
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
       </div>

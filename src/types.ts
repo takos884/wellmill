@@ -88,8 +88,23 @@ type image = {
     altText: string,
 }
 
+export const emptyCustomer:Customer = {
+    type: 'customer',
+    customerKey: null,
+    cart: {
+      type: 'cart',
+      quantity: 0,
+      cost: 0,
+      includedTax: 0,
+      lines: [],  
+    },
+    addresses: [],
+    purchases: [],
+}
+
 export type Customer = {
     type: "customer",
+    guest?: boolean,
     customerKey?: number | null, // For my MySQL database (null means its stored locally, undefined means not yet sent to server)
     code?: string,               // For the company Azure backup database
     email?: string,

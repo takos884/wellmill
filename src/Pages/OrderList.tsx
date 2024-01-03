@@ -19,6 +19,7 @@ const breadcrumbs = [
 function OrderList() {
   const { user, userLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+  console.log(user);
 
   const purchases: Purchase[] = user ? user.purchases : []
 

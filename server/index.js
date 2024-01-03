@@ -1367,46 +1367,42 @@ async function GetCartFromCustomerKey(customerKey) {
 }
 
 async function GetPurchasesFromCustomerKey(customerKey) {
-  // Prepare the SQL query to get a customer's line items that haven't been purchased
-  // Could be more selective
-  const selectQuery = `
-    SELECT lineItem.*, purchase.*
-    FROM lineItem 
-    JOIN purchase ON lineItem.purchaseKey = purchase.purchaseKey
-    WHERE lineItem.customerKey = ?
+  try {
+    query = `
+    SELECT *
+    FROM purchase
+    WHERE customerKey = ?
     AND purchase.status != 'created';`;
 
-  // Execute the query using the promisified pool.query and wait for the promise to resolve
-  try {
-    const [purchaseHistory] = await pool.query(selectQuery, [customerKey]);
+    const [purchases] = await pool.query(query, [customerKey]);
+    const purchaseKeys = purchases.map(pur => { return pur.purchaseKey; })
 
-    // Organize purchases and line items into a 2D array
-    const purchases = [];
+    query = `
+      SELECT *
+      FROM lineItem
+      WHERE purchaseKey IN (?);`
 
-    // Create a map to group line items by purchase ID
-    const purchaseMap = new Map();
+    const [lineItems] = await pool.query(query, [purchaseKeys]);
 
-    purchaseHistory.forEach((row) => {
-      const purchaseKey = row.purchase.purchaseKey;
-
-      // Check if the purchase is already in the map
-      if (!purchaseMap.has(purchaseKey)) {
-        // If not, add it to the map and initialize the line items array
-        purchaseMap.set(purchaseKey, {
-          purchase: row.purchase,
-          lineItems: [],
-        });
-      }
-
-      // Add the line item to the corresponding purchase in the map
-      purchaseMap.get(purchaseKey).lineItems.push(row.lineItem);
+    purchases.forEach((purchase) => {
+      const purchaseKey = purchase.purchaseKey;
+      const purchaseLines = lineItems.filter(line => line.purchaseKey === purchaseKey);
+      purchase.lineItems = purchaseLines;
     });
 
-    // Convert the map values to an array of purchases
-    purchases.push(...purchaseMap.values());
-
     // All values in purchases come from MySQL as strings, but I want the numbers to be real numbers
-    return ProcessPurchases(purchases)
+    for (const purchase of purchases) {
+      for (const lineItem of purchase.lineItems) {
+        // Convert from string to integer
+        lineItem.unitPrice = parseInt(lineItem.unitPrice);
+        lineItem.taxRate = parseInt(lineItem.taxRate);
+      }
+    }
+
+    console.log("purchases");
+    console.dir(purchases, { depth: null, colors: true });
+
+    return purchases;
   } catch (error) {
     console.error('Error in GetPurchasesFromCustomerKey: ', error);
     throw error;
@@ -1435,16 +1431,6 @@ function ProcessAddresses(addresses) {
     if(address === undefined) return null;
     address.defaultAddress = (address.defaultAddress?.toString() === "1");
     return address;
-  });
-}
-
-// All values in Purchase History come from MySQL as strings, but I want the numbers to be real numbers
-function ProcessPurchases(purchaseHistory) {
-  return purchaseHistory.map(oneHistory => {
-    return oneHistory.map(line => {
-      line.unitPrice = Math.round(Number(oneHistory.unitPrice));
-      line.taxRate = Math.round(Number(oneHistory.taxRate)*100)/100;        
-    })
   });
 }
 

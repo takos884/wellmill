@@ -17,9 +17,11 @@ type CheckoutProps = {
 const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
 function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
-  console.log("Rendering Checkout")
   const { user, local } = useContext(UserContext);
   const [clientSecret, setClientSecret] = useState("");
+
+  console.log("Rendering Checkout")
+  console.log(user)
 
   function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (event.target === event.currentTarget) {

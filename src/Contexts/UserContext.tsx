@@ -1,5 +1,5 @@
 import { createContext, useState, Dispatch, SetStateAction, useEffect } from 'react';
-import { Customer } from '../types';
+import { Customer, emptyCustomer } from '../types';
 import CallAPI from '../Utilities/CallAPI';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 import Cookies from 'js-cookie';
@@ -45,19 +45,6 @@ const defaultContextValue: UserContextValue = {
   setLocal: () => {},
 };
 
-const emptyCustomer:Customer = {
-  type: 'customer',
-  customerKey: null,
-  cart: {
-    type: 'cart',
-    quantity: 0,
-    cost: 0,
-    includedTax: 0,
-    lines: [],  
-  },
-  addresses: [],
-  purchases: [],
-}
 
 // Create the context with the interface
 export const UserContext = createContext<UserContextValue>(defaultContextValue);
@@ -128,17 +115,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     if (obj === null) return false;
 
     for (const key in obj) {
-        const value = obj[key];
+      if (key === 'type') continue; // Ignore fields named "type"
+      const value = obj[key];
 
-        if (Array.isArray(value)) {
-            if (value.length > 0) { return true; }
-        } else if (typeof value === 'object') {
-            if (isMeaningfulData(value)) { return true; }
-        } else if (typeof value === 'string' && value.trim() !== '') {
-            return true;
-        } else if (typeof value === 'number' && value !== null && value !== 0) {
-            return true;
-        }
+      if (Array.isArray(value)) {
+        if (value.length > 0) { return true; }
+      } else if (typeof value === 'object') {
+        if (isMeaningfulData(value)) { return true; }
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        return true;
+      } else if (typeof value === 'number' && value !== null && value !== 0) {
+        return true;
+      } else if (typeof value === 'boolean' && value !== null && value !== undefined) {
+        return true;
+      }
     }
     return false;
   }

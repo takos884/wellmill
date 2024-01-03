@@ -32,7 +32,7 @@ export const useUserData = (): UseUserDataReturnType => {
   const context = useContext(UserContext);
   if (!context) { throw new Error('useUserData must be used within a UserProvider'); }
 
-  const { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, local, setLocal } = context;
+  const { user, setUser, setCartLoading, setUserLoading, local } = context;
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   const createUser = async (userData: Customer): Promise<APIResponse> => {
@@ -158,19 +158,55 @@ export const useUserData = (): UseUserDataReturnType => {
   const addAddressLocal = useCallback((address: Address) => {
     if(!user) return { data: null, error: "No user data available when adding local address" };
 
+    // if new address's defaultAddress come in unset, undefined, null, etc should be "false", otherwise "true"
+    if(!address.defaultAddress) address.defaultAddress = false;
+    else                        address.defaultAddress = true;
+
+    // If this is the only address, it must be default
+    if(user.addresses.length === 0) {
+      address.defaultAddress = true;
+    }
+
+    // If all other addresses are not default, it must be default
+    if(!user.addresses.find(addr => {return (addr.defaultAddress === true && addr.addressKey !== address.addressKey)})) {
+      address.defaultAddress = true;
+    }
+
+    // If the new address is default, all others must not be
+    if(address.defaultAddress === true) {
+      user.addresses.forEach(addr => {
+        if(addr.addressKey !== address.addressKey) addr.defaultAddress = false;
+      });
+    }
+
     const addressesClone = [ ...user.addresses ];
 
-    // If an address with the same key exists, update that
-    // If not, make a new address
-    let existingAddress = addressesClone.find(ads => {return ads.addressKey === address.addressKey});
-    if(existingAddress) {
-      existingAddress = { ...existingAddress, ...address };
+    const existingIndex = addressesClone.findIndex(ads => ads.addressKey === address.addressKey);
+
+    if (existingIndex !== -1) {
+      // If an address with the same key exists, update that
+      addressesClone[existingIndex] = { ...address, addressKey: addressesClone[existingIndex].addressKey };
+    } else {
+      // If no address with the same key exists, add a new address
+      // Random addressKey (more than a million, so I can see at a glance in the database) while it's stored locally
+      const addressKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
+      addressesClone.push({ ...address, addressKey: addressKeyLocal });
     }
-    else {
-      // random (more than a million) lineItemKey while it's stored locally
-      const addressKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
-      addressesClone.push({ ...address, addressKey: addressKeyLocal});
-    }
+
+//    // If an address with the same key exists, update that
+//    // If not, make a new address
+//    let existingAddress = addressesClone.find(ads => {return ads.addressKey === address.addressKey});
+//    if(existingAddress) {
+//      existingAddress = { ...address };
+//      console.log(address)
+//      console.log(existingAddress)
+//      console.log(addressesClone)
+//    }
+//    else {
+//      // random (more than a million, so I can see at a glance in the database) addressKey while it's stored locally
+//      const addressKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+//      addressesClone.push({ ...address, addressKey: addressKeyLocal});
+//    }
 
     const userClone = { ...user, addresses: addressesClone};
     UpdateUser(userClone);
@@ -287,7 +323,7 @@ export const useUserData = (): UseUserDataReturnType => {
       existingLineItem.quantity += quantity;
     }
     else {
-      // random (more than a million) lineItemKey while it's stored locally
+      // random (more than a million, so I can see at a glance in the database) lineItemKey while it's stored locally
       const lineItemKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
       linesClone.push({type: 'cartLine',lineItemKey: lineItemKeyLocal, productKey: product.productKey, unitPrice: product.price, taxRate: product.taxRate, quantity})
     }
@@ -369,7 +405,7 @@ export const useUserData = (): UseUserDataReturnType => {
       if(local) {
         return deleteFromCartLocal(lineItemKey); // { data: xxx, error: yyy }
       }
-  
+
       if(!user)              return { data: null, error: "No user data available when deleting from remote cart" };
       if(!user?.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
       if(!user?.token)       return { data: null, error: "No token available when deleting from remote cart" };
