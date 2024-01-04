@@ -96,7 +96,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
 
-      console.log(APIResponse.data.customerData);
+      //console.log(APIResponse.data.customerData);
 
       setUser(ProcessCustomer(APIResponse.data.customerData))
     }

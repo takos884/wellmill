@@ -14,7 +14,7 @@ const breadcrumbs = [
 
 function Shop() {
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
-  //console.log(products);
+  console.log(products);
 
   return (
     <>

@@ -58,7 +58,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
         <>
             <div className={styles.header}>
                 <div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="logo.svg" alt="Logo" /></Link></div>
-                <span>{user?.customerKey ? user.customerKey : "-"}</span>
+                {false && (<span>{user?.customerKey ? user?.customerKey : "-"}</span>)}
                 <div className={styles.navItems}>
                     <div className={styles.navItem}><Link to="/remote-examination">モータリング検索は?</Link></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><Link to="/shop">SHOP</Link></div>

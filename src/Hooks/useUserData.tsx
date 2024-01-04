@@ -27,7 +27,7 @@ type UseUserDataReturnType = {
   deleteFromCart: (lineItemKey: number) => Promise<APIResponse>;
 
   createPaymentIntent: (cartLines: CartLine[], addressesState: LineItemAddressesArray) => Promise<APIResponse>;
-  finalizePurchase: (paymentIntentId: string, email: string, addressKey: number) => Promise<APIResponse>;
+  finalizePurchase: (paymentIntentId: string, email: string, billingAddressKey: number) => Promise<APIResponse>;
   cancelPurchase: (purchaseKey: number) => Promise<APIResponse>;
 };
 //#endregion Type definitions
@@ -594,15 +594,15 @@ export const useUserData = (): UseUserDataReturnType => {
 
 
 
-  const finalizePurchase = useCallback(async (paymentIntentId:string, email:string, addressKey: number) => {
+  const finalizePurchase = useCallback(async (paymentIntentId:string, email:string, billingAddressKey: number) => {
     if(guest) {
-      return await finalizePurchaseLocal(paymentIntentId, email, addressKey);
+      return await finalizePurchaseLocal(paymentIntentId, email, billingAddressKey);
     }
 
     if(!user)              return { data: null, error: "No user data available when creating payment intent" };
     if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
     if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
-    const requestBody = { customerKey: user.customerKey, token: user.token, addressKey: addressKey, email: email, paymentIntentId: paymentIntentId };
+    const requestBody = { customerKey: user.customerKey, token: user.token, billingAddressKey: billingAddressKey, email: email, paymentIntentId: paymentIntentId };
     const APIResponse = await CallAPI(requestBody, "finalizePurchase");
 
     if(APIResponse.error) {
@@ -611,17 +611,17 @@ export const useUserData = (): UseUserDataReturnType => {
       return APIResponse;
     }
 
-    //UpdateUser(APIResponse.data);
+    UpdateUser(APIResponse.data.customerData);
     return APIResponse;
   }, [guest, user, products]);
 
-  const finalizePurchaseLocal = useCallback(async (paymentIntentId: string, email: string, addressKey: number) => {
+  const finalizePurchaseLocal = useCallback(async (paymentIntentId: string, email: string, billingAddressKey: number) => {
     if(!user) { console.log("No User!"); return { data: null, error: "No user" }; }
     if(!products) { console.log("No products!"); return { data: null, error: "No product" }; }
     if(!paymentIntentId) { console.log("No paymentIntentId!"); return { data: null, error: "No payment intent" }; }
 
     const addresses = user.addresses;
-    const defaultAddress = addresses.find(addr => {return addr.addressKey === addressKey}) || addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
+    const defaultAddress = addresses.find(addr => {return addr.addressKey === billingAddressKey}) || addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
 
     const purchase = user.purchases.find(pur => {return pur.paymentIntentId === paymentIntentId})
     if(!purchase) { return { data: null, error: "No purchase" }; }
@@ -631,14 +631,10 @@ export const useUserData = (): UseUserDataReturnType => {
     if(!emailRegex.test(email)) { return { data: null, error: "Malformed email" }; }
     purchase.email = email;
 
+    purchase.addressKey = billingAddressKey;
 
-    const uniqueAddressKeysSet = new Set();
-    for (const item of purchaseLineItems) {
-      uniqueAddressKeysSet.add(item.addressKey);
-    }
-    const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
 
-    //TODO this should be in useBackupDB
+    //TODO this should be in useBackupDB, it's actually done on the server now
     //#region send purchase to Azure
     // We need to create a customer on the Azure servers before we can create a purchase
     //const customerCode = "NV" + Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
@@ -684,7 +680,14 @@ export const useUserData = (): UseUserDataReturnType => {
     console.log("orderDetails");
     console.dir(orderDetails, { depth: null, colors: true });
 
+    const uniqueAddressKeysSet = new Set();
+    for (const item of purchaseLineItems) {
+      uniqueAddressKeysSet.add(item.addressKey);
+    }
+    const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
 
+    // grouped delivery JSON for the backup servers (they don't want this)
+    /*
     //haiso
     const delivery = uniqueAddressKeys.map(addressKey => {
       const lineItems = purchaseLineItems.filter(lineItem => {return lineItem.addressKey === addressKey})
@@ -716,10 +719,42 @@ export const useUserData = (): UseUserDataReturnType => {
         "haiso_meisai": deliveryDetails
       }
     })
+    */
+
+    const delivery = purchaseLineItems.map(purchaseLineItem => {
+      const address = addresses.find(ad => {return ad.addressKey === purchaseLineItem.addressKey}) || defaultAddress;
+      if(!address) { return {}; }
+
+      const product = products.find(product => {return purchaseLineItem.productKey === product.productKey});
+
+      //haiso_meisai
+      const deliveryDetails = {
+        "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
+        "shohin_code": product?.id,
+        "shohin_name": product?.title,
+        "suryo": purchaseLineItem.quantity,
+        "chumon_meisai_no": purchaseLineItem.lineItemKey  
+      };
+
+      return {
+        "shuka_date": formatDate(purchase.purchaseTime),
+        "haiso_name": `${address.lastName} ${address.firstName}`,
+        "haiso_post_code": address.postalCode,
+        "haiso_pref_code": address.prefCode,
+        "haiso_pref": address.pref,
+        "haiso_city": address.city,
+        "haiso_address1": address.ward,
+        "haiso_address2": address.address2,
+        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}`,
+        "haiso_meisai": deliveryDetails
+      }
+    });
 
     console.log("delivery");
     console.dir(delivery, { depth: null, colors: true });
 
+
+    // Top level object
     const backupData = {
       "chumon_no": "NVP-" + purchase.purchaseKey,
       "chumon_no2": "NVP-" + purchase.purchaseKey,

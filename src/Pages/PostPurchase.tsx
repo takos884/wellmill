@@ -56,7 +56,7 @@ function PostPurchaseContent() {
   const paymentIntentId = params.get("payment_intent");
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
   const redirectStatus = params.get("redirect_status");
-  const addressKey = parseInt(params.get("ak") || "");
+  const billingAddressKey = parseInt(params.get("ak") || "");
 
   const email = decodeURIComponent(params.get("email") || '');
   let guest: boolean;
@@ -104,10 +104,10 @@ function PostPurchaseContent() {
     if(customerKey === prevCustomerKey.current) { console.log("Don't verify on re-render"); return; }
     prevCustomerKey.current = customerKey;
 
-    asyncFinalizePurchase(paymentIntentId, email, addressKey);
+    asyncFinalizePurchase(paymentIntentId, email, billingAddressKey);
 
-    async function asyncFinalizePurchase(paymentIntentId: string, email: string, addressKey: number) {
-      const finalizeReply = await finalizePurchase(paymentIntentId, email, addressKey);
+    async function asyncFinalizePurchase(paymentIntentId: string, email: string, billingAddressKey: number) {
+      const finalizeReply = await finalizePurchase(paymentIntentId, email, billingAddressKey);
       if(finalizeReply.error) {
         console.log("Error in asyncFinalizePurchase in PostPurchase:");
         console.log(finalizeReply);
@@ -116,7 +116,7 @@ function PostPurchaseContent() {
       console.log(finalizeReply);
     }
 
-  }, [user, products, paymentStatus, addressKey, email, paymentIntentId, paymentIntentClientSecret]);
+  }, [user, products, paymentStatus, billingAddressKey, email, paymentIntentId, paymentIntentClientSecret]);
 
   
   return (

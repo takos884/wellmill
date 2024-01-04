@@ -152,6 +152,7 @@ type LineItemAddress = {
 export type Purchase = {
     purchaseKey: number,
     customerKey: number | null,
+    addressKey?: number, // billing address
     status: string,
     creationTime: string,
     purchaseTime: string | null,

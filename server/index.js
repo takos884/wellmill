@@ -585,7 +585,6 @@ app.post('/sendWelcome', async (req, res) => {
 <html>
   <head>
     <style>
-      /* Inline CSS here for styling */
       table {
         border-spacing: 0;
       }
@@ -693,7 +692,6 @@ app.post('/sendWelcome', async (req, res) => {
   let mailOptions = {
       from: process.env.WELLMILL_EMAIL_ADDRESS, 
       to: recipient, 
-      //to: "cdehaan@gmail.com", 
       subject: '【ウェルミル】お客様アカウントの確認',
       html: emailHTML,
       attachments: [{
@@ -712,6 +710,309 @@ app.post('/sendWelcome', async (req, res) => {
       return res.status(500).send(errorMessage);
   }
 });
+
+async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images) {
+  console.log("░▒▓█ Hit sendOrderEmail. Time: " + CurrentTime());
+  console.dir(recipient, { depth: null, colors: true });
+
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.WELLMILL_EMAIL_ADDRESS,
+        pass: process.env.WELLMILL_EMAIL_APP_PASSWORD
+    }
+  });
+
+  const totalCost = Math.round(lineItems.reduce((accumulator, lineItem) => {
+    const lineItemCost = (parseInt(lineItem.unitPrice) * (1 + parseFloat(lineItem.taxRate)) * parseInt(lineItem.quantity));
+    return accumulator + lineItemCost;
+  }, 0));
+
+  console.log(`totalCost: ${totalCost}`);
+
+  const totalTax = Math.round(lineItems.reduce((accumulator, lineItem) => {
+    const lineItemCost = (parseInt(lineItem.unitPrice) * (parseFloat(lineItem.taxRate)) * parseInt(lineItem.quantity));
+    return accumulator + lineItemCost;
+  }, 0));
+
+  const uniqueProductKeysSet = new Set();
+  for (const item of lineItems) {
+    uniqueProductKeysSet.add(item.productKey);
+  }
+  const uniqueProductKeys = Array.from(uniqueProductKeysSet);
+
+  console.log(`uniqueProductKeys: ${uniqueProductKeys}`);
+
+  console.log("products");
+  console.dir(products, { depth: null, colors: true });
+
+  const attachments = uniqueProductKeys.map(productKey => {
+    const product = products.find(prod => { return prod.productKey === productKey});
+    if(!product) { console.log("No Product"); return null;}
+
+    const productImages = images.filter(img => img.productKey === productKey);
+
+    console.dir(productImages, { depth: null, colors: true });
+    console.dir(productImages[0].url.split("/").pop(), { depth: null, colors: true });
+    const filename = productImages[0].url.split("/").pop();
+    const path = __dirname + "/../" + productImages[0].url;
+    const cid = `Prod${productKey}`;
+
+    return {
+      filename: filename,
+      path: path,
+      cid: cid,
+    }
+  });
+
+  attachments.push({
+    filename: 'logo.png',
+    path: __dirname + '/logo.png',
+    cid: 'logo'
+  })
+
+  console.log("attachments");
+  console.dir(attachments, { depth: null, colors: true });
+
+  const uniqueAddressKeysSet = new Set();
+  for (const item of lineItems) {
+    uniqueAddressKeysSet.add(item.productKey);
+  }
+  const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+
+  const billingAddress = addresses.find(addr => { return addr.addressKey === purchase.billingAddressKey}) || null;
+  const billingAddressText = billingAddress ? `
+    配送先住所<br/>
+    ${billingAddress.lastName} ${billingAddress.firstName}<br/>
+    〒${billingAddress.postalCode}<br/>
+    ${billingAddress.pref}${billingAddress.city}${billingAddress.ward}<br/>
+    ${billingAddress.address2}<br/>
+    日本` : null;
+
+  const shippingAddressKey = uniqueAddressKeys.find(addr => { return addr.addressKey !== purchase.billingAddressKey});
+  const shippingAddress = shippingAddressKey ? addresses.find(addr => {addr.addressKey === shippingAddressKey}) || null : null;
+  const shippingAddressText = shippingAddress ? `
+    請求先住所<br/>
+    ${shippingAddress.lastName} ${shippingAddress.firstName}<br/>
+    〒${shippingAddress.postalCode}<br/>
+    ${shippingAddress.pref}${shippingAddress.city}${shippingAddress.ward}<br/>
+    ${shippingAddress.address2}<br/>
+    日本` : null;
+
+
+  const emailLines = lineItems.map(line => {
+    const product = products.find(prod => { return prod.productKey === line.productKey});
+    if(!product) return null;
+    const lineCost = Math.round(parseInt(line.unitPrice) * (1+parseFloat(line.taxRate)) * parseInt(line.quantity));
+
+    return `
+    <tr>
+      <td style="width:20%;">
+        <img src="cid:Prod${line.productKey}" alt="Item #${line.productKey}" style="max-width: 100%; padding-bottom:1rem;">
+      </td>
+      <td style="width:60%; font-weight: bold; padding-left: 1rem;">
+        <span>${product.title} × ${line.quantity}</span>
+      </td>
+      <td style="width:20%; text-align:right;">
+        ¥${lineCost}
+      </td>
+    </tr>
+    `;
+  }); 
+
+  console.log("emailLines");
+  console.dir(emailLines, { depth: null, colors: true });
+
+
+
+  const emailHTML = `
+    <html>
+      <head>
+        <style>
+          table {
+            border-spacing: 0;
+          }
+          td {
+            padding: 0;
+          }
+          img {
+            border: 0;
+          }
+          .content {
+            width: 600px;
+            margin: 0 auto;
+          }
+          .button {
+            background-color: #FFA500;
+            color: #FFFFFF;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+          }
+          .footer-text {
+            font-size: 0.9rem;
+            color: #888;
+            padding: 0;
+          }
+          .footer-highlight {
+            color: #FFA500;
+          }
+        </style>
+      </head>
+      <body>
+        <table width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+
+              <table class="content" cellspacing="0" cellpadding="0">
+                <!-- Logo -->
+                <tr>
+                  <td colspan="2" align="left" style="padding-top: 2rem;">
+                    <img src="cid:logo" alt="Logo" style="max-width: 100%;">
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" align="right" style="color: #444; padding: 0;">
+                    注文 #${purchase.purchaseKey}
+                  </td>
+                </tr>
+                <!-- Title -->
+                <tr>
+                  <td colspan="2" align="left" style="font-size: 1.5rem; color: #000; padding: 1rem 0;">
+                    ご購入頂きありがとうございました!
+                  </td>
+                </tr>
+                <!-- Message -->
+                <tr>
+                  <td colspan="2" align="left" style="font-size: 1.25rem; color: #444; padding: 0;">
+                    注文の発送準備を行なっております。商品を発送いたしましたら、改めてお 知らせいたします。
+                  </td>
+                </tr>
+                <!-- Button -->
+                <tr style="font-size: 1.25rem;">
+                  <td align="left" style="width: 200px; padding: 2rem 1rem;">
+                    <a href="https://cdehaan.ca/wellmill/account" class="button" style="color: #FFFFFF;">
+                      注文を表示する
+                    </a>
+                  </td>
+                  <td style="width: 400px;">
+                    または<a href="https://cdehaan.ca/wellmill/shop" style="color: #FFA500;">ショップにアクセスする</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="font-size: 1.5rem; padding-top: 4rem; padding-bottom: 2rem;">
+                    注文概要
+                  </td>
+                </tr>
+              </table>
+
+              <table class="content" cellspacing="0" cellpadding="0">
+                <!-- Dynamic Rows -->
+                ${emailLines.join('')}
+              </table>
+
+              <table class="content" cellspacing="0" cellpadding="0">
+                <!-- Full Separator -->
+                <tr>
+                  <td colspan="3" style="height: 1px; background-color: #eee; overflow: hidden;"></td>
+                </tr>
+                <tr>
+                  <td style="width: 300px; padding-top:2rem;"></td><td style="width: 150px padding-top:2rem;">小計   </td><td style="width: 150px; text-align: right; padding-top:2rem;">¥${totalCost}</td>
+                </tr>
+                <tr>
+                  <td style="width: 300px;"></td><td style="width: 150px">配送   </td><td style="width: 150px; text-align: right;">¥0</td>
+                </tr>
+                <tr>
+                  <td style="width: 300px; padding-bottom:2rem;"></td><td style="width: 150px; padding-bottom:2rem;">税金合計</td><td style="width: 150px; text-align: right; padding-bottom:2rem;">¥${totalTax}</td>
+                </tr>
+
+                <!-- Right half Separator -->
+                <tr>
+                  <td style="width: 300px; height: 1px; overflow: hidden;"></td><td style="width: 150px; height: 1px; background-color: #eee; overflow: hidden;"></td><td style="width: 150px; height: 1px; background-color: #eee; overflow: hidden;"></td>
+                </tr>
+                <tr>
+                  <td style="width: 50%;"></td><td style="width: 25%">合計</td><td style="width: 25%; text-align: right; font-size: 1.5rem; font-weight: bold;">¥${totalCost} JPY</td>
+                </tr>
+              </table>
+
+              <table class="content" cellspacing="0" cellpadding="0">
+              <tr>
+                <td>
+                  お客様情報
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%;">
+                  ${billingAddressText ? billingAddressText : " "}
+                </td>
+                <td style="width: 50%;">
+                  ${shippingAddressText ? shippingAddressText : " "}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  配送方法
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  通常配送
+                </td>
+              </tr>
+              </table>
+
+              <!-- Footer -->
+              <table class="content" cellspacing="0" cellpadding="0" style="margin-top: 3rem;">
+                <tr>
+                  <td class="footer-text" align="left">
+                    株式会社リプロセル 臨床検査室
+                  </td>
+                </tr>
+                <tr>
+                  <td class="footer-text" align="left">
+                    〒222-0033 神奈川県横浜市港北区新横浜3-8-11
+                  </td>
+                </tr>
+                <tr>
+                  <td class="footer-text footer-highlight" align="left">
+                    0120-825-828
+                  </td>
+                </tr>
+                <tr>
+                  <td class="footer-text" align="left">
+                    (平日9:00~18:00 土日祝日休み)
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+
+  let mailOptions = {
+    from: process.env.WELLMILL_EMAIL_ADDRESS, 
+    to: recipient, 
+    subject: '【ウェルミル】ご注文内容の確認 注文番号：＃' + purchase.purchaseKey,
+    html: emailHTML,
+    attachments: attachments,
+  };
+
+  try {
+
+    await transporter.sendMail(mailOptions);
+    //return res.status(200).send('Email sent successfully');
+  } catch (error) {
+    const errorMessage = `[${new Date().toISOString()}] Error in /sendEmail: ${error.message}`;
+    console.error(errorMessage);
+    //return res.status(500).send(errorMessage);
+  }
+
+}
 
 app.post('/sendPassword', async (req, res) => {
   console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
@@ -1696,8 +1997,8 @@ app.post("/finalizePurchase", async (req, res) => {
   const customer = results[0];
 
   // This is the address key to use for line items that don't have a line-item level address specified
-  const addressKey = parseInt(req.body.data.addressKey);
-  if(isNaN(addressKey)) { return res.status(400).send('addressKey must be a valid integer'); }
+  const billingAddressKey = parseInt(req.body.data.billingAddressKey);
+  if(isNaN(billingAddressKey)) { return res.status(400).send('billingAddressKey must be a valid integer'); }
 
   // Pick the address with the key specified OR the default OR anything else
   query = `
@@ -1707,7 +2008,7 @@ app.post("/finalizePurchase", async (req, res) => {
       (addressKey = ?) DESC,
       defaultAddress DESC`;
     //LIMIT 1`;
-  values = [customerKey, addressKey];
+  values = [customerKey, billingAddressKey];
 
   const [addresses] = await pool.query(query, values);
 
@@ -1718,7 +2019,7 @@ app.post("/finalizePurchase", async (req, res) => {
     console.log(query)
     console.log("values:")
     console.log(values)
-    return res.status(500).send('Error pulling customer addresses. Address Key: ' + addressKey);
+    return res.status(500).send('Error pulling customer addresses. Address Key: ' + billingAddressKey);
   }
 
   // Address data exists, use the top result
@@ -1728,9 +2029,9 @@ app.post("/finalizePurchase", async (req, res) => {
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
-      SET status = ?, email = ?, purchaseTime = CURRENT_TIMESTAMP
+      SET status = ?, email = ?, addressKey = ?, purchaseTime = CURRENT_TIMESTAMP
       WHERE paymentIntentId = ? AND status != ?`;
-    values = [paymentStatus, email, paymentIntentId, paymentStatus];
+    values = [paymentStatus, email, billingAddressKey, paymentIntentId, paymentStatus];
 
     try {
       const [finalizePurchaseResults] = await pool.query(query, values);
@@ -1748,6 +2049,9 @@ app.post("/finalizePurchase", async (req, res) => {
           console.log("Thrown out at productResults.length === 0");
           return res.status(500).send("Products error");
         }
+
+        query = `SELECT * FROM image`;
+        const [images] = await pool.query(query);
 
         query = `
           SELECT * FROM purchase 
@@ -1813,16 +2117,9 @@ app.post("/finalizePurchase", async (req, res) => {
         console.log("products");
         console.log(products);
 
-        const uniqueAddressKeysSet = new Set();
-        for (const item of lineItemUpdatedResults) {
-          uniqueAddressKeysSet.add(item.addressKey);
-        }
-        const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
-        console.log("uniqueAddressKeys");
-        console.dir(uniqueAddressKeys, { depth: null, colors: true });
 
-        // TODO good place to send an email that this purchase was made.
-        // use email, lineItemUpdatedResults, and products
+        sendOrderEmail(email, purchase, addresses, lineItemUpdatedResults, products, images);
+
 
 
         //#region send purchase to Azure
@@ -1846,6 +2143,16 @@ app.post("/finalizePurchase", async (req, res) => {
         console.dir(orderDetails, { depth: null, colors: true });
 
         
+        // grouped delivery JSON for the backup servers (they don't want this)
+        /*
+        const uniqueAddressKeysSet = new Set();
+        for (const item of lineItemUpdatedResults) {
+          uniqueAddressKeysSet.add(item.addressKey);
+        }
+        const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+        console.log("uniqueAddressKeys");
+        console.dir(uniqueAddressKeys, { depth: null, colors: true });
+
         //haiso
         const delivery = uniqueAddressKeys.map(addressKey => {
           const address = addresses.find(ad => {return ad.addressKey === addressKey});
@@ -1876,6 +2183,36 @@ app.post("/finalizePurchase", async (req, res) => {
             "haiso_meisai": deliveryDetails
           }
         })
+        */
+
+        const delivery = lineItemUpdatedResults.map(purchaseLineItem => {
+          const address = addresses.find(ad => {return ad.addressKey === purchaseLineItem.addressKey}) || defaultAddress;
+          if(!address) { return {}; }
+    
+          const product = products.find(product => {return purchaseLineItem.productKey === product.productKey});
+    
+          //haiso_meisai
+          const deliveryDetails = {
+            "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
+            "shohin_code": product?.id,
+            "shohin_name": product?.title,
+            "suryo": purchaseLineItem.quantity,
+            "chumon_meisai_no": purchaseLineItem.lineItemKey  
+          };
+    
+          return {
+            "shuka_date": formatDate(purchase.purchaseTime),
+            "haiso_name": `${address.lastName} ${address.firstName}`,
+            "haiso_post_code": address.postalCode,
+            "haiso_pref_code": address.prefCode,
+            "haiso_pref": address.pref,
+            "haiso_city": address.city,
+            "haiso_address1": address.ward,
+            "haiso_address2": address.address2,
+            "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}`,
+            "haiso_meisai": [deliveryDetails]
+          }
+        });
 
         console.log("delivery");
         console.dir(delivery, { depth: null, colors: true });
