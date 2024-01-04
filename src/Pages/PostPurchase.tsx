@@ -126,11 +126,10 @@ function PostPurchaseContent() {
       <span className="topHeader">カートを見る</span>
 
       {header}
-      <span>Stripe message:{stripeMessage}</span>
+      {false && <span>Stripe message:{stripeMessage}</span>}
       {(paymentStatus === null) && paymentInProgress}
       {paymentStatus === "succeeded" && PaymentSuccess}
       {paymentStatus !== null && paymentStatus !== "succeeded" && serverReply}
-      <span></span>
       <Footer />
     </>
   );

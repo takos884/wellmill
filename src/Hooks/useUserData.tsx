@@ -28,7 +28,7 @@ type UseUserDataReturnType = {
 
   createPaymentIntent: (cartLines: CartLine[], addressesState: LineItemAddressesArray) => Promise<APIResponse>;
   finalizePurchase: (paymentIntentId: string, email: string, addressKey: number) => Promise<APIResponse>;
-  cancelPurchase: (customerKey: number, token: string, purchaseKey: number) => Promise<APIResponse>;
+  cancelPurchase: (purchaseKey: number) => Promise<APIResponse>;
 };
 //#endregion Type definitions
 
@@ -781,7 +781,7 @@ export const useUserData = (): UseUserDataReturnType => {
     UpdateUser(APIResponse.data);
     setUserLoading(false);
     return { data: APIResponse.data, error: null };
-  }, [])
+  }, [user])
 
   /**
    * Updates the user state based on the provided data.

@@ -143,6 +143,25 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
     setAddress( (previousAddress: Address) => ({ ...previousAddress, [field]: newValue }) );
   }
 
+  function sanitizePhoneNumber() {
+    let newPhoneNumber = address.phoneNumber || "";
+
+    // Convert phone number input to half-width, keep appropriate characters only
+    //newPhoneNumber = newPhoneNumber.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0));
+    newPhoneNumber = newPhoneNumber.replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0xfee0));
+
+    // Convert full-width hyphens, spaces, and dots to half-width
+    newPhoneNumber = newPhoneNumber.replace(/[－]/g, "-");
+    newPhoneNumber = newPhoneNumber.replace(/[−]/g, "-");
+    newPhoneNumber = newPhoneNumber.replace(/[　]/g, " ");
+    newPhoneNumber = newPhoneNumber.replace(/[．]/g, ".");
+
+    // Remove non-numbers, dashes, dots, or spaces
+    newPhoneNumber = newPhoneNumber.replace(/[^0-9\-.\s]/g, "");
+    
+    setAddress( (previousAddress: Address) => ({ ...previousAddress, phoneNumber: newPhoneNumber }) );
+  }
+
 
   // Adds 〒 and - as needed to format postal code correctly
   function PostalCodeFormatter(newPostalCode?:string) {
@@ -229,7 +248,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
           </div>
           <div className={styles.inputRow}>
             <span className={styles.subheader}>電話番号</span>
-            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="080-1234-5678" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} />
+            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="080-1234-5678" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} onBlur={sanitizePhoneNumber} />
           </div>
 
           <div className="customCheckbox">

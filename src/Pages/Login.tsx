@@ -38,6 +38,7 @@ const Login = () => {
     if (data && data.token) {
       Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
       setGuest(false);
+      localStorage.removeItem('userLocal');
 
       setTimeout(() => {
         navigate('/account');

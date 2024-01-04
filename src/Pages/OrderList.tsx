@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 
 import { UserContext } from "../Contexts/UserContext";
-import { useProducts } from "../Contexts/ProductContext";
+//import { useProducts } from "../Contexts/ProductContext";
 
 import '../App.css';
 import styles from "./orderList.module.css"
@@ -18,7 +18,7 @@ const breadcrumbs = [
 
 function OrderList() {
   const { user, userLoading } = useContext(UserContext);
-  const { products, isLoading: productsLoading, error: productsError } = useProducts();
+  //const { products, isLoading: productsLoading, error: productsError } = useProducts();
   console.log(user);
 
   const purchases: Purchase[] = user ? user.purchases : []
@@ -80,6 +80,7 @@ function OrderList() {
     const orderStatus =
       purchase.status === "created" ? "作成した" :
       purchase.status === "succeeded" ? "支払い済み" :
+      purchase.status === "canceled" ? "キャンセル済み" : // not used
       (purchase.status) ? purchase.status : "不明";
 
     const purchaseShippingStatuses = Array.from(new Set(purchaseLineItems?.map(item => item.shippingStatus)));
@@ -88,6 +89,7 @@ function OrderList() {
       (purchaseShippingStatuses.length > 1) ? "一部発送済み" :
       (purchaseShippingStatuses[0] === null) ? "発送前" :
       (purchaseShippingStatuses[0] === "shipped") ? "発送済み" :
+      (purchaseShippingStatuses[0] === "canceled") ? "キャンセル済み" :
       (purchaseShippingStatuses[0]) ? purchaseShippingStatuses[0] : "不明";
 
     const totalCost = Math.round(purchaseLineItems.reduce((total, item) => {
@@ -96,7 +98,7 @@ function OrderList() {
     }, 0));
 
     return(
-      <div key={purchaseKey} className={styles.lineItem}>
+      <div key={purchaseKey} className={styles.lineItem} style={{backgroundColor: (shippingStatus === "キャンセル済み") ? "#eee" : undefined}}>
         <span className={styles.lineItemKeyLink}><Link to={`/purchaseDetails/${purchaseKey}`}>#{purchaseKey}</Link></span>
         <span className={styles.orderTime}>{UtcTimeToDotTime(purchase.purchaseTime || "")}</span>
         <span className={styles.orderStatus}>{orderStatus}</span>
@@ -159,12 +161,15 @@ function OrderList() {
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">購入履歴</span>
-      <div className={styles.contentWrapper}>
-        <span className={styles.header}>履歴の一覧</span>
-        {noPurchasesMessage}
-        {purchaseLinesHeader}
-        {purchaseLines}
-      </div>
+        <div className={styles.contentWrapper}>
+          <span className={styles.header}>履歴の一覧</span>
+          {userLoading ? <span>注文をロードする</span> :
+          <>
+            {noPurchasesMessage}
+            {purchaseLinesHeader}
+            {purchaseLines}
+          </>}
+        </div>
       <Footer />
     </>
   )

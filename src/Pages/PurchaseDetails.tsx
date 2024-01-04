@@ -33,7 +33,19 @@ export default function PurchaseDetails() {
   const lineItems = purchase.lineItems;
   if(lineItems.length === 0) return <span>Loading purchases</span>;
 
-  const hasShipped = lineItems?.some(item => item.shippingStatus === "shipped");
+  // Can cancel if nothing is shipped or canceled
+  const canCancel = !(lineItems?.some(item => {return item.shippingStatus === "shipped" || item.shippingStatus === "canceled" }));
+  const isCanceled = lineItems?.every(item => {return item.shippingStatus === "canceled" });
+
+  const purchaseShippingStatuses = Array.from(new Set(lineItems?.map(item => item.shippingStatus)));
+  const shippingStatus =
+    (purchaseShippingStatuses.length === 0) ? "不明" :
+    (purchaseShippingStatuses.length > 1) ? "一部発送済み" :
+    (purchaseShippingStatuses[0] === null) ? "発送前" :
+    (purchaseShippingStatuses[0] === "shipped") ? "発送済み" :
+    (purchaseShippingStatuses[0] === "canceled") ? "キャンセル済み" :
+    (purchaseShippingStatuses[0]) ? purchaseShippingStatuses[0] : "不明";
+
 
   console.log("lineItems");
   console.log(lineItems);
@@ -81,7 +93,8 @@ export default function PurchaseDetails() {
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>小計</span><span className={styles.alignEnd}>{subtotal?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>配送</span><span className={styles.alignEnd}>{shipping?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>合計</span><span className={styles.alignEnd}>{totalCost?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
-      {!hasShipped   && <div className={styles.cancelFooter}><span className={styles.cancelOrder} onClick={HandleCancelOrder}>(注文キャンセルする)</span></div>}
+      {canCancel     && <div className={styles.cancelFooter}><span className={styles.cancelOrder} onClick={HandleCancelOrder}>(注文キャンセルする)</span></div>}
+      {isCanceled    && <div className={styles.cancelFooter}><span className={styles.cancelMessage}>(キャンセル済み)</span></div>}
       {userLoading   && <div className={styles.cancelFooter}><span className={styles.cancelSpinner}><img src="spinner.svg" className={styles.cancelSpinner} alt="Spinner" /></span></div>}
       {cancelMessage && <div className={styles.cancelFooter}><span className={styles.cancelMessage}>{cancelMessage}</span></div>}
       {cancelError   && <div className={styles.cancelFooter}><span className={styles.cancelError}>{cancelError}</span></div>}
@@ -102,12 +115,10 @@ export default function PurchaseDetails() {
     if(!user?.token) { return null; }
     if(userLoading) { return null; }
 
-    const returnedCustomer = await cancelPurchase(user.customerKey, user.token, purchaseKey);
+    const returnedCustomer = await cancelPurchase(purchaseKey);
     console.log("Customer returned after canceling order:");
     console.log(returnedCustomer);
     if(returnedCustomer.error) {
-      //console.log("Customer returned after canceling order:");
-      //console.log(returnedCustomer);
       setCancelMessage("");
       setCancelError(returnedCustomer.error);
       return;
@@ -160,7 +171,7 @@ export default function PurchaseDetails() {
       <span className="topHeader">購入履歴</span>
       <div className={styles.contentWrapper}>
         <span className={styles.purchaseKey}>#{purchaseKey}</span>
-        <span>{hasShipped ? "発送済み" : "発送前"}</span>
+        <span>{shippingStatus}</span>
         {lineItemsGrid}
         <span className={styles.shippingAddress}>配送先住所</span>
         {addressesBox}

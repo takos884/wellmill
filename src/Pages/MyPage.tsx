@@ -36,7 +36,7 @@ const MyPage = () => {
 
   if(userLoading) return <span>Loading...</span>
 
-  if (!user) return <p>Please <Link to='/login'>log in</Link> first.</p>;
+  if (!user || guest) return <p>Please <Link to='/login'><span style={{textDecoration: "underline", color: "#369"}}>log in</span></Link> first.</p>;
 
   const makeAccountAdvice = (
     <>

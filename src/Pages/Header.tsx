@@ -21,9 +21,9 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const cartDotContent = cartLoading ? spinner : cart?.quantity;
     const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
     const headerButton = (
-        userMeaningful ? 
-            <Link to="/account"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>マイページ</div></Link> :
-            <Link to="/login"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>ログイン</div></Link>
+        guest ? 
+            <Link to="/login"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>ログイン</div></Link> :
+            <Link to="/account"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>マイページ</div></Link>
         )
 
     const handleHomeClick = () => {

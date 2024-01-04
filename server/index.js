@@ -632,7 +632,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Title -->
             <tr>
               <td align="left" style="font-size: 1.5rem; color: #000; padding: 1rem 0;">
-                ウェルミル（デストサイト）へようこそ!
+                ウェルミル（テストサイト）へようこそ!
               </td>
             </tr>
             <!-- Message -->
@@ -643,9 +643,9 @@ app.post('/sendWelcome', async (req, res) => {
             </tr>
             <!-- Button -->
             <tr>
-              <td align="left" style="padding: 1rem 0;">
+              <td align="left" style="padding: 2rem 1rem;">
                 <a href="https://cdehaan.ca/wellmill/shop" class="button" style="color: #FFFFFF">
-                  ショッピングアクセスする
+                  ショップにアクセスする
                 </a>
               </td>
             </tr>
@@ -1057,12 +1057,23 @@ app.post('/cancelPurchase', async (req, res) => {
   const connection = await pool.getConnection();
   try {
     // Delete query for lineItem table
-    const deleteLineItemQuery = "DELETE FROM lineItem WHERE customerKey = ? AND purchaseKey = ?";
-    await connection.query(deleteLineItemQuery, [customerKey, purchaseKey]);
+    //const deleteLineItemQuery = "DELETE FROM lineItem WHERE customerKey = ? AND purchaseKey = ?";
+    //await connection.query(deleteLineItemQuery, [customerKey, purchaseKey]);
+
+    // Update lineItems to "canceled"
+    const updateLineItemQuery = "UPDATE lineItem SET shippingStatus = 'canceled' WHERE customerKey = ? AND purchaseKey = ?";
+    await connection.query(updateLineItemQuery, [customerKey, purchaseKey]);
+    console.log(`Query: ${updateLineItemQuery}, customerKey: ${customerKey}, purchaseKey: ${purchaseKey}`);
+
 
     // Delete query for purchase table
-    const deletePurchaseQuery = "DELETE FROM purchase WHERE customerKey = ? AND purchaseKey = ?";
-    await connection.query(deletePurchaseQuery, [customerKey, purchaseKey]);
+    //const deletePurchaseQuery = "DELETE FROM purchase WHERE customerKey = ? AND purchaseKey = ?";
+    //await connection.query(deletePurchaseQuery, [customerKey, purchaseKey]);
+
+    // // Update purchase to "canceled"
+    // const updatePurchaseQuery = "UPDATE purchase SET status = 'canceled' WHERE customerKey = ? AND purchaseKey = ?";
+    // await connection.query(updatePurchaseQuery, [customerKey, purchaseKey]);
+    // console.log(`Query: ${updatePurchaseQuery}, customerKey: ${customerKey}, purchaseKey: ${purchaseKey}`);
 
     // Commit the transaction if both queries succeed
     await connection.commit();
@@ -1076,6 +1087,39 @@ app.post('/cancelPurchase', async (req, res) => {
     // Release the connection back to the pool
     connection.release();
   }
+
+  query = `
+    SELECT newPurchaseJson 
+    FROM purchase
+    WHERE purchaseKey = ?;
+  `;
+
+  console.log("query");
+  console.log(query);
+
+  try {
+    const [results] = await pool.query(query, [purchaseKey]);
+    if (results.length > 0) {
+      console.log("results");
+      console.dir(results, { depth: null, colors: true });
+      const originalPurchaseJson = JSON.parse(results[0].newPurchaseJson);
+      originalPurchaseJson.touroku_kbn = 9; // 9 is for delete
+      console.log("originalPurchaseJson");
+      console.dir(originalPurchaseJson, { depth: null, colors: true });
+      const responseData = await StoreBackupData("chumon_renkei_api", originalPurchaseJson);
+      console.log("responseData");
+      console.log(responseData);
+    } else {
+      console.log("results.length > 0 failed when selecting newPurchaseJson using purchaseKey: " + purchaseKey);
+      return res.status(400).send('Purchase not found');
+    }
+  } catch (error) {
+    console.log("query failed when selecting newPurchaseJson using purchaseKey: " + purchaseKey + ", error:");
+    console.dir(error, { depth: null, colors: true });
+    return res.status(500).send('Purchase not found');
+  }
+
+
 
   // Get updated customer data
   const customerData = await GetCustomerDataFromCustomerKey(customerKey);
@@ -1112,9 +1156,6 @@ app.post('/deleteLineItem', async (req, res) => {
         const originalPurchaseJson = JSON.parse(results[0].newPurchaseJson);
         console.log("originalPurchaseJson");
         console.dir(originalPurchaseJson, { depth: null, colors: true });
-
-
-        // Now `originalPurchaseJson` is your object, and you can make changes to it
     } else {
       console.log("results.length > 0 failed when selecting newPurchaseJson using lineItemKey: " + lineItemKey);
       return res.status(400).send('Purchase not found');
@@ -1206,23 +1247,43 @@ app.post('/storeBackupData', async (req, res) => {
 
   const { endpoint, paymentIntentId, inputData } = req.body.data;
 
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+  if(endpoint === "kentai_id_check_api") {
+    if(inputData.kentai_saishubi) {
+      const dateRegex = /^(?:19|20)\d\d[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12][0-9]|3[01])$/;
+      if (!dateRegex.test(inputData.kentai_saishubi)) { return res.status(400).send('Malformed data'); }
+      const [year, month, day] = inputData.kentai_saishubi.split(/[-/]/);
+      inputData.kentai_saishubi = `${year}年${month}月${day}日`;    
+    }
+  }
 
-  const paymentStatus = paymentIntent.status;
-  console.log(`paymentStatus: ${paymentStatus}`);
+  if(paymentIntentId) {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
 
-  if(paymentStatus === 'succeeded') {
+    const paymentStatus = paymentIntent.status;
+    console.log(`paymentStatus: ${paymentStatus}`);
+
+    if(paymentStatus === 'succeeded') {
+      const result = await StoreBackupData(endpoint, inputData);
+
+      if (result.error) {
+        return res.status(result.status).json({ message: result.message });
+      }
+
+      return res.json(result);  
+    }
+
+    return res.status(400).json({ message: "Payment not succeeded" });  
+  } else {
     const result = await StoreBackupData(endpoint, inputData);
 
     if (result.error) {
       return res.status(result.status).json({ message: result.message });
     }
 
-    return res.json(result);  
+    return res.json(result);
   }
 
-  return res.status(400).json({ message: "Payment not succeeded" });
 });
 
 async function StoreBackupData(endpoint, inputData) {

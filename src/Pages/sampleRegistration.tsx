@@ -19,7 +19,10 @@ function SampleRegistration() {
   const { user } = useContext(UserContext);
   const [researchAgreement, setResearchAgreement] = useState(true);
   const [kentaiId, setKentaiId] = useState(''); //W2023022001000
-  const [kentaiSaishubi, setKentaiSaishubi] = useState(getFormattedDate());
+
+  const now = new Date();
+  now.setTime(now.getTime() + 9*60*60*1000); // Japan timezone = +9h
+  const [kentaiSaishubi, setKentaiSaishubi] = useState(now.toISOString().split('T')[0]);
 
   // sad to use 'any', but I don't know what the server will return
   const { backupSampleData, data: sampleBackupData, error: sampleBackupError } = useBackupDB<any>();
@@ -91,7 +94,7 @@ function SampleRegistration() {
         <input type="text" value={kentaiId} name="kentaiId" onChange={handleInputChange} />
         {unknownId}
         <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
-        <input type="text" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange} placeholder={getFormattedDate()}></input>
+        <input type="date" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange}></input>
 
         <div className="customCheckbox" style={{margin: "4rem 0 1rem 0"}}>
           <label className="customCheckbox">
