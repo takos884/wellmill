@@ -90,15 +90,15 @@ function OrderList() {
       (purchaseShippingStatuses[0] === "shipped") ? "発送済み" :
       (purchaseShippingStatuses[0]) ? purchaseShippingStatuses[0] : "不明";
 
-    const totalCost = purchaseLineItems.reduce((total, item) => {
+    const totalCost = Math.round(purchaseLineItems.reduce((total, item) => {
       const itemTotal = item.unitPrice * (1 + item.taxRate) * item.quantity;
       return total + itemTotal;
-    }, 0);
+    }, 0));
 
     return(
       <div key={purchaseKey} className={styles.lineItem}>
         <span className={styles.lineItemKeyLink}><Link to={`/purchaseDetails/${purchaseKey}`}>#{purchaseKey}</Link></span>
-        <span className={styles.orderTime}>{UtcTimeToDotTime(purchase.purchaseTime)}</span>
+        <span className={styles.orderTime}>{UtcTimeToDotTime(purchase.purchaseTime || "")}</span>
         <span className={styles.orderStatus}>{orderStatus}</span>
         <span className={styles.orderStatus}>{shippingStatus}</span>
         <span className={styles.totalCost}>{totalCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>

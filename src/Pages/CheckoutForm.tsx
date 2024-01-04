@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { StripePaymentElementOptions } from "@stripe/stripe-js";
+//import { StripePaymentElementOptions } from "@stripe/stripe-js";
 
 import { UserContext } from "../Contexts/UserContext";
 import { useProducts } from "../Contexts/ProductContext";
@@ -9,19 +9,23 @@ import { useProducts } from "../Contexts/ProductContext";
 import { prefectures } from "../Utilities/addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
+import { LineItemAddressesArray } from "../types";
 
 type CheckoutFormProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
+  addressesState: LineItemAddressesArray
 };
 
 
-export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) {
+export default function CheckoutForm({ setDisplayCheckout, addressesState }: CheckoutFormProps) {
   console.log("Rendering CheckoutForm")
   const stripe = useStripe();
   const elements = useElements();
 
-  const { user } = useContext(UserContext);
+  const { user, setCartLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+
+  //#region Addresses
   const addresses = (user?.addresses || []).sort((a, b) => {
     if (a.defaultAddress) return -1;
     if (b.defaultAddress) return 1;
@@ -29,6 +33,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   });
 
   const defaultAddressKey = addresses.find(address => {return address.defaultAddress === true})?.addressKey || null;
+  //#endregion
 
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(user?.email || "");
@@ -37,7 +42,6 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(defaultAddressKey);
   const [showNewAddress, setShowNewAddress] = useState(false);
 
-  const cart = user ? user.cart : undefined;
 
   // The current address is the default one unless another address key has been set
   const address = addresses.find(address => {
@@ -46,7 +50,19 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     address.addressKey === selectedAddressKey;
   });
 
-  //console.log(address); // undefined when there's no address
+
+  // Changes the cursor to wait for the whole page while sending payment
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'loading-cursor-style';
+    style.textContent = 'body { cursor: wait; }';
+    if (isSendingPayment) {
+      document.head.appendChild(style);
+    } else {
+      const existingStyleTag = document.getElementById('loading-cursor-style');
+      if (existingStyleTag) { existingStyleTag.remove(); }
+    }
+  }, [isSendingPayment]);
 
 
   // Set payment message pulled from Stripe
@@ -65,6 +81,7 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
       }
     });
   }, [stripe]);
+
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -111,14 +128,12 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     setIsSendingPayment(false);
   };
 
+
   function ToYen(value: number | undefined) {
     if(value === undefined) return null;
     return value.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })
   }
 
-  const paymentElementOptions: StripePaymentElementOptions = {
-    layout: "tabs"
-  }
 
   // When typing in the email field, remove error status from the field
   function HandleEmailChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -126,17 +141,9 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     setEmail(event.target.value);
   };
 
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.id = 'loading-cursor-style';
-    style.textContent = 'body { cursor: wait; }';
-    if (isSendingPayment) {
-      document.head.appendChild(style);
-    } else {
-      const existingStyleTag = document.getElementById('loading-cursor-style');
-      if (existingStyleTag) { existingStyleTag.remove(); }
-    }
-  }, [isSendingPayment]);
+
+  if(!user) { return <span>Loading User...</span> }
+  const cart = user.cart;
 
   const headings = (
     <div className={styles.headings}>
@@ -184,8 +191,6 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
   const createButton = <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); }}>住所を作成する</span>;
   const editButton = addressKey ? <span className={styles.addressAction} onClick={() => { setShowNewAddress(true); setSelectedAddressKey(addressKey); }}>この住所を編集する</span> : null;
   const changeButton = (addresses.length >= 2) ? <span className={styles.addressAction} onClick={() => { setSelectedAddressKey(null); }}>別の住所を選択する</span> : null;
-  //const addressOptions = addresses.map(address => {return (<option></option>)});
-  //const addressSelect = (<select></select>)
   const prefectureName = prefectures.find(prefecture => prefecture.code.toString() === address?.pref)?.name;
 
   function generateAddressCard(addressKey: number) {
@@ -203,20 +208,55 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     )
   }
 
+//  const lineItemKeysInCart = cart.lines.map(line => line.lineItemKey);
+//  for (const lineItemKey of lineItemKeysInCart) {
+//    const lineItemAddresses = addressesState.find(addr => addr.lineItemKey === lineItemKey);
+//    if (!lineItemAddresses || !lineItemAddresses.addresses || lineItemAddresses.addresses.length === 0) {
+//      return false;
+//    }
+//    if(lineItemAddresses.addresses.some(addr => {return addr.addressKey === null})) {
+//      return false;
+//    }
+//  }
+
+  // If every item has an address set, we don't need to force one on the checkout screen
+  const allAddressesSet = cart.lines.every(line => {
+    const lineItemAddresses = addressesState.find(addr => addr.lineItemKey === line.lineItemKey);
+  
+    return (
+      lineItemAddresses?.addresses &&
+      lineItemAddresses.addresses.length > 0 &&
+      !lineItemAddresses.addresses.some(addr => addr.addressKey === null)
+    );
+  });
+
+
   const addressCard = (selectedAddressKey) ? (
     <>
+      <span className={styles.billingAddress}>請求先およびデフォルト配送先</span>
       {generateAddressCard(selectedAddressKey)}
       <div className={styles.addressActions}>
         {editButton}
         {changeButton}
       </div>
     </>
-  ) : (
-    <div className={styles.addressCard} style={{alignItems: "center"}}>
-      <span>住所が見つかりません。</span>
-      <span>住所を入力してください。</span>
-      {createButton}
-    </div>
+  ) :
+//  (allAddressesSet) ?
+//    <div className={styles.addressCard} style={{alignItems: "center"}}>
+//      <span>すべてのアイテムには住所があります。</span>
+//      <span>必要に応じて請求先住所を指定します。</span>
+//      {createButton}
+//    </div>
+//  :
+  (
+    <>
+      <span className={styles.billingAddress}>請求先およびデフォルト配送先</span>
+      <div className={styles.addressCard} style={{alignItems: "center"}}>
+        <span>住所が見つかりません。</span>
+        <span>住所を入力してください。</span>
+        {createButton}
+      </div>
+    </>
   );
 
   const addressCards = addresses.map((address, index) => {
@@ -236,18 +276,20 @@ export default function CheckoutForm({ setDisplayCheckout }: CheckoutFormProps) 
     </div>
   );
 
+  // const paymentElementOptions: StripePaymentElementOptions = { layout: "tabs" }
+
   return (
     <>
       {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
       {selectedAddressKey === null && addressCards.length > 0 && selectAddressModal}
       <div className={styles.checkoutModal}>
-        <span className={styles.checkoutX} onClick={() => { setDisplayCheckout(false); }}>✖</span>
+        <span className={styles.checkoutX} onClick={() => { console.log("setDisplayCheckout(false) 2"); setCartLoading(false); setDisplayCheckout(false); }}>✖</span>
           <div className={styles.checkoutFormWrapper}>
             <img src="logo.svg" alt="Logo" />
             <span className={styles.checkoutHeader}>Checkout</span>
             <div className={styles.checkoutFormContent}>
               <form className={styles.paymentForm} id="payment-form" onSubmit={handleSubmit}>
-                <PaymentElement id="payment-element" options={paymentElementOptions} />
+                <PaymentElement id="payment-element" options={{ layout: "tabs" }} />
                 <div className={styles.email}>
                   <span className={styles.email}>E-mail</span>
                   <input type="email" className={`${styles.email} ${(emailError && styles.emailError)}`} value={email} onChange={HandleEmailChange} />

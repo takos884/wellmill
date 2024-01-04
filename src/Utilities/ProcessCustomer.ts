@@ -36,9 +36,9 @@ function ProcessCart(data:Cart|CartLine[]):Cart {
     };
   });
 
-  const cartQuantity = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0);
-  const cartCost = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0);
-  const includedTax = updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * lineItem.taxRate * lineItem.quantity; }, 0);
+  const cartQuantity = Math.round(updatedCartLines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0));
+  const cartCost = Math.round(updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0));
+  const includedTax = Math.round(updatedCartLines.reduce((total, lineItem) => { return total + lineItem.unitPrice * lineItem.taxRate * lineItem.quantity; }, 0));
 
   return {
     type: 'cart',

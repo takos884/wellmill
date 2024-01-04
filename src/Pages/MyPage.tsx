@@ -13,18 +13,18 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const { user, setUser, userLoading, local, setLocal } = useContext(UserContext);
+  const { user, setUser, userLoading, guest, setGuest } = useContext(UserContext);
   const navigate = useNavigate();
 
   function handleLogout() {
-    if(!local) {
+    if(!guest) {
       Cookies.remove('WellMillToken');
       setUser(null);
-      setLocal(true);
+      setGuest(true);
       navigate('/login');
     }
 
-    if(local) {
+    if(guest) {
       const confirmationMessage = "アカウントデータの削除を確認しますか？カート内の商品、保存された住所、ローカルに保存されたテスト結果が削除されます。これはローカルデータのみに影響します。";
       if(window.confirm(confirmationMessage)) {
         localStorage.removeItem('userLocal');
@@ -48,7 +48,7 @@ const MyPage = () => {
     </>
   );
 
-  const logoutText = local ? "買い物データ削除" : "ログアウト"
+  const logoutText = guest ? "買い物データ削除" : "ログアウト"
 
   return (
     <>
@@ -65,7 +65,7 @@ const MyPage = () => {
           <Link to="/address"><span className={styles.link}>お届け先住所</span></Link>
           <Link to="/profile"><span className={styles.link}>アカウント情報</span></Link>
         </div>
-        {local && makeAccountAdvice}
+        {guest && makeAccountAdvice}
         <button onClick={handleLogout}>{logoutText}</button>
       </div>
       <Footer />

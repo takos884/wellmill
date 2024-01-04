@@ -1,8 +1,12 @@
-import { useContext, useEffect, useCallback } from 'react';
+import { useContext, useCallback } from 'react';
+
 import { UserContext } from '../Contexts/UserContext';
-import CallAPI from '../Utilities/CallAPI';
-import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem } from '../types';
+import { useBackupDB } from "../Hooks/useBackupDB";
 import { useProducts } from "../Contexts/ProductContext";
+
+import CallAPI from '../Utilities/CallAPI';
+
+import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase } from '../types';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 
 //#region Type definitions
@@ -23,6 +27,7 @@ type UseUserDataReturnType = {
   deleteFromCart: (lineItemKey: number) => Promise<APIResponse>;
 
   createPaymentIntent: (cartLines: CartLine[], addressesState: LineItemAddressesArray) => Promise<APIResponse>;
+  finalizePurchase: (paymentIntentId: string, email: string, addressKey: number) => Promise<APIResponse>;
   cancelPurchase: (customerKey: number, token: string, purchaseKey: number) => Promise<APIResponse>;
 };
 //#endregion Type definitions
@@ -32,8 +37,9 @@ export const useUserData = (): UseUserDataReturnType => {
   const context = useContext(UserContext);
   if (!context) { throw new Error('useUserData must be used within a UserProvider'); }
 
-  const { user, setUser, setCartLoading, setUserLoading, local } = context;
+  const { user, setUser, setCartLoading, setUserLoading, guest } = context;
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+  const {backupCustomerData, data: customerBackupData, error: customerBackupError} = useBackupDB<any>();
 
   const createUser = async (userData: Customer): Promise<APIResponse> => {
     setUserLoading(true);
@@ -124,7 +130,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return addAddressResults;
 
     async function addAddressFunction(address: Address) {
-      if(local) {
+      if(guest) {
         return addAddressLocal(address);
       }
 
@@ -193,21 +199,6 @@ export const useUserData = (): UseUserDataReturnType => {
       addressesClone.push({ ...address, addressKey: addressKeyLocal });
     }
 
-//    // If an address with the same key exists, update that
-//    // If not, make a new address
-//    let existingAddress = addressesClone.find(ads => {return ads.addressKey === address.addressKey});
-//    if(existingAddress) {
-//      existingAddress = { ...address };
-//      console.log(address)
-//      console.log(existingAddress)
-//      console.log(addressesClone)
-//    }
-//    else {
-//      // random (more than a million, so I can see at a glance in the database) addressKey while it's stored locally
-//      const addressKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
-//      addressesClone.push({ ...address, addressKey: addressKeyLocal});
-//    }
-
     const userClone = { ...user, addresses: addressesClone};
     UpdateUser(userClone);
     localStorage.setItem('userLocal', JSON.stringify(userClone));
@@ -224,7 +215,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return deleteAddressResults;
 
     async function deleteAddressFunction(addressKey: number) {
-      if(local) {
+      if(guest) {
         return deleteAddressLocal(addressKey);
       }
 
@@ -267,6 +258,9 @@ export const useUserData = (): UseUserDataReturnType => {
   //#endregion
 
 
+
+
+
   //#region Add to cart
   const addToCart = useCallback(async (productKey: number, quantity: number) => {
     setCartLoading(true);
@@ -282,7 +276,7 @@ export const useUserData = (): UseUserDataReturnType => {
         return { data: null, error: "Product not found" };
       }
   
-      if(local) {
+      if(guest) {
         return addToCartLocal(product, quantity);
       }
   
@@ -301,7 +295,7 @@ export const useUserData = (): UseUserDataReturnType => {
       UpdateUser(APIResponse.data);
       return { data: APIResponse.data, error: null };
     }
-  }, [products, local, user]);
+  }, [products, guest, user]);
 
   const addToCartLocal = useCallback((product: Product, quantity: number) => {
     // No cart or no lines is ok for add to cart
@@ -339,9 +333,6 @@ export const useUserData = (): UseUserDataReturnType => {
   //#endregion
 
 
-
-
-
   //#region Update cart quantity
   const updateCartQuantity = useCallback(async (lineItemKey: number, quantity: number) => {
     setCartLoading(true);
@@ -350,7 +341,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return updatedCart;
 
     async function updateCartQuantityFunction(lineItemKey: number, quantity: number) {
-      if(local) {
+      if(guest) {
         return updateCartQuantityLocal(lineItemKey, quantity); // { data: xxx, error: yyy }
       }
   
@@ -369,7 +360,7 @@ export const useUserData = (): UseUserDataReturnType => {
       UpdateUser(APIResponse.data);
       return {data: APIResponse.data, error: null };
     }
-  }, [local, user])
+  }, [guest, user])
 
   const updateCartQuantityLocal = useCallback((lineItemKey: number, quantity: number) => {
     if(!user)            return { data: null, error: "No user data available when updating local cart quantity" };
@@ -402,7 +393,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return updatedCart;
 
     async function deleteFromCartFunction(lineItemKey: number) {
-      if(local) {
+      if(guest) {
         return deleteFromCartLocal(lineItemKey); // { data: xxx, error: yyy }
       }
 
@@ -421,7 +412,7 @@ export const useUserData = (): UseUserDataReturnType => {
       UpdateUser(APIResponse.data);
       return { data: APIResponse.data, error: null };
     }
-  }, [local, user])
+  }, [guest, user])
 
   const deleteFromCartLocal = useCallback((lineItemKey: number) => {
     if(!user)            return { data: null, error: "No user data available when deleting from local cart" };
@@ -447,9 +438,9 @@ export const useUserData = (): UseUserDataReturnType => {
     const lines = newCart.lines;
     if(!lines) return cart;
 
-    const cartQuantity = lines.reduce((sum, lineItem) => sum + lineItem.quantity, 0);
-    const cartCost = lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0);
-    const cartTax = lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0);
+    const cartQuantity = Math.round(lines.reduce((sum, lineItem) => sum + lineItem.quantity, 0));
+    const cartCost = Math.round(lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0));
+    const cartTax = Math.round(lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0));
     newCart.quantity = cartQuantity;
     newCart.cost = cartCost;
     newCart.includedTax = cartTax;
@@ -457,61 +448,318 @@ export const useUserData = (): UseUserDataReturnType => {
     return newCart;
   }
 
+
+
+
+
+
   const createPaymentIntent = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
     setCartLoading(true);
-    const updatedCart = await createPaymentIntentFunction(cartLines, addressesState);
+    const paymentIntent = await createPaymentIntentFunction(cartLines, addressesState);
     setCartLoading(true);
-    return updatedCart;
+    return paymentIntent;
 
     async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
-      if(local) {
+      if(guest) {
         return createPaymentIntentLocal(cartLines, addressesState); // { data: xxx, error: yyy }
       }
 
       if(!user)              return { data: null, error: "No user data available when creating payment intent" };
       if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
       if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
-      const requestBody = {data: { customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState }};
+      const requestBody = {customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState, guest: guest };
       const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
 
       if(APIResponse.error) {
         console.log("Error in createPaymentIntent in useUserData:");
         console.log(APIResponse);
-        return { data: null, error: APIResponse.error };
+        return APIResponse;
       }
 
-      UpdateUser(APIResponse.data);
-      return { data: APIResponse.data, error: null };
+      //UpdateUser(APIResponse.data);
+      return APIResponse;
     }
-  }, [local, user])
+  }, [guest, user])
 
   const createPaymentIntentLocal = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
     if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
     if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
     if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when creating payment intent locally" };
 
-    const requestBody = {cartLines: cartLines, addressesState: addressesState, local: true};
+    const requestBody = {cartLines: cartLines, addressesState: addressesState, guest: guest};
     const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
     if(APIResponse.error) {
       console.log("Error in createPaymentIntentLocal in useUserData:");
       console.log(APIResponse);
-      return { data: null, error: APIResponse.error };
+      return APIResponse;
     }
 
-    // make purchase in user "purchase array, include my paymentIntentId + amount"
-    //const paymentIntentId = (Date.now().toString(36) + Math.random().toString(36).substring(2)).substring(0, 16);
-    const paymentKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+    const defaultAddress = user.addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
+    const purchaseKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+    const paymentIntentId = APIResponse.data.paymentIntentId;
+    const clientSecret = APIResponse.data.clientSecret;
 
-    //const newPayment: LineItem = {}
+    const lineItems: LineItem[] = [];
+    cartLines.forEach(cartLine => {
+      const addressData = addressesState.find(addrSt => {return addrSt.lineItemKey === cartLine.lineItemKey});
+      if(!addressData) { return {data: null, error: `addressData for lineItemKey: ${cartLine.lineItemKey} not found`}; }
+
+      // Addresses for this item are not split up
+      if(addressData.addresses === null) {
+        if(!defaultAddress || !defaultAddress.addressKey) { return {data: null, error: `No default address and no specific address for lineItemKey: ${cartLine.lineItemKey}`}; }
+        const newLineItem: LineItem = {
+          type: "lineItem",
+          lineItemKey: cartLine.lineItemKey,
+          productKey: cartLine.productKey,
+          customerKey: null,
+          purchaseKey: purchaseKeyLocal,
+          addressKey: defaultAddress.addressKey,
+          quantity: cartLine.quantity,
+          addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+          unitPrice: cartLine.unitPrice,
+          taxRate: cartLine.taxRate,
+          firstName: defaultAddress.firstName || null,
+          lastName: defaultAddress.lastName || null,
+          postalCode: defaultAddress.postalCode || null,
+          prefCode: defaultAddress.prefCode || null,
+          pref: defaultAddress.pref || null,
+          city: defaultAddress.city || null,
+          ward: defaultAddress.ward || null,
+          address2: defaultAddress.address2 || null,
+          phoneNumber: defaultAddress.phoneNumber || null,
+        }
+        lineItems.push(newLineItem);
+      }
+
+      // Addresses for this item are split up
+      else {
+        addressData.addresses.forEach(addrData => {
+          const address = user.addresses.find(addr => {return addr.addressKey === addrData.addressKey })
+          if(!address || !address.addressKey) { return {data: null, error: `address for addressData addressKey: ${addrData.addressKey} not found`}; }
+          const newLineItem: LineItem = {
+            type: "lineItem",
+            lineItemKey: cartLine.lineItemKey,
+            productKey: cartLine.productKey,
+            customerKey: null,
+            purchaseKey: purchaseKeyLocal,
+            addressKey: address.addressKey,
+            quantity: addrData.quantity,
+            addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+            unitPrice: cartLine.unitPrice,
+            taxRate: cartLine.taxRate,
+            firstName: address.firstName || null,
+            lastName: address.lastName || null,
+            postalCode: address.postalCode || null,
+            prefCode: address.prefCode || null,
+            pref: address.pref || null,
+            city: address.city || null,
+            ward: address.ward || null,
+            address2: address.address2 || null,
+            phoneNumber: address.phoneNumber || null,
+          }
+          lineItems.push(newLineItem);
+        });
+      }
+    });
+
+    // make purchase in user "purchase array, include my paymentIntentId + amount"
+    const newPurchase: Purchase = {
+      purchaseKey: purchaseKeyLocal,
+      customerKey: null,
+      status: "created",
+      creationTime: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+      purchaseTime: null,
+      shippedTime: null,
+      refundTime: null,
+      paymentIntentId: paymentIntentId,
+      note: null,
+      amount: user.cart.cost,
+      email: null,
+      newPurchaseJson: null,
+      lineItems: lineItems,
+      cartLines: [],
+    }
 
     const userClone: Customer = JSON.parse(JSON.stringify(user));
-    //userClone.purchases.push()
+    userClone.purchases.push(newPurchase);
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    console.log(JSON.parse(localStorage.getItem('userLocal') || ""))
 
-    cartLines.forEach(line => {
-      const lineAddress = user.addresses.find(address => {});
-    });
-    return { data: null, error: "Not written yet"};
+    return APIResponse;
   }, [user]);
+
+
+
+
+
+
+  const finalizePurchase = useCallback(async (paymentIntentId:string, email:string, addressKey: number) => {
+    if(guest) {
+      return await finalizePurchaseLocal(paymentIntentId, email, addressKey);
+    }
+
+    if(!user)              return { data: null, error: "No user data available when creating payment intent" };
+    if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
+    if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
+    const requestBody = { customerKey: user.customerKey, token: user.token, addressKey: addressKey, email: email, paymentIntentId: paymentIntentId };
+    const APIResponse = await CallAPI(requestBody, "finalizePurchase");
+
+    if(APIResponse.error) {
+      console.log("Error in createPaymentIntent in useUserData:");
+      console.log(APIResponse);
+      return APIResponse;
+    }
+
+    //UpdateUser(APIResponse.data);
+    return APIResponse;
+  }, [guest, user, products]);
+
+  const finalizePurchaseLocal = useCallback(async (paymentIntentId: string, email: string, addressKey: number) => {
+    if(!user) { console.log("No User!"); return { data: null, error: "No user" }; }
+    if(!products) { console.log("No products!"); return { data: null, error: "No product" }; }
+    if(!paymentIntentId) { console.log("No paymentIntentId!"); return { data: null, error: "No payment intent" }; }
+
+    const addresses = user.addresses;
+    const defaultAddress = addresses.find(addr => {return addr.addressKey === addressKey}) || addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
+
+    const purchase = user.purchases.find(pur => {return pur.paymentIntentId === paymentIntentId})
+    if(!purchase) { return { data: null, error: "No purchase" }; }
+    const purchaseLineItems = purchase.lineItems;
+
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if(!emailRegex.test(email)) { return { data: null, error: "Malformed email" }; }
+    purchase.email = email;
+
+
+    const uniqueAddressKeysSet = new Set();
+    for (const item of purchaseLineItems) {
+      uniqueAddressKeysSet.add(item.addressKey);
+    }
+    const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+
+    //TODO this should be in useBackupDB
+    //#region send purchase to Azure
+    // We need to create a customer on the Azure servers before we can create a purchase
+    //const customerCode = "NV" + Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
+//    const customerCode = "NVGuest" + Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
+//    await backupCustomerData(
+//      0, //customerKey: number,
+//      "", //token: string,
+//      customerCode, //kaiin_code: string,
+//      defaultAddress?.lastName || "", //kaiin_last_name: string,
+//      defaultAddress?.firstName || "", //kaiin_first_name: string,
+//      defaultAddress?.lastName || "", //kaiin_last_name_kana: string,
+//      defaultAddress?.firstName || "", //kaiin_first_name_kana: string,
+//      defaultAddress?.postalCode?.toString() || "", //post_code: string,
+//      defaultAddress?.prefCode?.toString() || "", //pref_code: string,
+//      defaultAddress?.pref || "", //pref: string,
+//      defaultAddress?.city || "", //city: string,
+//      defaultAddress?.ward || "", //address1: string,
+//      defaultAddress?.address2 || "", //address2: string,
+//      defaultAddress?.phoneNumber || "", //renrakusaki: string,
+//      email, //mail_address: string,
+//      0, //touroku_kbn: number,
+//      1, //seibetsu: number,
+//      "1900年01月01日", //seinengappi: string)
+//    )
+
+
+    const orderDetails = purchaseLineItems.map(lineItem => {
+      const product = products.find(product => {return lineItem.productKey === product.productKey});
+      return({
+        "chumon_meisai_no": lineItem.lineItemKey,
+        "shohin_code": product?.id,
+        "shohin_name": product?.title,
+        "suryo": lineItem.quantity,
+        //"tanka": Number(lineItem.unitPrice),
+        "tanka": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
+        "kingaku": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
+        "soryo": 0,
+        "zei_ritsu": Number(lineItem.taxRate) * 100,
+        "gokei_kingaku": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate)) * lineItem.quantity)
+      })
+    });
+
+    console.log("orderDetails");
+    console.dir(orderDetails, { depth: null, colors: true });
+
+
+    //haiso
+    const delivery = uniqueAddressKeys.map(addressKey => {
+      const lineItems = purchaseLineItems.filter(lineItem => {return lineItem.addressKey === addressKey})
+      const address = addresses.find(ad => {return ad.addressKey === addressKey}) || defaultAddress;
+      if(!address) { return {}; }
+
+      //haiso_meisai
+      const deliveryDetails = lineItems.map(lineItem => {
+        const product = products.find(product => {return lineItem.productKey === product.productKey});
+        return {
+          "haiso_meisai_no": lineItem.lineItemKey, // must be a number
+          "shohin_code": product?.id,
+          "shohin_name": product?.title,
+          "suryo": lineItem.quantity,
+          "chumon_meisai_no": lineItem.lineItemKey  
+        }
+      });
+
+      return {
+        "shuka_date": formatDate(purchase.purchaseTime),
+        "haiso_name": `${address.lastName} ${address.firstName}`,
+        "haiso_post_code": address.postalCode,
+        "haiso_pref_code": address.prefCode,
+        "haiso_pref": address.pref,
+        "haiso_city": address.city,
+        "haiso_address1": address.ward,
+        "haiso_address2": address.address2,
+        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}`,
+        "haiso_meisai": deliveryDetails
+      }
+    })
+
+    console.log("delivery");
+    console.dir(delivery, { depth: null, colors: true });
+
+    const backupData = {
+      "chumon_no": "NVP-" + purchase.purchaseKey,
+      "chumon_no2": "NVP-" + purchase.purchaseKey,
+      "chumon_date": formatDate(purchase.purchaseTime),
+      "konyu_name": `${defaultAddress?.lastName || ""} ${defaultAddress?.firstName || ""}`,
+      "nebiki": 0,
+      "soryo": 0,
+      "zei1": Math.round(purchase.amount * (1/1.1)),
+      "zei_ritsu1": 10,
+      "zei2": 0,
+      "zei_ritsu2": 0,
+      "zei3": 0,
+      "zei_ritsu3": 0,
+      "konyu_mail_address": email,
+      "touroku_kbn": 0,
+      "chumon_meisai": orderDetails,
+      "haiso": delivery
+    }
+    console.log("backupData (for order)");
+    console.log(backupData);
+
+    const backupResults = await CallAPI({endpoint: "chumon_renkei_api", paymentIntentId: paymentIntentId, inputData: backupData}, "storeBackupData");
+    console.log("backupResults");
+    console.log(backupResults);
+    //#endregion
+
+    const backupDataJSON = JSON.stringify(backupData);
+    purchase.newPurchaseJson = backupDataJSON;
+
+    const userClone: Customer = JSON.parse(JSON.stringify(user));
+    UpdateUser(userClone);
+    localStorage.setItem('userLocal', JSON.stringify(userClone));
+    console.log(JSON.parse(localStorage.getItem('userLocal') || ""))
+
+    return { data: userClone, error: null };
+  }, [user, products]);
+
+
+
+
 
 
 
@@ -575,10 +823,24 @@ export const useUserData = (): UseUserDataReturnType => {
     });
   }
 
+  function formatDate(dateString: string | null) {
+    if(dateString === null) { return "1900年01月01日" }
+
+    const date = new Date(dateString);
+  
+    // Format the date components to be in YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Add 1 because months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+  
+    return `${year}年${month}月${day}日`;
+  }
+
+
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers
     addToCart, updateCartQuantity, deleteFromCart, 
-    createPaymentIntent, cancelPurchase,
+    createPaymentIntent, finalizePurchase, cancelPurchase,
     addAddress, deleteAddress
   };
 

@@ -1,5 +1,5 @@
 import { createContext, useState, Dispatch, SetStateAction, useEffect } from 'react';
-import { Customer, emptyCustomer } from '../types';
+import { Cart, Customer, emptyCustomer } from '../types';
 import CallAPI from '../Utilities/CallAPI';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 import Cookies from 'js-cookie';
@@ -24,8 +24,8 @@ type UserContextValue = {
    */
   userMeaningful: boolean;
   setUserMeaningful: Dispatch<SetStateAction<boolean>>;
-  local: boolean | undefined;
-  setLocal: Dispatch<SetStateAction<boolean | undefined>>;
+  guest: boolean | undefined;
+  setGuest: Dispatch<SetStateAction<boolean | undefined>>;
 }
 //#endregion Type definitions
 
@@ -41,8 +41,8 @@ const defaultContextValue: UserContextValue = {
   setUserLoading: () => {},
   userMeaningful: false,
   setUserMeaningful: () => {},
-  local: undefined,
-  setLocal: () => {},
+  guest: undefined,
+  setGuest: () => {},
 };
 
 
@@ -54,7 +54,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [cartLoading, setCartLoading] = useState<boolean>(false);
   const [userLoading, setUserLoading] = useState(false);
   const [userMeaningful, setUserMeaningful] = useState(false);
-  const [local, setLocal] = useState<boolean | undefined>(undefined)
+  const [guest, setGuest] = useState<boolean | undefined>(undefined)
+
 
   // This effect runs once on mount to check for existing user data, first on the server, then locally
   useEffect(() => {
@@ -70,17 +71,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       if (token) {
         try{
           await loginUserFromToken(token);
-          setLocal(false);
+          setGuest(false);
         }
         catch(error) {
           console.error("Failed to fetch remote user data:", error);
           console.error("Falling back to local data");
           pullUserLocal();
-          setLocal(true);
+          setGuest(true);
         }
       } else {
         pullUserLocal();
-        setLocal(true);
+        setGuest(true);
       }
     }
 
@@ -107,33 +108,66 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   }, [user]);
 
+
+  // Detect meaningful data when user changes
   useEffect(() => {
     setUserMeaningful(isMeaningfulData(user));
+
+    function isMeaningfulData(obj: any): boolean {
+      if (obj === null) return false;
+  
+      for (const key in obj) {
+        if (key === 'type') continue; // Ignore fields named "type"
+        const value = obj[key];
+  
+        if (Array.isArray(value)) {
+          if (value.length > 0) { return true; }
+        } else if (typeof value === 'object') {
+          if (isMeaningfulData(value)) { return true; }
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          return true;
+        } else if (typeof value === 'number' && value !== null && value !== 0) {
+          return true;
+        } else if (typeof value === 'boolean' && value !== null && value !== undefined) {
+          return true;
+        }
+      }
+      return false;
+    }  
   }, [user]);
 
-  function isMeaningfulData(obj: any): boolean {
-    if (obj === null) return false;
 
-    for (const key in obj) {
-      if (key === 'type') continue; // Ignore fields named "type"
-      const value = obj[key];
+  // Update cart metadata when cart changes
+  useEffect(() => {
+    if(!user) return;
+    const cart = user.cart;
+    const lines = cart.lines;
 
-      if (Array.isArray(value)) {
-        if (value.length > 0) { return true; }
-      } else if (typeof value === 'object') {
-        if (isMeaningfulData(value)) { return true; }
-      } else if (typeof value === 'string' && value.trim() !== '') {
-        return true;
-      } else if (typeof value === 'number' && value !== null && value !== 0) {
-        return true;
-      } else if (typeof value === 'boolean' && value !== null && value !== undefined) {
-        return true;
+    const cartQuantity = Math.round(lines.reduce((sum, lineItem) => sum + lineItem.quantity, 0));
+    const cartCost = Math.round(lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0));
+    const cartTax = Math.round(lines.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0));
+
+    if(cart.quantity !== cartQuantity || cart.cost !== cartCost || cart.includedTax !== cartTax) {
+      const newCart: Cart = {
+        type: "cart",
+        quantity: cartQuantity,
+        cost: cartCost,
+        includedTax: cartTax,
+        lines: lines
       }
-    }
-    return false;
-  }
 
-  const value: UserContextValue = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, local, setLocal };
+      setUser(prev => {
+        if(prev === null) return null;
+        return {
+          ...prev,
+          cart: newCart
+        }
+      });
+    }
+
+  }, [user?.cart]);
+
+  const value: UserContextValue = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, guest: guest, setGuest: setGuest };
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 //#endregion

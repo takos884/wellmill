@@ -115,6 +115,7 @@ async function fetchProducts() {
       if (!products[row.productKey]) {
         products[row.productKey] = {
           productKey: row.productKey,
+          id: row.id,
           title: row.title,
           description: row.description,
           available: row.available,
@@ -1193,27 +1194,41 @@ app.post('/storeBackupData', async (req, res) => {
 
 app.post('/storeBackupData', async (req, res) => {
   console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
-  console.log(req.body);
+  console.dir(req.body, { depth: null, colors: true });
 
-  const validation = await ValidatePayload(req.body.data);
-  if(validation.valid === false) {
-    console.log(`Validation error in storeBackupData: ${validation.message}`);
-    return res.status(400).send("Validation error");
+//  // Validation happens against paymentIntentId
+//  const validation = await ValidatePayload(req.body.data);
+//  if(validation.valid === false) {
+//    console.log(`Validation error in storeBackupData: ${validation.message}`);
+//    return res.status(400).send("Validation error");
+//  }
+//  const customerKey = validation.customerKey;
+
+  const { endpoint, paymentIntentId, inputData } = req.body.data;
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+
+  const paymentStatus = paymentIntent.status;
+  console.log(`paymentStatus: ${paymentStatus}`);
+
+  if(paymentStatus === 'succeeded') {
+    const result = await StoreBackupData(endpoint, inputData);
+
+    if (result.error) {
+      return res.status(result.status).json({ message: result.message });
+    }
+
+    return res.json(result);  
   }
-  const customerKey = validation.customerKey;
 
-  const { endpoint, inputData } = req.body.data;
-
-  const result = await StoreBackupData(endpoint, inputData);
-
-  if (result.error) {
-    return res.status(result.status).json({ message: result.message });
-  }
-
-  return res.json(result);
+  return res.status(400).json({ message: "Payment not succeeded" });
 });
 
 async function StoreBackupData(endpoint, inputData) {
+  console.log("░▒▓█ Hit storeBackupData function. Time: " + CurrentTime());
+  console.dir({endpoint, inputData}, { depth: null, colors: true });
+
   try {
     const fullEndpoint = `${BASE_URL}${endpoint}`;
     const fullFetchContent = {
@@ -1228,7 +1243,7 @@ async function StoreBackupData(endpoint, inputData) {
     // Make the POST request to the backup server
     const response = await fetch(fullEndpoint, fullFetchContent);
     const responseData = await response.json();
-    //console.dir(responseData);
+    console.dir(responseData);
 
     if (!response.ok) {
       return { error: true, status: response.status, message: 'An unexpected error occurred in StoreBackupData.' };
@@ -1353,9 +1368,9 @@ async function GetCartFromCustomerKey(customerKey) {
     const [linesResults] = (await pool.query(selectQuery, [customerKey]));
 
     linesResults.forEach(line => {line.type = "lineItem"});
-    const cartQuantity = linesResults.reduce((sum, lineItem) => sum + lineItem.quantity, 0);
-    const cartCost = linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0);
-    const cartTax = linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0);
+    const cartQuantity = Math.round(linesResults.reduce((sum, lineItem) => sum + lineItem.quantity, 0));
+    const cartCost = Math.round(linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity), 0));
+    const cartTax = Math.round(linesResults.reduce((sum, lineItem) => sum + (lineItem.unitPrice * (lineItem.taxRate) * lineItem.quantity), 0));
 
     const cart = {type: "cart", quantity: cartQuantity, cost: cartCost, includedTax: cartTax, lines: linesResults }
 
@@ -1399,8 +1414,8 @@ async function GetPurchasesFromCustomerKey(customerKey) {
       }
     }
 
-    console.log("purchases");
-    console.dir(purchases, { depth: null, colors: true });
+    //console.log("purchases");
+    //console.dir(purchases, { depth: null, colors: true });
 
     return purchases;
   } catch (error) {
@@ -1445,7 +1460,6 @@ const calculateOrderAmount = (cartLines) => {
 
 app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
-  console.log(req.body);
   console.dir(req.body, { depth: null, colors: true });
 
   // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
@@ -1466,9 +1480,12 @@ app.post("/createPaymentIntent", async (req, res) => {
   console.log("Created paymentIntent:");
   //console.log(paymentIntent);
 
-  if(req.body.data.local === true) {
+
+  if(req.body.data.guest === true) {
+    //createGuestPaymentIntent(req, res)
     return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
   }
+
 
   // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
   const validation = await ValidatePayload(req.body.data);
@@ -1577,15 +1594,34 @@ app.post("/createPaymentIntent", async (req, res) => {
 });
 
 
-app.post("/verifyPayment", async (req, res) => {
-  console.log("░▒▓█ Hit verifyPayment. Time: " + CurrentTime());
+app.post("/finalizePurchase", async (req, res) => {
+  console.log("░▒▓█ Hit finalizePurchase. Time: " + CurrentTime());
   console.log(req.body);
+  if(req.body.data.guest === true) {
+    return res.json({error: "Guest cannot finalizePurchase on server"});
+  }
+
   const validation = await ValidatePayload(req.body.data);
   if(validation.valid === false) {
     console.log(`Validation error in createPaymentIntent: ${validation.message}`);
     return res.status(400).send("Validation error");
   }
   const customerKey = validation.customerKey;
+
+  // Validate the email
+  const email = req.body.data.email;
+  const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if(!regex.test(email)) { return res.status(400).send('Malformed email address'); }
+
+  // I use their token to validate registered users, not using this secret
+  const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+
+  const paymentStatus = paymentIntent.status;
+  console.log("paymentIntent");
+  console.log(paymentIntent);
 
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
@@ -1628,24 +1664,6 @@ app.post("/verifyPayment", async (req, res) => {
   // This address will only be used if the line item doesn't contain any address data
   const defaultAddress = addresses[0];
 
-
-  // Validate the email
-  const email = req.body.data.email;
-  const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if(!regex.test(email)) { return res.status(400).send('Malformed email address'); }
-
-
-
-  // I used their token to validate, not using this secret
-  const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
-
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
-
-  const paymentStatus = paymentIntent.status;
-  console.log("paymentIntent");
-  console.log(paymentIntent);
-
   if (paymentStatus === 'succeeded' || paymentStatus === 'created') {
     query = `
       UPDATE purchase 
@@ -1654,19 +1672,20 @@ app.post("/verifyPayment", async (req, res) => {
     values = [paymentStatus, email, paymentIntentId, paymentStatus];
 
     try {
-      const [verifyPaymentResults] = await pool.query(query, values);
-      console.log("verifyPayment results");
-      console.log(verifyPaymentResults);
+      const [finalizePurchaseResults] = await pool.query(query, values);
+      console.log("finalizePurchase results");
+      console.log(finalizePurchaseResults);
 
       //Send order details to Azure
-      if(paymentStatus === 'succeeded' && verifyPaymentResults.affectedRows > 0) {
+      if(paymentStatus === 'succeeded' && finalizePurchaseResults.affectedRows > 0) {
+        //await SendOrderToAzure(paymentIntentId);
         query = `SELECT * FROM product`;
         const [products] = await pool.query(query);
 
         // If no results, no products found
         if (products.length === 0) {
           console.log("Thrown out at productResults.length === 0");
-          return null; // TODO throw an error
+          return res.status(500).send("Products error");
         }
 
         query = `
@@ -1679,7 +1698,7 @@ app.post("/verifyPayment", async (req, res) => {
         // If no results, the purchase isn't found
         if (purchaseResults.length === 0) {
           console.log("Thrown out at purchaseResults.length === 0");
-          return null; // TODO throw an error
+          return res.status(500).send("Purchase error");
         }
 
         const purchase = purchaseResults[0];
@@ -1695,7 +1714,7 @@ app.post("/verifyPayment", async (req, res) => {
         if (lineItemResults.length === 0) {
           console.log("Thrown out at lineItemResults.length === 0");
           console.log(`purchase.purchaseKey: ${purchase.purchaseKey}`);
-          return null; // TODO throw an error
+          return res.status(500).send("Line item error");
         }
 
         // Filter out line items that need their address updated

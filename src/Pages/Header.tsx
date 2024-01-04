@@ -14,7 +14,7 @@ interface HeaderProps {
 function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const [showMenu, setShowMenu] = useState(false);
 
-    const { user, cartLoading, userMeaningful, local } = useContext(UserContext);
+    const { user, cartLoading, userMeaningful, guest } = useContext(UserContext);
     const cart = user ? user.cart : undefined;
 
     const spinner = <img className={styles.cartDotSpinnerSpinner} src="spinner.svg" alt="Spinner"/>;
@@ -22,8 +22,8 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
     const headerButton = (
         userMeaningful ? 
-            <Link to="/account"><div className={`${styles.navItem} ${styles.loginButton} ${local && styles.loginButtonGlow}`}>マイページ</div></Link> :
-            <Link to="/login"><div className={`${styles.navItem} ${styles.loginButton} ${local && styles.loginButtonGlow}`}>ログイン</div></Link>
+            <Link to="/account"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>マイページ</div></Link> :
+            <Link to="/login"><div className={`${styles.navItem} ${styles.loginButton} ${guest && styles.loginButtonGlow}`}>ログイン</div></Link>
         )
 
     const handleHomeClick = () => {

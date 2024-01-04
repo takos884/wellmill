@@ -19,7 +19,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { user, setUser, local, setLocal } = useContext(UserContext);
+  const { user, setUser, guest, setGuest } = useContext(UserContext);
   const { loginUser} = useUserData();
 
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ const Login = () => {
 
     if (data && data.token) {
       Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
-      setLocal(false);
+      setGuest(false);
 
       setTimeout(() => {
         navigate('/account');
@@ -48,7 +48,7 @@ const Login = () => {
   const handleLogout = async () => {
     Cookies.remove('WellMillToken');
     setUser(null);
-    setLocal(true);
+    setGuest(true);
   }
 
   function handleNewGuest() {
@@ -83,7 +83,7 @@ const Login = () => {
         <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
       </div>
 
-      {!local && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}
+      {!guest && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}
       <Footer />
     </>
   );

@@ -36,7 +36,7 @@ export default function Cart() {
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  console.log(addressesState);
+  //console.log(addressesState);
 
   // Set multiple addresses state to all-default to start
   // If the cart isn't ready, or there is already addresses state data, exit
@@ -110,8 +110,8 @@ export default function Cart() {
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
   if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
 
-  const cartQuantity = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0) : 0;
-  const cartCost = cart?.lines ? cart.lines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0) : 0;
+  const cartQuantity = cart?.lines ? Math.round(cart.lines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0)) : 0;
+  const cartCost = cart?.lines ? Math.round(cart.lines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0)) : 0;
 
 
   async function HandleQuantityClick(lineItemKey: number, quantity: number) {

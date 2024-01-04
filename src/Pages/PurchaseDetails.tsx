@@ -67,10 +67,10 @@ export default function PurchaseDetails() {
     )
   });
 
-  const subtotal = lineItems?.reduce((total, item) => {
+  const subtotal = Math.round(lineItems?.reduce((total, item) => {
     const itemTotal = item.unitPrice * (1 + item.taxRate) * item.quantity;
     return total + itemTotal;
-  }, 0);
+  }, 0));
 
   const shipping = 0;
 
@@ -128,7 +128,7 @@ export default function PurchaseDetails() {
     const addressKey = [ line.firstName, line.lastName, line.postalCode, line.prefCode, line.pref, line.city, line.ward, line.address2, line.phoneNumber].join('|');
     if (!seen.has(addressKey)) {
       seen.add(addressKey);
-      uniqueAddresses.push({ firstName: line.firstName, lastName: line.lastName, postalCode: line.postalCode, prefCode: line.prefCode, pref: line.pref, city: line.city, ward: line.ward, address2: line.address2, phoneNumber: line.phoneNumber});
+      uniqueAddresses.push({ firstName: line.firstName || undefined, lastName: line.lastName || undefined, postalCode: line.postalCode || undefined, prefCode: line.prefCode || undefined, pref: line.pref || undefined, city: line.city || undefined, ward: line.ward || undefined, address2: line.address2 || undefined, phoneNumber: line.phoneNumber || undefined});
     }
   });
 

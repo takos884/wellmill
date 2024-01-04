@@ -5,7 +5,8 @@ import styles from './checkout.module.css';
 import { Elements } from "@stripe/react-stripe-js";
 import { Appearance, StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
 import { UserContext } from "../Contexts/UserContext";
-import { LineItemAddressesArray } from "../types";
+import { useUserData } from "../Hooks/useUserData";
+import { CartLine, LineItemAddressesArray } from "../types";
 
 
 type CheckoutProps = {
@@ -17,7 +18,8 @@ type CheckoutProps = {
 const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
 function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
-  const { user, local } = useContext(UserContext);
+  const { user } = useContext(UserContext);
+  const { createPaymentIntent } = useUserData();
   const [clientSecret, setClientSecret] = useState("");
 
   console.log("Rendering Checkout")
@@ -25,6 +27,7 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
 
   function hideCheckout(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     if (event.target === event.currentTarget) {
+      console.log("setDisplayCheckout(false) 1")
       setDisplayCheckout(false);
     }
   }
@@ -49,32 +52,38 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
     // If not, use the default address. (Existing site can't do this. Should we?)
 
     const cartLines = user.cart.lines;
-    const requestBody = {data: { customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState }};
+    const purchases = user.purchases;
 
-    async function fetchData() {
-      try {
-        const response = await fetch("https://cdehaan.ca/wellmill/api/createPaymentIntent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        });
-  
-        const data = await response.json();
-        setClientSecret(data.clientSecret);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+    // Every item in the cart is already within some payment
+    const paymentIntentExists = cartLines.every(cartLine =>
+      purchases.some(purchase =>
+        purchase.lineItems.some(item => item.lineItemKey === cartLine.lineItemKey)
+      )
+    );
+
+    if(!paymentIntentExists) {
+      createPaymentIntentFunction(cartLines, addressesState);
+    }
+
+    async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
+      const response = await createPaymentIntent(cartLines, addressesState);
+      if(response.error) {
+        console.log("Error in createPaymentIntentFunction: " + response.error);
+      } else {
+        console.log("Created Payment Intent:");
+        console.log(response.data);
+        if(response.data.clientSecret) {
+          setClientSecret(response.data.clientSecret);
+        }
       }
     }
-  
-    // Call fetchData
-    fetchData();
   }, [user?.customerKey]);
 
 
   const StripeElements = clientSecret ? (
     <Elements options={options} stripe={stripePromise}>
       <div className={styles.checkoutWrapper} onClick={hideCheckout}>
-        <CheckoutForm setDisplayCheckout={setDisplayCheckout}/>
+        <CheckoutForm setDisplayCheckout={setDisplayCheckout} addressesState={addressesState}/>
       </div>
     </Elements>) : null;
 

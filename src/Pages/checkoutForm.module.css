@@ -191,11 +191,18 @@ span.defaultAddressHeader {
   padding: 0 1rem;
 }
 
+span.billingAddress {
+  display: flex;
+  justify-content: center;
+  background-color: #fef8ec;
+  border-bottom: 1px solid #fade9e;
+  margin-top: 2rem;
+}
+
 div.addressCard {
   background-color: #fdf2d8;
   color: #444;
   font-weight: 700;
-  margin-top: 1rem;
   padding: 1rem;
   display: flex;
   flex-direction: column;

@@ -47,7 +47,7 @@ export const useBackupDB = <T extends unknown>() => {
     //console.log(sampleBackupResult);
   };
 
-  const backupCustomerData = (
+  async function backupCustomerData(
     customerKey: number,
     token: string,
     kaiin_code: string,
@@ -66,12 +66,15 @@ export const useBackupDB = <T extends unknown>() => {
     touroku_kbn: number,
     seibetsu: number,
     seinengappi: string,
-  ) => {
+  ) {
     const endpoint = "kaiin_renkei_api";
-    const body = JSON.stringify({data: {customerKey: customerKey, token: token, endpoint: endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}}});
+    const body = JSON.stringify({data: {customerKey: user?.customerKey, token: user?.token, endpoint: endpoint, inputData: {kaiin_code, kaiin_last_name, kaiin_first_name, kaiin_last_name_kana, kaiin_first_name_kana, post_code, pref_code, pref, city, address1, address2, renrakusaki, mail_address, touroku_kbn, seibetsu, seinengappi}}});
     console.log("body in backupCustomerData in useBackupDB");
-    console.dir(body, { depth: null, colors: true });
-    postBackupData(body);
+    console.log(JSON.parse(body));
+    const postCustomerDataReply = await postBackupData(body);
+    console.log("postCustomerDataReply");
+    console.log(postCustomerDataReply);
+    return postCustomerDataReply;
   }
 
   // Placeholder for future function

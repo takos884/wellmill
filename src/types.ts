@@ -1,45 +1,4 @@
 // types.ts
-export type FakeProduct = {
-    id: string;
-    description: string;
-    long_description: string;
-    base_price: number;
-    tax_rate: number;
-    images: string[];
-    bloodTest: boolean;
-};
-
-
-
-export type Variant = {
-    product_id: string,
-    id: string,
-    title: string,
-    price: number,
-    requires_shipping: boolean,
-    admin_graphql_api_id: string,
-}
-
-export type ShopifyImage = {
-    product_id: string,
-    id: string,
-    position: number,
-    alt: string | null,
-    width: number,
-    height: number,
-    src: string,
-}
-
-export type ShopifyProduct = {
-    id: string;
-    title: string;
-    body_html: string;
-    vendor: string;
-    status: number;
-    image: ShopifyImage,
-    images: ShopifyImage[];
-    variants: Variant[];
-};
 
 export type WellMillAzureAddress = {
     address_key?: number, // Given by MySQL
@@ -64,9 +23,7 @@ export type WellMillAzureAddress = {
 
 
 
-
-
-
+//#region Product
 export type Product = {
     productKey: number,
     id: string,
@@ -87,7 +44,11 @@ type image = {
     displayOrder: number,
     altText: string,
 }
+//#endregion
 
+
+
+//#region Customer/User, Cart, Address
 export const emptyCustomer:Customer = {
     type: 'customer',
     customerKey: null,
@@ -138,33 +99,14 @@ export type CartLine = {
     productKey: number,
     unitPrice: number,
     taxRate: number,
-    quantity: number,  
+    quantity: number,
+    purchaseKey?: number, // On checkout screen, after paymentIntentId has been made
 }
+//#endregion
 
-/**
- * Represents a line item address.
- *
- * @property {number | null} addressKey - The address key for this line item. Null means no address chosen yet.
- * @property {number} quantity - The quantity going to this address only.
- * @property {number} addressIndex - The order of the addresses in the array of addresses
- *   for split items from a lineItem that was originally a single entry. Not an address key.
- */
-type LineItemAddress = {
-    addressKey: number | null;
-    quantity: number;
-    addressIndex: number;
-};
-  
-export type LineItemAddresses = {
-    lineItemKey: number;
-    quantity: number;
-    addresses: LineItemAddress[] | null;
-};
 
-export type LineItemAddressesArray = LineItemAddresses[];
-  
-  
 
+//#region Address, Address state (used for multiple addresses for one type of item in a purchase)
 // All are optional, if any one of them is missing, it's still a reasonable address (inside the system)
 export type Address = {
     addressKey?: number | null, // Given by MySQL - null just means we're sure this address doesn't have a key yet
@@ -181,44 +123,76 @@ export type Address = {
     defaultAddress?: boolean, // true
 }
 
+export type LineItemAddressesArray = LineItemAddresses[];
+
+export type LineItemAddresses = {
+    lineItemKey: number;
+    quantity: number;
+    addresses: LineItemAddress[] | null;
+};
+
+/**
+ * Represents a line item address.
+ *
+ * @property {number | null} addressKey - The address key for this line item. Null means no address chosen yet.
+ * @property {number} quantity - The quantity going to this address only.
+ * @property {number} addressIndex - The order of the addresses in the array of addresses
+ *   for split items from a lineItem that was originally a single entry. Not an address key.
+ */
+type LineItemAddress = {
+    addressKey: number | null;
+    quantity: number;
+    addressIndex: number;
+};
+//#endregion
+
+
+
+//#region Purchase and Line Item with address
+export type Purchase = {
+    purchaseKey: number,
+    customerKey: number | null,
+    status: string,
+    creationTime: string,
+    purchaseTime: string | null,
+    shippedTime: string | null,
+    refundTime: string | null,
+    paymentIntentId: string,
+    note: string | null,
+    amount: number,
+    email: string | null,
+    newPurchaseJson: string | null,
+    lineItems: LineItem[],
+    cartLines: CartLine[], // Array of CartLines exists while on the checkout screen, address not frozen yet
+}
+
 export type LineItem = {
+    type: "lineItem",
     lineItemKey: number,
     productKey: number,
-    customerKey: number,
+    customerKey: number | null, // null for a guest buying something
     purchaseKey: number,
     addressKey: number,
     quantity: number,
     addedAt: string,
     unitPrice: number,
     taxRate: number,
-    firstName: string,
-    lastName: string,
-    postalCode: number,
-    prefCode: number,
-    pref: string,
-    city: string,
-    ward: string,
-    address2: string,
-    phoneNumber: string,
+    firstName: string | null,
+    lastName: string | null,
+    postalCode: number | null,
+    prefCode: number | null,
+    pref: string | null,
+    city: string | null,
+    ward: string | null,
+    address2: string | null,
+    phoneNumber: string | null,
     shippingStatus?: string,
 }
+//#endregion
 
-export type Purchase = {
-    purchaseKey: number,
-    customerKey: number,
-    status: string,
-    creationTime: string,
-    purchaseTime: string,
-    shippedTime: string,
-    refundTime: string,
-    paymentIntentId: string,
-    note: string,
-    amount: number,
-    email: string,
-    newPurchaseJson: string,
-    lineItems: LineItem[],
-}
 
+
+//#region Credentials
 interface CredentialsWithEmail {
     email: string;
     password: string;
@@ -230,6 +204,9 @@ interface CredentialsWithToken {
 }
 
 export type UserCredentials = CredentialsWithEmail | CredentialsWithToken;
+//#endregion
+
+
 
 // Define a TypeScript interface for the breadcrumb object used in the Header component
 export interface Breadcrumb {
