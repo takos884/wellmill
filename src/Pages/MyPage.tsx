@@ -6,6 +6,7 @@ import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { useContext } from "react";
+import { emptyCustomer } from "../types";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -19,8 +20,11 @@ const MyPage = () => {
   function handleLogout() {
     if(!guest) {
       Cookies.remove('WellMillToken');
-      setUser(null);
       setGuest(true);
+      setUser(emptyCustomer);
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);  
       navigate('/login');
     }
 

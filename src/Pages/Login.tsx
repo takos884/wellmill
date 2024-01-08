@@ -19,7 +19,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { user, setUser, guest, setGuest } = useContext(UserContext);
+  const { user, setUser, guest, setGuest, userMeaningful } = useContext(UserContext);
   const { loginUser} = useUserData();
 
   const navigate = useNavigate();
@@ -62,7 +62,15 @@ const Login = () => {
         return newCustomer;
       });
     }
-    navigate('/account');
+    navigate('/shop');
+  }
+
+  function handleWipeGuest() {
+    localStorage.removeItem('userLocal');
+    Cookies.remove('WellMillToken');
+    setUser(emptyCustomer); setTimeout(() => {
+      window.location.reload();
+    }, 500);
   }
 
   return (
@@ -81,7 +89,11 @@ const Login = () => {
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={handleNewGuest}>ゲストとして続ける</button>
         <div className={styles.loginLine}></div>
-        <button className={styles.loginSignup} onClick={() => navigate('/sign-up')}>新規登録はこちら</button>
+        <button className={styles.loginSignup} onClick={() => {navigate('/sign-up')}}>新規登録はこちら</button>
+        {guest && userMeaningful && (<>
+          <div className={styles.loginLine}></div>
+          <button className={styles.loginSignup} onClick={handleWipeGuest}>ゲストデータを削除する</button>
+        </>)}
       </div>
 
       {!guest && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}

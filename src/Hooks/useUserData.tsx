@@ -8,6 +8,7 @@ import CallAPI from '../Utilities/CallAPI';
 
 import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase } from '../types';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
+import { prefectures } from '../Utilities/addressData';
 
 //#region Type definitions
 type APIResponse = {
@@ -163,6 +164,10 @@ export const useUserData = (): UseUserDataReturnType => {
 
   const addAddressLocal = useCallback((address: Address) => {
     if(!user) return { data: null, error: "No user data available when adding local address" };
+
+    // Take the prefecture's code, a number, and fill in the text
+    const prefCode = address?.prefCode || NaN;
+    if(!isNaN(prefCode)) { address.pref = prefectures.find(pref => pref.code === prefCode)?.name }
 
     // if new address's defaultAddress come in unset, undefined, null, etc should be "false", otherwise "true"
     if(!address.defaultAddress) address.defaultAddress = false;
@@ -506,27 +511,27 @@ export const useUserData = (): UseUserDataReturnType => {
 
       // Addresses for this item are not split up
       if(addressData.addresses === null) {
-        if(!defaultAddress || !defaultAddress.addressKey) { return {data: null, error: `No default address and no specific address for lineItemKey: ${cartLine.lineItemKey}`}; }
+        //if(!defaultAddress || !defaultAddress.addressKey) { return {data: null, error: `No default address and no specific address for lineItemKey: ${cartLine.lineItemKey}`}; }
         const newLineItem: LineItem = {
           type: "lineItem",
           lineItemKey: cartLine.lineItemKey,
           productKey: cartLine.productKey,
           customerKey: null,
           purchaseKey: purchaseKeyLocal,
-          addressKey: defaultAddress.addressKey,
+          addressKey: defaultAddress?.addressKey || 0,
           quantity: cartLine.quantity,
           addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
           unitPrice: cartLine.unitPrice,
           taxRate: cartLine.taxRate,
-          firstName: defaultAddress.firstName || null,
-          lastName: defaultAddress.lastName || null,
-          postalCode: defaultAddress.postalCode || null,
-          prefCode: defaultAddress.prefCode || null,
-          pref: defaultAddress.pref || null,
-          city: defaultAddress.city || null,
-          ward: defaultAddress.ward || null,
-          address2: defaultAddress.address2 || null,
-          phoneNumber: defaultAddress.phoneNumber || null,
+          firstName: defaultAddress?.firstName || null,
+          lastName: defaultAddress?.lastName || null,
+          postalCode: defaultAddress?.postalCode || null,
+          prefCode: defaultAddress?.prefCode || null,
+          pref: defaultAddress?.pref || null,
+          city: defaultAddress?.city || null,
+          ward: defaultAddress?.ward || null,
+          address2: defaultAddress?.address2 || null,
+          phoneNumber: defaultAddress?.phoneNumber || null,
         }
         lineItems.push(newLineItem);
       }
@@ -626,6 +631,8 @@ export const useUserData = (): UseUserDataReturnType => {
     const purchase = user.purchases.find(pur => {return pur.paymentIntentId === paymentIntentId})
     if(!purchase) { return { data: null, error: "No purchase" }; }
     const purchaseLineItems = purchase.lineItems;
+    console.log("purchaseLineItems");
+    console.log(purchaseLineItems);
 
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if(!emailRegex.test(email)) { return { data: null, error: "Malformed email" }; }
@@ -728,25 +735,25 @@ export const useUserData = (): UseUserDataReturnType => {
       const product = products.find(product => {return purchaseLineItem.productKey === product.productKey});
 
       //haiso_meisai
-      const deliveryDetails = {
+      const deliveryDetails = [{
         "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
-        "shohin_code": product?.id,
-        "shohin_name": product?.title,
+        "shohin_code": product?.id || "なし",
+        "shohin_name": product?.title || "なし",
         "suryo": purchaseLineItem.quantity,
         "chumon_meisai_no": purchaseLineItem.lineItemKey  
-      };
+      }];
 
       return {
         "shuka_date": formatDate(purchase.purchaseTime),
-        "haiso_name": `${address.lastName} ${address.firstName}`,
-        "haiso_post_code": address.postalCode,
-        "haiso_pref_code": address.prefCode,
-        "haiso_pref": address.pref,
-        "haiso_city": address.city,
-        "haiso_address1": address.ward,
-        "haiso_address2": address.address2,
-        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}`,
-        "haiso_meisai": deliveryDetails
+        "haiso_name": `${address.lastName} ${address.firstName}` || "なし",
+        "haiso_post_code": address.postalCode || "なし",
+        "haiso_pref_code": address.prefCode || "なし",
+        "haiso_pref": address.pref || "なし",
+        "haiso_city": address.city || "なし",
+        "haiso_address1": address.ward || "なし",
+        "haiso_address2": address.address2 || "なし",
+        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}` || "なし",
+        "haiso_meisai": deliveryDetails,
       }
     });
 
@@ -759,7 +766,7 @@ export const useUserData = (): UseUserDataReturnType => {
       "chumon_no": "NVP-" + purchase.purchaseKey,
       "chumon_no2": "NVP-" + purchase.purchaseKey,
       "chumon_date": formatDate(purchase.purchaseTime),
-      "konyu_name": `${defaultAddress?.lastName || ""} ${defaultAddress?.firstName || ""}`,
+      "konyu_name": `${defaultAddress?.lastName || ""} ${defaultAddress?.firstName || ""}` || "なし",
       "nebiki": 0,
       "soryo": 0,
       "zei1": Math.round(purchase.amount * (1/1.1)),
@@ -768,7 +775,7 @@ export const useUserData = (): UseUserDataReturnType => {
       "zei_ritsu2": 0,
       "zei3": 0,
       "zei_ritsu3": 0,
-      "konyu_mail_address": email,
+      "konyu_mail_address": email || "なし",
       "touroku_kbn": 0,
       "chumon_meisai": orderDetails,
       "haiso": delivery
@@ -783,6 +790,10 @@ export const useUserData = (): UseUserDataReturnType => {
 
     const backupDataJSON = JSON.stringify(backupData);
     purchase.newPurchaseJson = backupDataJSON;
+
+    // Now that the purchase is finished, the cart is empty.
+    // Whatever was in the cart is represented in the purchase
+    if(user) { user.cart.lines = [];}
 
     const userClone: Customer = JSON.parse(JSON.stringify(user));
     UpdateUser(userClone);

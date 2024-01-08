@@ -167,7 +167,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   }, [user?.cart]);
 
-  const value: UserContextValue = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, guest: guest, setGuest: setGuest };
+  const value: UserContextValue = { user, setUser, cartLoading, setCartLoading, userLoading, setUserLoading, userMeaningful, setUserMeaningful, guest, setGuest };
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 //#endregion

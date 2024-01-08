@@ -30,6 +30,7 @@ const pool = mysql.createPool({
 
 
 const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
+const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
 const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 
 // used for both creating a file, and calculating cart totals
@@ -1608,6 +1609,10 @@ async function StoreBackupData(endpoint, inputData) {
       body: JSON.stringify(inputData),
     };
 
+    if(endpoint === "chumon_renkei_api") {
+      fs.writeFileSync(ORDER_BACKUP_FILE_PATH, JSON.stringify(inputData, null, 2));
+    }
+
     // Make the POST request to the backup server
     const response = await fetch(fullEndpoint, fullFetchContent);
     const responseData = await response.json();
@@ -1619,6 +1624,8 @@ async function StoreBackupData(endpoint, inputData) {
 
     return responseData;
   } catch (error) {
+    console.log("Caught in storeBackupData function with error: ")
+    console.dir(error, { depth: null, colors: true });
     return { error: true, status: 500, message: error.message || 'An unexpected error occurred in StoreBackupData.' };
   }
 }
@@ -1845,14 +1852,15 @@ app.post("/createPaymentIntent", async (req, res) => {
     currency: "jpy",
   });
 
-  console.log("Created paymentIntent:");
-  //console.log(paymentIntent);
-
 
   if(req.body.data.guest === true) {
     //createGuestPaymentIntent(req, res)
+    console.log("Created paymentIntent for guest");
     return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
   }
+
+  console.log("Created paymentIntent");
+  //console.log(paymentIntent);
 
 
   // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
@@ -2198,13 +2206,13 @@ app.post("/finalizePurchase", async (req, res) => {
           const product = products.find(product => {return purchaseLineItem.productKey === product.productKey});
     
           //haiso_meisai
-          const deliveryDetails = {
+          const deliveryDetails = [{
             "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
             "shohin_code": product?.id || "なし",
             "shohin_name": product?.title || "なし",
             "suryo": purchaseLineItem.quantity,
             "chumon_meisai_no": purchaseLineItem.lineItemKey  
-          };
+          }];
     
           return {
             "shuka_date": formatDate(purchase.purchaseTime),
@@ -2216,7 +2224,7 @@ app.post("/finalizePurchase", async (req, res) => {
             "haiso_address1": address.ward || "なし",
             "haiso_address2": address.address2 || "なし",
             "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}` || "なし",
-            "haiso_meisai": [deliveryDetails]
+            "haiso_meisai": deliveryDetails
           }
         });
 
@@ -2246,8 +2254,6 @@ app.post("/finalizePurchase", async (req, res) => {
         const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
         console.log("backupResults");
         console.log(backupResults);
-
-        fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
         //#endregion
 
 
