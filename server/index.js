@@ -713,7 +713,7 @@ app.post('/sendWelcome', async (req, res) => {
 
 async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images) {
   console.log("░▒▓█ Hit sendOrderEmail. Time: " + CurrentTime());
-  console.dir(recipient, { depth: null, colors: true });
+  console.dir({recipient, purchase, addresses, lineItems, products, images}, { depth: null, colors: true });
 
   let transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -776,11 +776,12 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
 
   const uniqueAddressKeysSet = new Set();
   for (const item of lineItems) {
-    uniqueAddressKeysSet.add(item.productKey);
+    uniqueAddressKeysSet.add(item.addressKey);
   }
   const uniqueAddressKeys = Array.from(uniqueAddressKeysSet);
+  console.log(`uniqueAddressKeys: ${uniqueAddressKeys}`);
 
-  const billingAddress = addresses.find(addr => { return addr.addressKey === purchase.billingAddressKey}) || null;
+  const billingAddress = addresses.find(addr => { return addr.addressKey === purchase.addressKey}) || null;
   const billingAddressText = billingAddress ? `
     配送先住所<br/>
     ${billingAddress.lastName} ${billingAddress.firstName}<br/>
@@ -789,8 +790,13 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     ${billingAddress.address2}<br/>
     日本` : null;
 
-  const shippingAddressKey = uniqueAddressKeys.find(addr => { return addr.addressKey !== purchase.billingAddressKey});
-  const shippingAddress = shippingAddressKey ? addresses.find(addr => {addr.addressKey === shippingAddressKey}) || null : null;
+  const shippingAddressKey = uniqueAddressKeys.find(uAddrKey => { return uAddrKey !== purchase.addressKey});
+  console.log("shippingAddressKey: " + shippingAddressKey);
+
+  const shippingAddress = shippingAddressKey ? addresses.find(addr => {return addr.addressKey === shippingAddressKey}) || null : null;
+  console.log("shippingAddress");
+  console.log(shippingAddress);
+
   const shippingAddressText = shippingAddress ? `
     請求先住所<br/>
     ${shippingAddress.lastName} ${shippingAddress.firstName}<br/>
@@ -939,7 +945,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
 
               <table class="content" cellspacing="0" cellpadding="0">
               <tr>
-                <td>
+                <td style="padding: 2rem 0;">
                   お客様情報
                 </td>
               </tr>
@@ -952,7 +958,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 </td>
               </tr>
               <tr>
-                <td>
+                <td style="padding-top: 1rem;">
                   配送方法
                 </td>
               </tr>
@@ -2128,7 +2134,7 @@ app.post("/finalizePurchase", async (req, res) => {
           return({
             "chumon_meisai_no": lineItem.lineItemKey,
             "shohin_code": product?.id,
-            "shohin_name": product?.title,
+            "shohin_name": product?.title || "なし",
             "suryo": lineItem.quantity,
             //"tanka": Number(lineItem.unitPrice),
             "tanka": Math.round(Number(lineItem.unitPrice) * (1+Number(lineItem.taxRate))),
@@ -2194,22 +2200,22 @@ app.post("/finalizePurchase", async (req, res) => {
           //haiso_meisai
           const deliveryDetails = {
             "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
-            "shohin_code": product?.id,
-            "shohin_name": product?.title,
+            "shohin_code": product?.id || "なし",
+            "shohin_name": product?.title || "なし",
             "suryo": purchaseLineItem.quantity,
             "chumon_meisai_no": purchaseLineItem.lineItemKey  
           };
     
           return {
             "shuka_date": formatDate(purchase.purchaseTime),
-            "haiso_name": `${address.lastName} ${address.firstName}`,
-            "haiso_post_code": address.postalCode,
-            "haiso_pref_code": address.prefCode,
-            "haiso_pref": address.pref,
-            "haiso_city": address.city,
-            "haiso_address1": address.ward,
-            "haiso_address2": address.address2,
-            "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}`,
+            "haiso_name": `${address.lastName} ${address.firstName}` || "なし",
+            "haiso_post_code": address.postalCode || "なし",
+            "haiso_pref_code": address.prefCode || "なし",
+            "haiso_pref": address.pref || "なし",
+            "haiso_city": address.city || "なし",
+            "haiso_address1": address.ward || "なし",
+            "haiso_address2": address.address2 || "なし",
+            "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}` || "なし",
             "haiso_meisai": [deliveryDetails]
           }
         });
@@ -2221,7 +2227,7 @@ app.post("/finalizePurchase", async (req, res) => {
           "chumon_no": "NVP-" + purchase.purchaseKey,
           "chumon_no2": "NVP-" + purchase.purchaseKey,
           "chumon_date": formatDate(purchase.purchaseTime),
-          "konyu_name": `${customer.lastName} ${customer.firstName}`,
+          "konyu_name": `${customer.lastName} ${customer.firstName}` || "なし",
           "nebiki": 0,
           "soryo": 0,
           "zei1": Math.round(purchase.amount * (1/1.1)),
@@ -2230,16 +2236,18 @@ app.post("/finalizePurchase", async (req, res) => {
           "zei_ritsu2": 0,
           "zei3": 0,
           "zei_ritsu3": 0,
-          "konyu_mail_address": customer.email,
+          "konyu_mail_address": customer.email || "なし",
           "touroku_kbn": 0,
           "chumon_meisai": orderDetails,
-          "haiso": delivery
+          "haiso": delivery,
         }
         console.log("backupData (for order)");
-        console.dir(backupData, { depth: null });
+        console.dir(backupData, { depth: null, colors: true });
         const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
         console.log("backupResults");
         console.log(backupResults);
+
+        fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
         //#endregion
 
 
