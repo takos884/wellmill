@@ -12,6 +12,7 @@ import Footer from "./Footer";
 import Checkout from "./Checkout";
 import { LineItemAddressesArray, LineItemAddresses } from "../types";
 import NewAddress from "./NewAddress";
+import { prefectures } from "../Utilities/addressData";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -196,8 +197,8 @@ export default function Cart() {
 
 
   function HandleAddressSelectChange(lineItemKey: number, addressIndex: number | null, event: React.ChangeEvent<HTMLSelectElement>) {
-    if(!user?.customerKey) return;
-    if(!user?.token) return;
+    //if(!user?.customerKey) return;
+    //if(!user?.token) return;
 
     setErrorMessage(null);
 
@@ -385,9 +386,12 @@ export default function Cart() {
 
     const addressesLines = addressSplit ? addressState?.addresses?.map(oneAddress => {
       const address = addresses.find(ad => { return ad.addressKey === oneAddress.addressKey; });
+      console.log("address")
+      console.log(address)
       const addressOptions = addresses.map(addressOption => {
+        const prefectureName = prefectures.find(prefecture => prefecture.code === addressOption.prefCode)?.name || "";
         /* 〒${addressOption.postalCode} -  */
-        const addressLabel = `${addressOption.pref} ${addressOption.city} ${addressOption.ward} ${addressOption.address2} / ${addressOption.lastName} ${addressOption.firstName}`;
+        const addressLabel = `${prefectureName} ${addressOption.city} ${addressOption.ward || ""} ${addressOption.address2 || ""} / ${addressOption.lastName || ""} ${addressOption.firstName || ""}`;
         return (<option key={addressOption.addressKey} value={addressOption.addressKey || undefined}>{addressLabel}</option>)
       });
 

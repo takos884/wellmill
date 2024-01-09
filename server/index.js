@@ -1642,6 +1642,7 @@ async function GetCustomerDataFromCredentials(email, password) {
 
     // If no results, the email is not registered
     if (results.length === 0) {
+      console.log("メールアドレスとパスワードが一致しません 1")
       //return {error: "Email and Password pair not found"};
       return {error: "メールアドレスとパスワードが一致しません"};
     }
@@ -1655,13 +1656,16 @@ async function GetCustomerDataFromCredentials(email, password) {
     if (!match) {
       // TODO think about some login attempt limit
       //return {error: "Email and Password pair not found"};
+      console.log("メールアドレスとパスワードが一致しません 2")
       return {error: "メールアドレスとパスワードが一致しません"};
     }
 
     // Passwords match, now fetch the customer's cart
-    //console.log("Correct password");
+    console.log("Correct password, customer key: " + customerResults.customerKey);
 
     const customer = GetCustomerDataFromCustomerKey(customerResults.customerKey);
+    //console.dir(customer, { depth: null, colors: true });
+
 
     return customer;
   } catch (error) {
@@ -1704,6 +1708,7 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
 
     // If no results, the customer does not exist
     if (results.length === 0) {
+      console.log("Customer not found with customerKey");
       return {error: "Customer not found with customerKey"};
     }
 
@@ -1766,13 +1771,14 @@ async function GetPurchasesFromCustomerKey(customerKey) {
 
     const [purchases] = await pool.query(query, [customerKey]);
     const purchaseKeys = purchases.map(pur => { return pur.purchaseKey; })
+    const fallbackPurchaseKeys = purchaseKeys.length > 0 ? purchaseKeys : [-1];
 
     query = `
       SELECT *
       FROM lineItem
       WHERE purchaseKey IN (?);`
 
-    const [lineItems] = await pool.query(query, [purchaseKeys]);
+    const [lineItems] = await pool.query(query, [fallbackPurchaseKeys]);
 
     purchases.forEach((purchase) => {
       const purchaseKey = purchase.purchaseKey;

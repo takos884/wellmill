@@ -122,6 +122,14 @@ button.newAddress {
   align-self: center;
 }
 
+span.errorMessage {
+  text-align: center;
+  color: #800;
+  font-weight: bold;
+  position: relative;
+  top: -1.5rem;
+}
+
 span.cancelNewAddress {
   text-align: center;
   margin-bottom: 2rem;

@@ -45,7 +45,10 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
   };
 
   useEffect(() => {
-    if(!user) return;
+    if(!user) {
+      console.log("return on no user");
+      return;
+    }
 
     // From here, a customer cannot set item-specific addresses.
     // If an item-specific address (including mailing address and addressKey) is set, use that.
@@ -61,7 +64,8 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
       )
     );
 
-    if(!paymentIntentExists) {
+    if(!paymentIntentExists || true) {
+      console.log("paymentIntentExists: " + paymentIntentExists ? "true" : "false");
       createPaymentIntentFunction(cartLines, addressesState);
     }
 

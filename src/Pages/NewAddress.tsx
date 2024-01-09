@@ -22,6 +22,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
   const postalCodeRef = useRef(null);
   const [address, setAddress] = useState<Address>({defaultAddress: false});
   const [fetchingAddress, setFetchingAddress] = useState<Boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const currentAddress = addressKey ? user?.addresses?.find(address => address.addressKey === addressKey) : null;
 
@@ -140,6 +141,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
 
 
   function handleAddressChange(field: string, newValue: string | boolean) {
+    setErrorMessage(null);
     setAddress( (previousAddress: Address) => ({ ...previousAddress, [field]: newValue }) );
   }
 
@@ -191,6 +193,14 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
 
   async function sendAddress(e: React.FormEvent) {
     e.preventDefault();
+    if((address.firstName === undefined || address.firstName === "") && (address.lastName === undefined || address.lastName === "")) {
+      setErrorMessage("名前を入力してください");
+      return;
+    }
+    if(address.postalCode === undefined || address.postalCode < 10) {
+      setErrorMessage("有効な郵便番号を入力してください");
+      return;
+    }
 
     const addressData = {
       ...address,
@@ -260,6 +270,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
           </div>
 
           <button className={styles.newAddress} onClick={sendAddress}>{addressKey === null ? "住所を追加する" : "住所を保存する"}</button>
+          <span className={styles.errorMessage}>{errorMessage}</span>
           <span className={styles.cancelNewAddress} onClick={() => { setShowNewAddress(false); }}>キャンセルする</span>
         </form>
       </div>
