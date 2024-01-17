@@ -5,6 +5,7 @@
   "homepage": "/wellmill/",
   "proxy": "https://wellmill-test-api-mgmnt.azure-api.net",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
     "@shopify/shopify-api": "^8.0.2",
     "@stripe/react-stripe-js": "^2.3.2",
     "@stripe/stripe-js": "^2.1.11",

@@ -737,22 +737,22 @@ export const useUserData = (): UseUserDataReturnType => {
       //haiso_meisai
       const deliveryDetails = [{
         "haiso_meisai_no": purchaseLineItem.lineItemKey, // must be a number
-        "shohin_code": product?.id || "なし",
-        "shohin_name": product?.title || "なし",
+        "shohin_code": product?.id || "",
+        "shohin_name": product?.title || "",
         "suryo": purchaseLineItem.quantity,
         "chumon_meisai_no": purchaseLineItem.lineItemKey  
       }];
 
       return {
         "shuka_date": formatDate(purchase.purchaseTime),
-        "haiso_name": `${address.lastName} ${address.firstName}` || "なし",
-        "haiso_post_code": address.postalCode || "なし",
-        "haiso_pref_code": address.prefCode || "なし",
-        "haiso_pref": address.pref || "なし",
-        "haiso_city": address.city || "なし",
-        "haiso_address1": address.ward || "なし",
-        "haiso_address2": address.address2 || "なし",
-        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}` || "なし",
+        "haiso_name": `${address.lastName} ${address.firstName}` || "",
+        "haiso_post_code": address.postalCode || "",
+        "haiso_pref_code": address.prefCode || "",
+        "haiso_pref": address.pref || "",
+        "haiso_city": address.city || "",
+        "haiso_address1": address.ward || "",
+        "haiso_address2": address.address2 || "",
+        "haiso_renrakusaki": `${address.phoneNumber?.replace(/\D/g, '')}` || "",
         "haiso_meisai": deliveryDetails,
       }
     });
@@ -766,7 +766,7 @@ export const useUserData = (): UseUserDataReturnType => {
       "chumon_no": "NVP-" + purchase.purchaseKey,
       "chumon_no2": "NVP-" + purchase.purchaseKey,
       "chumon_date": formatDate(purchase.purchaseTime),
-      "konyu_name": `${defaultAddress?.lastName || ""} ${defaultAddress?.firstName || ""}` || "なし",
+      "konyu_name": `${defaultAddress?.lastName || ""} ${defaultAddress?.firstName || ""}` || "",
       "nebiki": 0,
       "soryo": 0,
       "zei1": Math.round(purchase.amount * (1/1.1)),
@@ -775,7 +775,7 @@ export const useUserData = (): UseUserDataReturnType => {
       "zei_ritsu2": 0,
       "zei3": 0,
       "zei_ritsu3": 0,
-      "konyu_mail_address": email || "なし",
+      "konyu_mail_address": email || "",
       "touroku_kbn": 0,
       "chumon_meisai": orderDetails,
       "haiso": delivery

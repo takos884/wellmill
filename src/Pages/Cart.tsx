@@ -142,8 +142,8 @@ export default function Cart() {
 
   function HandleAddressQuantityClick(lineItemKey: number, addressIndex: number, quantity:number) {
     if(quantity < 1 || quantity > 10) { return; }
-    if(!user?.customerKey) return;
-    if(!user?.token) return;
+    //if(!user?.customerKey) return;
+    //if(!user?.token) return;
 
     setAddressesState((prev) => {
       const lineItem = prev.find(li => li.lineItemKey === lineItemKey);
