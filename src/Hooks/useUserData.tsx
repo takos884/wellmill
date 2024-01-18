@@ -6,7 +6,7 @@ import { useProducts } from "../Contexts/ProductContext";
 
 import CallAPI from '../Utilities/CallAPI';
 
-import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase } from '../types';
+import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase, Image } from '../types';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 import { prefectures } from '../Utilities/addressData';
 
@@ -640,32 +640,7 @@ export const useUserData = (): UseUserDataReturnType => {
 
     purchase.addressKey = billingAddressKey;
 
-
-    //TODO this should be in useBackupDB, it's actually done on the server now
-    //#region send purchase to Azure
-    // We need to create a customer on the Azure servers before we can create a purchase
-    //const customerCode = "NV" + Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
-//    const customerCode = "NVGuest" + Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER - 1000002) + 1000001);
-//    await backupCustomerData(
-//      0, //customerKey: number,
-//      "", //token: string,
-//      customerCode, //kaiin_code: string,
-//      defaultAddress?.lastName || "", //kaiin_last_name: string,
-//      defaultAddress?.firstName || "", //kaiin_first_name: string,
-//      defaultAddress?.lastName || "", //kaiin_last_name_kana: string,
-//      defaultAddress?.firstName || "", //kaiin_first_name_kana: string,
-//      defaultAddress?.postalCode?.toString() || "", //post_code: string,
-//      defaultAddress?.prefCode?.toString() || "", //pref_code: string,
-//      defaultAddress?.pref || "", //pref: string,
-//      defaultAddress?.city || "", //city: string,
-//      defaultAddress?.ward || "", //address1: string,
-//      defaultAddress?.address2 || "", //address2: string,
-//      defaultAddress?.phoneNumber || "", //renrakusaki: string,
-//      email, //mail_address: string,
-//      0, //touroku_kbn: number,
-//      1, //seibetsu: number,
-//      "1900年01月01日", //seinengappi: string)
-//    )
+    const purchaseKey = purchase.purchaseKey;
 
 
     const orderDetails = purchaseLineItems.map(lineItem => {
@@ -780,6 +755,7 @@ export const useUserData = (): UseUserDataReturnType => {
       "chumon_meisai": orderDetails,
       "haiso": delivery
     }
+
     console.log("backupData (for order)");
     console.log(backupData);
 
@@ -788,14 +764,42 @@ export const useUserData = (): UseUserDataReturnType => {
     console.log(backupResults);
     //#endregion
 
+
+    //#region Order confirmation email
+    /*
+    // No need for uniqueness
+    const uniqueImageUrls = new Set<string>();
+    products.forEach(product => {
+      product.images.forEach(image => {
+        uniqueImageUrls.add(image.url);
+      });
+    });
+
+    const images = Array.from(uniqueImageUrls).map(url => {
+      const image = products.flatMap(product => product.images)
+                     .find(image => image.url === url);
+    });
+    */
+
+    const requestBody = {email: email, purchase: purchase, addresses: addresses, lineItems: purchase.lineItems, products: products};
+    console.log(requestBody);
+
+    const APIResponse = await CallAPI(requestBody, "sendOrderEmail");
+    if(APIResponse.error) {
+      console.log("Error in sendOrderEmail in useUserData:");
+      console.log(APIResponse);
+      return { data: null, error: APIResponse.error };
+    }
+    //#endregion
+
+
     const backupDataJSON = JSON.stringify(backupData);
     purchase.newPurchaseJson = backupDataJSON;
 
-    // Now that the purchase is finished, the cart is empty.
+    // Now that the purchase is finished, the cart must be emptied.
     // Whatever was in the cart is represented in the purchase
-    if(user) { user.cart.lines = [];}
-
     const userClone: Customer = JSON.parse(JSON.stringify(user));
+    userClone.cart.lines = [];
     UpdateUser(userClone);
     localStorage.setItem('userLocal', JSON.stringify(userClone));
     console.log(JSON.parse(localStorage.getItem('userLocal') || ""))

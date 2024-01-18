@@ -11,6 +11,10 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
 
+var smtpapi = require("smtpapi");
+const sgMail = require('@sendgrid/mail');
+const { send } = require('process');
+sgMail.setApiKey(process.env.SENDGRID_NODE_API_KEY)
 
 const app = express();
 app.use(cors());  // Enable CORS for all routes
@@ -632,7 +636,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Title -->
             <tr>
               <td align="left" style="font-size: 1.5rem; color: #000; padding: 1rem 0;">
-                ウェルミル（テストサイト）へようこそ!
+                ウェルミルへようこそ!
               </td>
             </tr>
             <!-- Message -->
@@ -697,7 +701,8 @@ app.post('/sendWelcome', async (req, res) => {
       html: emailHTML,
       attachments: [{
         filename: 'logo.png',
-        path: __dirname + '/logo.png',
+        //path: __dirname + '/logo.png',
+        path: process.env.BASE_URL + 'logo.png',
         cid: 'logo'
     }]
   };
@@ -712,8 +717,32 @@ app.post('/sendWelcome', async (req, res) => {
   }
 });
 
+app.post("/sendOrderEmail", async (req, res) => {
+  console.log("░▒▓█ Hit sendOrderEmail (API). Time: " + CurrentTime());
+  console.log(req.body);
+
+  const images = req.body.data.products.flatMap(product => {
+    const images = product.images;
+    images.forEach(image => { image.productKey = product.productKey; });
+    return images;
+  });
+
+  images.sort((a, b) => {
+    if (a.productKey < b.productKey) return -1;
+    if (a.productKey > b.productKey) return 1;
+    // If productKey is equal, sort by displayOrder
+    return a.displayOrder - b.displayOrder;
+  });
+
+  req.body.data.products.forEach(product => { delete product.images; });
+
+  sendOrderEmail(req.body.data.email, req.body.data.purchase, req.body.data.addresses, req.body.data.lineItems, req.body.data.products, images);
+
+  return res.json({ message: 'Email sent successfully' });
+});
+
 async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images) {
-  console.log("░▒▓█ Hit sendOrderEmail. Time: " + CurrentTime());
+  console.log("░▒▓█ Hit sendOrderEmail (function). Time: " + CurrentTime());
   console.dir({recipient, purchase, addresses, lineItems, products, images}, { depth: null, colors: true });
 
   let transporter = nodemailer.createTransport({
@@ -756,7 +785,8 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     console.dir(productImages, { depth: null, colors: true });
     console.dir(productImages[0].url.split("/").pop(), { depth: null, colors: true });
     const filename = productImages[0].url.split("/").pop();
-    const path = __dirname + "/../" + productImages[0].url;
+    //const path = __dirname + "/../" + productImages[0].url;
+    const path = process.env.BASE_URL + productImages[0].url;
     const cid = `Prod${productKey}`;
 
     return {
@@ -768,12 +798,54 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
 
   attachments.push({
     filename: 'logo.png',
-    path: __dirname + '/logo.png',
+    //path: __dirname + '/logo.png',
+    path: process.env.BASE_URL + 'logo.png',
     cid: 'logo'
   })
 
   console.log("attachments");
   console.dir(attachments, { depth: null, colors: true });
+
+  /*
+  const sendGridAttachments = uniqueProductKeys.map(productKey => {
+    const product = products.find(prod => { return prod.productKey === productKey});
+    if(!product) { console.log("No Product"); return null;}
+
+    const productImages = images.filter(img => img.productKey === productKey);
+
+    const filename = productImages[0].url.split("/").pop();
+    //const path = __dirname + "/../" + productImages[0].url;
+    const path = process.env.BASE_URL + productImages[0].url;
+    const imageBuffer = fs.readFileSync(path);
+
+    const extention = filename.split('.').pop().toLowerCase();
+    const contentType = (extention === 'jpeg' || extention === 'jpg') ? 'image/jpeg' : (extention === 'png') ? 'image/png' : 'application/octet-stream';
+
+    const cid = `Prod${productKey}`;
+
+    return {
+      filename: filename,
+      contentType: contentType,
+      cid: cid,
+      //content: imageBuffer,
+      content: imageBuffer.toString('base64'),
+    }
+  });
+
+  sendGridAttachments.push({
+    filename: 'logo.png',
+    contentType: 'image/png',
+    cid: 'logo',
+    //content: fs.readFileSync(__dirname + '/logo.png').toString('base64'),
+    content: fs.readFileSync(process.env.BASE_URL + 'logo.png').toString('base64'),
+  })
+
+  console.log("sendGridAttachments");
+  console.dir(sendGridAttachments, { depth: null, colors: true });
+  */
+
+  //const logo64 = fs.readFileSync(__dirname + '/logo.png').toString('base64');
+  //const logo64 = fs.readFileSync(process.env.BASE_URL + 'logo.png').toString('base64');
 
   const uniqueAddressKeysSet = new Set();
   for (const item of lineItems) {
@@ -787,7 +859,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     配送先住所<br/>
     ${billingAddress.lastName} ${billingAddress.firstName}<br/>
     〒${billingAddress.postalCode}<br/>
-    ${billingAddress.pref}${billingAddress.city}${billingAddress.ward}<br/>
+    ${prefectureNames.find(prefectureName => prefectureName.code == billingAddress.prefCode)?.name || ""}${billingAddress.city}${billingAddress.ward}<br/>
     ${billingAddress.address2}<br/>
     日本` : null;
 
@@ -802,7 +874,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     請求先住所<br/>
     ${shippingAddress.lastName} ${shippingAddress.firstName}<br/>
     〒${shippingAddress.postalCode}<br/>
-    ${shippingAddress.pref}${shippingAddress.city}${shippingAddress.ward}<br/>
+    ${prefectureNames.find(prefectureName => prefectureName.code == billingAddress.prefCode)?.name || ""}${shippingAddress.city}${shippingAddress.ward}<br/>
     ${shippingAddress.address2}<br/>
     日本` : null;
 
@@ -811,11 +883,13 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     const product = products.find(prod => { return prod.productKey === line.productKey});
     if(!product) return null;
     const lineCost = Math.round(parseInt(line.unitPrice) * (1+parseFloat(line.taxRate)) * parseInt(line.quantity));
+    //const productImageUrl = __dirname + images.find(img => { return img.productKey === line.productKey}).url;
+    const productImageUrl = process.env.BASE_URL + images.find(img => { return img.productKey === line.productKey}).url;
 
     return `
     <tr>
       <td style="width:20%;">
-        <img src="cid:Prod${line.productKey}" alt="Item #${line.productKey}" style="max-width: 100%; padding-bottom:1rem;">
+        <img src="${productImageUrl}" alt="Item #${line.productKey}" style="max-width: 100%; padding-bottom:1rem;">
       </td>
       <td style="width:60%; font-weight: bold; padding-left: 1rem;">
         <span>${product.title} × ${line.quantity}</span>
@@ -826,11 +900,14 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     </tr>
     `;
   }); 
+  //        <img src="cid:Prod${line.productKey}" alt="Item #${line.productKey}" style="max-width: 100%; padding-bottom:1rem;">
 
   console.log("emailLines");
   console.dir(emailLines, { depth: null, colors: true });
 
 
+  //const logoPath = __dirname + '/logo.png';
+  const logoPath = process.env.BASE_URL + 'logo.png';
 
   const emailHTML = `
     <html>
@@ -877,7 +954,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 <!-- Logo -->
                 <tr>
                   <td colspan="2" align="left" style="padding-top: 2rem;">
-                    <img src="cid:logo" alt="Logo" style="max-width: 100%;">
+                    <img src="${logoPath}" alt="Logo" style="max-width: 100%;">
                   </td>
                 </tr>
                 <tr>
@@ -1001,6 +1078,8 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     </html>
   `;
 
+  /*
+  // Works great, sends via gmail
   let mailOptions = {
     from: process.env.WELLMILL_EMAIL_ADDRESS, 
     to: recipient, 
@@ -1010,7 +1089,6 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
   };
 
   try {
-
     await transporter.sendMail(mailOptions);
     //return res.status(200).send('Email sent successfully');
   } catch (error) {
@@ -1018,8 +1096,26 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     console.error(errorMessage);
     //return res.status(500).send(errorMessage);
   }
+  */
 
+  const msg = {
+    to: recipient,
+    from: 'no-reply@well-mill.com',
+    subject: '【ウェルミル】ご注文内容の確認 注文番号：＃' + purchase.purchaseKey,
+    html: emailHTML,
+  };
+
+  sgMail
+  .send(msg)
+  .then(() => {
+    console.log('SendGrid email sent')
+  })
+  .catch((error) => {
+    console.error(error)
+  })
 }
+
+
 
 app.post('/sendPassword', async (req, res) => {
   console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
@@ -1175,7 +1271,8 @@ app.post('/sendPassword', async (req, res) => {
       html: emailHTML,
       attachments: [{
         filename: 'logo.png',
-        path: __dirname + '/logo.png',
+        //path: __dirname + '/logo.png',
+        path: process.env.BASE_URL + 'logo.png',
         cid: 'logo'
     }]
   };

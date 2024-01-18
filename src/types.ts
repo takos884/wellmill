@@ -34,10 +34,10 @@ export type Product = {
     price: number,
     taxRate: number,
     type: number,
-    images: image[]
+    images: Image[]
 }
 
-type image = {
+export type Image = {
     imageKey: number,
     productKey: number,
     url: string,
