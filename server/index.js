@@ -585,6 +585,7 @@ app.post('/sendWelcome', async (req, res) => {
       </body>
   </html>
   `;
+  const logoPath = process.env.BASE_URL + 'logo.png';
 
   const emailHTML = `
 <html>
@@ -630,7 +631,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Logo -->
             <tr>
               <td align="left" style="padding-top: 2rem;">
-                <img src="cid:logo" alt="Logo" style="max-width: 100%;">
+                <img src="${logoPath}" alt="Logo" style="max-width: 100%;">
               </td>
             </tr>
             <!-- Title -->
@@ -694,6 +695,8 @@ app.post('/sendWelcome', async (req, res) => {
 </html>
 `;
 
+  /*
+  // Works great, sends via gmail
   let mailOptions = {
       from: process.env.WELLMILL_EMAIL_ADDRESS, 
       to: recipient, 
@@ -715,6 +718,26 @@ app.post('/sendWelcome', async (req, res) => {
       console.error(errorMessage);
       return res.status(500).send(errorMessage);
   }
+  */
+
+  const msg = {
+    to: recipient,
+    from: 'no-reply@well-mill.com',
+    subject: '【ウェルミル】お客様アカウントの確認',
+    html: emailHTML,
+  };
+
+  sgMail
+  .send(msg)
+  .then(() => {
+    console.log('SendGrid welcome email sent')
+    return res.json({ message: 'Email sent successfully' });
+  })
+  .catch((error) => {
+    console.error(error)
+    return res.status(500).send('Error sending email');
+  })
+
 });
 
 app.post("/sendOrderEmail", async (req, res) => {
@@ -1108,7 +1131,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
   sgMail
   .send(msg)
   .then(() => {
-    console.log('SendGrid email sent')
+    console.log('SendGrid order email sent')
   })
   .catch((error) => {
     console.error(error)

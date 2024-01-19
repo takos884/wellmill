@@ -190,6 +190,7 @@ function Signup() {
       userData.customerKey = parseInt(response.data.customerKey);
       userData.token = response.data.token;
       userData.code = response.data.code;
+      userData.guest = false;
 
       if(userData.token) {
         //console.log(`Going to login with token: ${userData.token}`);
@@ -205,7 +206,14 @@ function Signup() {
 
       await sendWelcomeEmail(inputs.email);
 
-      setTimeout(() => { navigate('/new-customer'); }, 500);
+      // Ideally, I wouldn't need a reload after signing up, but it's so much simpler to just reload the page and force a new token login
+      setTimeout(() => {
+        navigate('/new-customer');
+        // Adding an additional delay before reload
+        setTimeout(() => {
+           window.location.reload();
+        }, 200);
+      }, 500);
     }
   }
 
