@@ -426,7 +426,7 @@ export default function Cart() {
       <>
         <div key={line.lineItemKey} className={styles.lineItem}>
           <div className={styles.lineItemLeft}>
-            <img src={topImage.url} className={styles.lineItem} alt={product.title}/>
+            <img src={topImage?.url ? topImage.url : undefined} className={styles.lineItem} alt={product.title}/>
             <div className={styles.description}>
               <span className={styles.title}>{product.title}</span>
               <span className={styles.descriptionPrice}>{unitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}（税込）</span>

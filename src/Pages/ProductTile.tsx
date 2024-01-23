@@ -20,7 +20,7 @@ function ProductTile({ Product: product }: ProductTileProps) {
     return(
         <Link to={`/shop/${product.productKey}`}>
             <div className={styles.product}>
-                <img className={styles.productImage} src={topImage.url} alt={`Product #${product.productKey}`} />
+                <img className={styles.productImage} src={topImage?.url ? topImage?.url : undefined} alt={`Product #${product.productKey}`} />
                 <span className={styles.productDescription}>{product.title}</span>
                 <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
             </div>

@@ -111,9 +111,18 @@ export default function PurchaseDetails() {
 
 
   async function HandleCancelOrder() {
-    if(!user?.customerKey) { return null; }
-    if(!user?.token) { return null; }
+    if(!user) { return null; }
+    if(!user.customerKey) { return null; }
+    if(!user.token) { return null; }
     if(userLoading) { return null; }
+
+    const purchase = user.purchases.find(pur => {return pur.purchaseKey === purchaseKey});
+    if(!purchase) { return null; }
+
+    if(purchase.lineItems.length === 0) { return null; }
+    if(purchase.lineItems.length > 1) {
+      if(!window.confirm("複数の商品を含むご注文をキャンセルすると、すべての商品がキャンセルされます。 続く？")) { return null; }
+    }
 
     const returnedCustomer = await cancelPurchase(purchaseKey);
     console.log("Customer returned after canceling order:");

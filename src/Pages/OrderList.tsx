@@ -61,7 +61,7 @@ function OrderList() {
 
 
   // The header is created if there's a list if lineItems
-  const purchaseLinesHeader = (purchases?.length) && (purchases?.length > 0) && (
+  const purchaseLinesHeader = (purchases?.length && (purchases?.length > 0)) ? (
     <div className={styles.lineItem}>
       <span>注文番号</span>
       <span>注文日</span>
@@ -69,7 +69,7 @@ function OrderList() {
       <span>発送ステータス</span>
       <span>合計金額</span>
     </div>
-  )
+  ) : null;
 
   const purchaseLines = purchases.map(purchase => {
     const purchaseKey = purchase.purchaseKey;

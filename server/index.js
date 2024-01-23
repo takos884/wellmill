@@ -1547,6 +1547,33 @@ app.post('/cancelPurchase', async (req, res) => {
     return res.status(500).send('Purchase not found');
   }
 
+  try {
+    query = `SELECT paymentIntentId FROM purchase WHERE purchaseKey = ?`;
+    const [paymentIntentIds] = (await pool.query(query, [purchaseKey]));
+
+    if (paymentIntentIds.length > 0) {
+      const paymentIntentId = paymentIntentIds[0].paymentIntentId;
+      // Payment exists, use the paymentIntentId to cancel the payment
+      try {
+        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' });
+        console.log("refund done");
+        console.log(refund);  
+      } catch (error) {
+        console.log("refund failed");
+        console.dir(error, { depth: null, colors: true });
+        return res.status(500).send('Stripe refund failed');
+      }
+    } else {
+      console.log("paymentIntentIds.length > 0 failed when selecting paymentIntentId using purchaseKey: " + purchaseKey);
+      return res.status(400).send('Payment not found');
+    }  
+  } catch (error) {
+    console.log("query failed when selecting paymentIntentId using purchaseKey: " + purchaseKey + ", error:");
+    console.dir(error, { depth: null, colors: true });
+    return res.status(500).send('Payment not found');
+  }
+
+
 
 
   // Get updated customer data
