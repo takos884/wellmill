@@ -71,7 +71,8 @@ function Product() {
     const productImages = currentProduct?.images.map((image, index) => (
       <img
         key={image.imageKey}
-        src={image.url.replace(/\\/g, "")}
+        //src={image.url.replace(/\\/g, "")}
+        src={`/${image.url}`}
         className={styles.productImage}
         alt={`Product ${index}`}
         style={index === 0 ? { gridColumn: 'span 2' } : {}}
@@ -89,7 +90,7 @@ function Product() {
       </>
     )
 
-    const spinner = <img className={styles.spinner} src="spinner.svg" alt="Spinner"/>;
+    const spinner = <img className={styles.spinner} src="/spinner.svg" alt="Spinner"/>;
     const checkoutButtonContent = cartLoading ? spinner : "カートに入れる";
   
     const questionsNode = (

@@ -17,7 +17,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     const { user, cartLoading, userMeaningful, guest } = useContext(UserContext);
     const cart = user ? user.cart : undefined;
 
-    const spinner = <img className={styles.cartDotSpinnerSpinner} src="spinner.svg" alt="Spinner"/>;
+    const spinner = <img className={styles.cartDotSpinnerSpinner} src="/spinner.svg" alt="Spinner"/>;
     const cartDotContent = cartLoading ? spinner : cart?.quantity;
     const cartDot = (cart && cart.quantity > 0) ? <span className={styles.cartDot}>{cartDotContent}</span> : null
     const headerButton = (
@@ -57,7 +57,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
     return (
         <>
             <div className={styles.header}>
-                <div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="logo.svg" alt="Logo" /></Link></div>
+                <div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="/logo.svg" alt="Logo" /></Link></div>
                 {false && (<span>{user?.customerKey ? user?.customerKey : "-"}</span>)}
                 {false && (<span>{user?.addresses.length ? user?.addresses.length : "-"}</span>)}
                 <div className={styles.navItems}>
@@ -66,7 +66,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
                     <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
                     {headerButton}
                     <div className={`${styles.navItem} ${styles.cart}`}>
-                        <Link to="/cart"><img className={styles.cart} src="cart.png" alt="Cart" />{cartDot}</Link>
+                        <Link to="/cart"><img className={styles.cart} src="/cart.png" alt="Cart" />{cartDot}</Link>
                     </div>
                     {hamburgerIcon}
                 </div>

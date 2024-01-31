@@ -46,7 +46,7 @@ function Home() {
   return(
     <>
       <div className={styles.homeHeader}>
-        <div className={styles.homeHeaderLogo} onClick={resetIframe} style={{opacity: (showMenu ? 0 : 1)}}><img className={styles.homeHeaderLogo} src="logo.svg" alt="Logo" /></div>
+        <div className={styles.homeHeaderLogo} onClick={resetIframe} style={{opacity: (showMenu ? 0 : 1)}}><img className={styles.homeHeaderLogo} src="/logo.svg" alt="Logo" /></div>
         {hamburgerIcon}
       </div>
       <div className={styles.headerWrapper}>

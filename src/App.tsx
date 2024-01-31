@@ -74,7 +74,7 @@ function App() {
   return (
     <ProductProvider>
       <UserProvider>
-        <BrowserRouter basename="/wellmill">
+        <BrowserRouter basename={process.env.REACT_APP_BASENAME}>
           <Layout />
         </BrowserRouter>
       </UserProvider>

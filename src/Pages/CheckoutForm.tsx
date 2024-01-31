@@ -111,7 +111,8 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+      //confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+      confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
     });
 
     // This point will only be reached if there is an immediate error when
@@ -163,7 +164,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
         const lineCost = lineUnitCost * line.quantity;
         return(
           <div className={styles.checkoutLine}>
-            <img className={styles.checkoutLine} src={product.images[0].url} />
+            <img className={styles.checkoutLine} src={"/" + product.images[0].url} />
             <div className={styles.lineText}>
               <span className={styles.lineDescription}>{product.title}</span>
               <span className={styles.lineUnitCost}>{lineUnitCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>

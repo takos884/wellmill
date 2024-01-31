@@ -1,6 +1,7 @@
 export default async function CallAPI(data:object, endpoint: string) {
   const requestBody = JSON.stringify({data: data});
   try {
+    const ApiEndpoint = process.env.API_ENDPOINT
     const response = await fetch(`https://cdehaan.ca/wellmill/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', },

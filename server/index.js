@@ -3,7 +3,6 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
@@ -11,9 +10,14 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
 
-var smtpapi = require("smtpapi");
+//const fetch = require('node-fetch');
+let fetch;
+
+(async () => {
+  fetch = (await import('node-fetch')).default;
+})();
+
 const sgMail = require('@sendgrid/mail');
-const { send } = require('process');
 sgMail.setApiKey(process.env.SENDGRID_NODE_API_KEY)
 
 const app = express();
@@ -33,9 +37,11 @@ const pool = mysql.createPool({
 
 
 
-const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
-const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
-const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
+// const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
+// const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
+//const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
+const PRODUCTS_FILE_PATH = path.join(__dirname, 'products.json');
+ const ORDER_BACKUP_FILE_PATH = path.join(__dirname, 'order-WindsorAction.json');
 
 // used for both creating a file, and calculating cart totals
 let products = {};

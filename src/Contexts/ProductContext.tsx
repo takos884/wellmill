@@ -36,7 +36,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/wellmill/products.json');
+        //const response = await fetch('/wellmill/products.json');
+        const response = await fetch('/products.json');
         if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
         const rawResponse = await response.json();
 

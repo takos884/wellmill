@@ -22,9 +22,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-.env
+.env*
 
 commands.txt
+New Ubuntu Commands.txt
 products.json
 customers.json
 storefront_access_token.json
