@@ -40,7 +40,7 @@ function Contact() {
     event.preventDefault();
 
     try {
-        const response = await fetch('https://cdehaan.ca/wellmill/api/sendEmail', {
+        const response = await fetch('https://stage.well-mill.com/api/sendEmail', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

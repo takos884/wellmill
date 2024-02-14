@@ -26,7 +26,7 @@ export default function PasswordRecover() {
 
   async function sendPasswordEmail(recipient: string) {
     try {
-        const response = await fetch('https://cdehaan.ca/wellmill/api/sendPassword', {
+        const response = await fetch('https://stage.well-mill.com/api/sendPassword', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

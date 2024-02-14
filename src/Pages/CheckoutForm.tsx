@@ -111,7 +111,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
 
     const { error } = await stripe.confirmPayment({
       elements,
-      //confirmParams: { return_url: `https://cdehaan.ca/wellmill/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+      //confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
       confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
     });
 

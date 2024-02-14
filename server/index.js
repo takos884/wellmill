@@ -40,8 +40,8 @@ const pool = mysql.createPool({
 // const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
 // const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
 //const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
-const PRODUCTS_FILE_PATH = path.join(__dirname, 'products.json');
- const ORDER_BACKUP_FILE_PATH = path.join(__dirname, 'order-WindsorAction.json');
+const PRODUCTS_FILE_PATH = path.join('/var/www/wellmill/products.json');
+const ORDER_BACKUP_FILE_PATH = path.join('/var/www/wellmill/order-WindsorAction.json');
 
 // used for both creating a file, and calculating cart totals
 let products = {};
@@ -576,7 +576,7 @@ app.post('/sendWelcome', async (req, res) => {
           <img src="cid:logo" alt="Logo">
           <span style="font-size: 1.5rem; display: flex; margin-top: 1rem;">ウェルミル（デストサイト）へようこそ!</span>
           <span style="color: #444; display: flex; margin: 1rem 0;">会員登録いただきありがとうございます。引き続きお買い物をお楽しみください。</span>
-          <a href="https://cdehaan.ca/wellmill/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
+          <a href="https://stage.well-mill.com/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
           </div>
         </div>
         <hr/>
@@ -655,7 +655,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 2rem 1rem;">
-                <a href="https://cdehaan.ca/wellmill/shop" class="button" style="color: #FFFFFF">
+                <a href="https://stage.well-mill.com/shop" class="button" style="color: #FFFFFF">
                   ショップにアクセスする
                 </a>
               </td>
@@ -1006,12 +1006,12 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 <!-- Button -->
                 <tr style="font-size: 1.25rem;">
                   <td align="left" style="width: 200px; padding: 2rem 1rem;">
-                    <a href="https://cdehaan.ca/wellmill/account" class="button" style="color: #FFFFFF;">
+                    <a href="https://stage.well-mill.com/account" class="button" style="color: #FFFFFF;">
                       注文を表示する
                     </a>
                   </td>
                   <td style="width: 400px;">
-                    または<a href="https://cdehaan.ca/wellmill/shop" style="color: #FFA500;">ショップにアクセスする</a>
+                    または<a href="https://stage.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
                   </td>
                 </tr>
                 <tr>
@@ -1246,7 +1246,7 @@ app.post('/sendPassword', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 1rem 0;">
-                <a href="https://cdehaan.ca/wellmill/login" class="button" style="color: #FFFFFF">
+                <a href="https://stage.well-mill.com/login" class="button" style="color: #FFFFFF">
                   今すぐサインイン
                 </a>
               </td>

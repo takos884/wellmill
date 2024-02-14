@@ -441,7 +441,7 @@ export default function Cart() {
             <span className={styles.quantityTrash} onClick={() => {HandleRemoveClick(line.lineItemKey)}}>🗑</span>
           </div>
           <span className={styles.lineCost}>{lineCost.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span>
-          <span className={styles.splitToggle} onClick={() => HandleSplitToggleClick(line.lineItemKey)}>{addressSplit ? "配送先を削除" : "複数の配送先を指定する" }</span>
+          {((cart && cartQuantity > 1) || addressSplit) && <span className={styles.splitToggle} onClick={() => HandleSplitToggleClick(line.lineItemKey)}>{addressSplit ? "配送先を削除" : "複数の配送先を指定する" }</span>}
           <div className={styles.addressLines}>
             {addressesLines}
             {(addressesLines && addressesLines.length < totalQuantity) ? addAddress : null}

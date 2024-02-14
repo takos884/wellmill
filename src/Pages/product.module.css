@@ -134,6 +134,10 @@ button.addToCart {
     border-radius: 0.5rem;
 }
 
+button.viewCart {
+    background-color: #fb4600;
+}
+
 img.spinner {
   height: 2rem;
   filter: invert(100%);

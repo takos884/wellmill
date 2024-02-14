@@ -26,7 +26,9 @@ function Shop() {
         {productsLoading && <p>Loading...</p>}
         {productsError && <p>Error: {productsError}</p>}
         <div className={styles.productGrid}>
-          {products?.map(product => (
+          {products?.
+          filter(product => product.available === true).
+          map(product => (
             <div key={product.productKey}>
               <ProductTile Product={product} />
             </div>

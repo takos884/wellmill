@@ -219,7 +219,7 @@ function Signup() {
 
   async function sendWelcomeEmail(recipient: string) {
     try {
-        const response = await fetch('https://cdehaan.ca/wellmill/api/sendWelcome', {
+        const response = await fetch('https://stage.well-mill.com/api/sendWelcome', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
