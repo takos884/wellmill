@@ -13,14 +13,20 @@ img.productImage {
 }
 
 span.productDescription {
-    color: #5c5352;
+    color: #413a3a;
     font-size: 1.3rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
 
-span.productPrice {
-    color: #5c5352;
+span.productPriceNoTax {
+    color: #413a3a;
     font-size: 1.3rem;
+    font-weight: bold;
+}
+
+span.productPriceWithTax {
+    color: #5c5352;
+    font-size: 1rem;
     font-weight: bold;
 }

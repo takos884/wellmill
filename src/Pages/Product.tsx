@@ -27,6 +27,7 @@ function Product() {
 
     const currentProduct = products?.find(p => p.productKey === productIdNum);
     const otherProducts = products?.filter(p => p.productKey !== productIdNum);
+    const priceWithoutTax = currentProduct ? Math.round(currentProduct.price) : 0;
     const taxIncludedPrice = currentProduct ? Math.round(currentProduct.price * (1+currentProduct.taxRate)) : 0;
 
     // pre-loads spinner so it shows right away
@@ -137,32 +138,111 @@ function Product() {
         {currentProduct?.type === 2 && (
           <>
             <details>
-              <summary>どれくらいの時間がかかりますか？</summary>
-              <p>この検査はわずか2分で完了します。非常に正確で、利用者にとっても簡単な手順で行えるため、時間をかけずに重要な情報を提供します。当キットは最新の技術を使用しており、迅速かつ正確な結果を保証します。日常の忙しさの中でも、この検査を簡単に行うことができます。</p>
+              <summary>採血条件について</summary>
+              <ul>
+                <li>月経のあるある方は月経開始日を1日目として3～5日目の間に採血を行ってください。</li>
+                <li>月経の不安定な方、月経の無い方についてはいつでも採血可能です。</li>
+              </ul>
+            </details>
+            <details>
+              <summary>投薬による検査数値の影響</summary>
+              <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、低用量ピル等のホルモン剤を使用されていると、検査数値が基準範囲から逸脱する場合がございますのでご了承ください。</p>
+            </details>
+            <details>
+              <summary>検査結果について</summary>
+              <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
             </details>
           </>
         )}
         {currentProduct?.type === 3 && (
           <>
-            <details>
-              <summary>どのくらいの時間がかかりますか？</summary>
-              <p>この検査はご自宅で簡単に10分以内に完了します。採取したサンプルは、専門のラボで分析され、信頼性の高い結果を提供します。</p>
-            </details>
-          </>
+          <details>
+            <summary>採血条件について</summary>
+            <p>採血条件は特にありません。<br/>※このキット大人の方を対象にした商品です。</p>
+          </details>
+          <details>
+            <summary>投薬による検査数値の影響</summary>
+            <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、日頃ご使用のお薬によっては検査数値に影響があるものもございますので、ご了承ください。</p>
+          </details>
+          <details>
+            <summary>検査結果について</summary>
+            <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
+          </details>
+        </>
         )}
         {currentProduct?.type === 4 && (
           <>
             <details>
-              <summary>不妊チェック検査の所要時間は？</summary>
-              <p>この検査キットは自宅での簡単な手順で、約15分で完了します。迅速かつ正確な分析により、不妊に関する貴重な洞察を提供します。</p>
+              <summary>採血条件について</summary>
+              <p>月経開始日を1日目として、3～5日目の間に採血してください。</p>
+            </details>
+            <details>
+              <summary>投薬による検査数値の影響</summary>
+              <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、低用量ピル等のホルモン剤を使用されていると、検査数値が基準範囲から逸脱する場合がございますのでご了承ください。</p>
+            </details>
+            <details>
+              <summary>検査結果について</summary>
+              <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
             </details>
           </>
         )}
         {currentProduct?.type === 5 && (
           <>
             <details>
-              <summary>唾液検査はどのように行いますか？</summary>
-              <p>唾液検査は非常に簡単で、自宅で快適に行うことができます。検査キットに含まれる指示に従い、唾液サンプルを採取して専用の容器に入れます。このプロセスは数分で完了し、サンプルは専門ラボで分析されます。唾液検査は非侵襲的で、日常生活に影響を与えることなく、正確なホルモンレベルや健康状態の評価を提供します。</p>
+              <summary>唾液の採取条件について</summary>
+              <ul>
+                <li>唾液を採取する前30分間は、水やガムを含む飲食、喫煙、歯磨きなどを避けてください。</li>
+                <li>午前中(8-11時)に採取を行ってください。</li>
+              </ul>
+            </details>
+            <details>
+              <summary>投薬による検査数値の影響</summary>
+              <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、普段ご使用のお薬によっては検査数値に影響を及ぼすものもございますのでご了承ください。</p>
+            </details>
+            <details>
+              <summary>検査結果について</summary>
+              <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
+            </details>
+          </>
+        )}
+        {currentProduct?.type === 6 && (
+          <>
+            <details>
+              <summary>唾液の採取条件について</summary>
+              <ul>
+                <li>液を採取する前30分間は、水やガムを含む飲食、喫煙、歯磨きなどを避けてください</li>
+                <li>月経開始日を1日目として、3～5日目に唾液採取を行ってください。</li>
+                <li>月経が不安定な方、月経が無い方はいつでも採取いただけます。</li>
+              </ul>
+            </details>
+            <details>
+              <summary>投薬による検査数値の影響</summary>
+              <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、普段ご使用のお薬によっては検査数値に影響を及ぼすものもございますのでご了承ください。</p>
+            </details>
+            <details>
+              <summary>検査結果について</summary>
+              <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
+            </details>
+          </>
+        )}
+        {currentProduct?.type === 7 && (
+          <>
+            <details>
+              <summary>唾液の採取条件について</summary>
+              <ul>
+                <li>唾液を採取する前30分間は、水やガムを含む飲食、喫煙、歯磨きなどを避けてください。</li>
+                <li>午前中(8-11時)に採取を行ってください。</li>
+                <li>月経開始日を1日目として、3～5日目に採取を行ってください。</li>
+                <li>月経の無い方は、採取日についての指定はございません。</li>
+              </ul>
+            </details>
+            <details>
+              <summary>投薬による検査数値の影響</summary>
+              <p>本検査は、投薬していない成人データをもとに検査を行っております。そのため、普段ご使用のお薬によっては検査数値に影響を及ぼすものもございますのでご了承ください。</p>
+            </details>
+            <details>
+              <summary>検査結果について</summary>
+              <p>検査結果は、弊社に血液が届いてから2週間を目安メールにてお渡しいたします。検体の受付状況によっては多少日数が前後いたしますので、ご了承ください。もし検査結果のご連絡が届かない場合は迷惑メールボックス等をご確認いただいた上で、ウェルミルWEBサイトのお問い合わせフォーム(お問い合わせURL)よりご連絡ください。<br/>検査結果シートの郵送対応は行っておりません。</p>
             </details>
           </>
         )}
@@ -211,7 +291,8 @@ function Product() {
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>
             <span className={styles.productDescription}>{currentProduct?.title}</span>
-            <span className={styles.productPrice}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
+            <span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span>
+            <span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
             数量{quantityNode}
             {actionButton}
             <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.description || '' }} />

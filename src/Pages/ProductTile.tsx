@@ -9,7 +9,8 @@ function ProductTile({ Product: product }: ProductTileProps) {
     if(!product) { return null; }
 
     // Full price = Base price * (1 + tax rate)
-    const taxIncludedPrice = product.price ? Math.round(product.price * (1+product.taxRate)) : null;
+    const priceWithoutTax = product.price ? Math.round(product.price) : 0;
+    const taxIncludedPrice = product.price ? Math.round(product.price * (1+product.taxRate)) : 0;
 
     //Find the image with the lowest displayOrder value's URL (Works, but the next way is easier for me to understand)
     //const topImageUrl = product.images.reduce((prev, current) => { return (prev.displayOrder < current.displayOrder) ? prev : current; }).url;
@@ -22,7 +23,8 @@ function ProductTile({ Product: product }: ProductTileProps) {
             <div className={styles.product}>
                 <img className={styles.productImage} src={topImage?.url ? `/${topImage.url}` : undefined} alt={`Product #${product.productKey}`} />
                 <span className={styles.productDescription}>{product.title}</span>
-                <span className={styles.productPrice}>¥{taxIncludedPrice} (税込)</span>
+                <span className={styles.productPriceNoTax}>¥{priceWithoutTax} (税抜)</span>
+                <span className={styles.productPriceWithTax}>¥{taxIncludedPrice} (税込)</span>
             </div>
         </Link>
     )
