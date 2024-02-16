@@ -23,8 +23,8 @@ function ProductTile({ Product: product }: ProductTileProps) {
             <div className={styles.product}>
                 <img className={styles.productImage} src={topImage?.url ? `/${topImage.url}` : undefined} alt={`Product #${product.productKey}`} />
                 <span className={styles.productDescription}>{product.title}</span>
-                <span className={styles.productPriceNoTax}>¥{priceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span>
-                <span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span>
+                <span className={styles.productPriceNoTax}>{priceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span>
+                <span className={styles.productPriceWithTax}>{taxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span>
             </div>
         </Link>
     )
