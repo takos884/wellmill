@@ -1,4 +1,5 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { useSearchParams } from 'react-router-dom';
 import { UserContext } from "../Contexts/UserContext";
 import { Link } from "react-router-dom";
 import Header from "./Header";
@@ -16,9 +17,12 @@ const breadcrumbs = [
 
 
 function SampleRegistration() {
-  const { user } = useContext(UserContext);
+  const { user, userLoading } = useContext(UserContext);
   const [researchAgreement, setResearchAgreement] = useState(true);
   const [kentaiId, setKentaiId] = useState(''); //W2023022001000
+  const [kentaiIdLock, setKentaiIdLock] = useState(false);
+
+  const [searchParams] = useSearchParams();
 
   const now = new Date();
   now.setTime(now.getTime() + 9*60*60*1000); // Japan timezone = +9h
@@ -27,9 +31,23 @@ function SampleRegistration() {
   // sad to use 'any', but I don't know what the server will return
   const { backupSampleData, data: sampleBackupData, error: sampleBackupError } = useBackupDB<any>();
 
+  console.log("User");
+  console.log(user);
+
+  useEffect(() => {
+    const sampleId = searchParams.get('sample') || searchParams.get('sampleId');
+
+    if (sampleId) {
+      console.log(`Sample ID from query: ${sampleId}`);
+      localStorage.setItem('sampleID', sampleId);
+      setKentaiId(sampleId);
+      setKentaiIdLock(true);
+    }
+  }, [searchParams]);
+
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
-  
+
     switch (name) {
       case 'kentaiId':       setKentaiId(value);       break;
       case 'kentaiSaishubi': setKentaiSaishubi(value); break;
@@ -79,9 +97,33 @@ function SampleRegistration() {
     <span className={styles.unknownIdSmallPrint}>数回登録を試みても登録がうまくいかない場合は<Link to="/contact" style={{textDecoration: "underline"}}>お問い合わせ</Link>ください</span>
   </div>) : null;
 
-  console.dir(sampleBackupData);
+  //console.dir(sampleBackupData);
+
+  const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
+  const forceSigninMessage = `テストを登録するには<br/>サインインする必要があります`;
+
+  const forceAddress = (!userLoading && user?.addresses.length === 0 && kentaiIdLock);
+  const forceAddressMessage = `テストを登録するには<br/>住所を登録する必要があります`;
+
+  const forceModal = (
+    <div className={styles.backdrop}>
+      <div className={styles.modal}>
+        <img className={styles.modalImg} src="Pencil.png" alt="Pencil" />
+        <span className={styles.modalSpan}>{forceSignin ? forceSigninMessage : forceAddress ? forceAddressMessage : null}</span>
+        <div className={styles.modalLinks}>
+          <Link to="/sample-registration" onClick={() => {setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>
+          {
+            forceSignin ? <Link to="/login"><span className={styles.modalLinkPrimary}>サインイン</span></Link> :
+            forceAddress ? <Link to="/address"><span className={styles.modalLinkPrimary}>住所を登録</span></Link> : null
+          }
+        </div>
+      </div>
+    </div>
+  );
+
   return(
     <>
+      {forceSignin && forceModal}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">検体IDの登録</span>
@@ -91,7 +133,7 @@ function SampleRegistration() {
         <span className={styles.subHeader2}>（IDが一致しているか念の為ご確認ください）</span>
         <img src="registerQR.jpg" alt="Sample QR code"/>
         <span className={styles.inputHeader}>検体ID<span className={styles.required}>必須</span></span>
-        <input type="text" value={kentaiId} name="kentaiId" onChange={handleInputChange} />
+        <input type="text" value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />
         {unknownId}
         <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
         <input type="date" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange}></input>

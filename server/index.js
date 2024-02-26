@@ -1268,7 +1268,7 @@ app.post('/generateReceipt', async (req, res) => {
   doc.fontSize(10).text("購入時間:", 50, 145);
   doc.fontSize(10).text(formattedPurchaseTime, 100, 145);
   doc.text("住所:", 50, 165);
-  doc.text(`${addressSource.lastName}, ${addressSource.firstName}`, 100, 165);
+  doc.text(`${addressSource.lastName}, ${addressSource.firstName}様`, 100, 165);
   doc.text(`${addressSource.pref} ${addressSource.city} ${addressSource.ward} ${addressSource.address2}`, 100, 180);
   doc.text(`〒${addressSource.postalCode.slice(0, 3)}-${addressSource.postalCode.slice(3)}`, 100, 195);
   doc.text(`${addressSource.phoneNumber}`, 100, 210);
@@ -1339,10 +1339,11 @@ app.post('/generateReceipt', async (req, res) => {
   doc.text(`¥${totalWithTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithTax.toString()) - leftPadding, currentY);
   
 
-  const footerLeft = `#${purchaseKey} - 領収書は ${formattedCreationTime} に生成されました`;
-  const footerRight = "© 2024 www.well-mill.com";
-  doc.fontSize(10).text(footerLeft, 50, doc.page.height - 45);
-  doc.fontSize(10).text(footerRight, doc.page.width-50 - doc.widthOfString(footerRight), doc.page.height - 45);
+  const footerAddress = "株式会社リプロセル\nウェルミルサービス事業\n〒222-0033\n神奈川県横浜市港北区新横浜三丁目8-11\nメットライフ新横浜ビル9階"
+  const footerRight = `#${purchaseKey} - 領収書は ${formattedCreationTime} に生成されました`;
+  //const footerRight = "© 2024 www.well-mill.com";
+  doc.fontSize(10).text(footerAddress, 50,                                                 doc.page.height - 45 - doc.heightOfString(footerRight));
+  doc.fontSize(10).text(footerRight,   doc.page.width-50 - doc.widthOfString(footerRight), doc.page.height - 45);
 
   const bottomBarStart = doc.page.height - 30;
   doc.rect(10, bottomBarStart, doc.page.width-20, 20).fill('#fbc600');
