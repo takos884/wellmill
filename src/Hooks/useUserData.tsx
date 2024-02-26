@@ -30,6 +30,7 @@ type UseUserDataReturnType = {
   createPaymentIntent: (cartLines: CartLine[], addressesState: LineItemAddressesArray) => Promise<APIResponse>;
   finalizePurchase: (paymentIntentId: string, email: string, billingAddressKey: number) => Promise<APIResponse>;
   cancelPurchase: (purchaseKey: number) => Promise<APIResponse>;
+  printReceipt: (purchaseKey: number) => Promise<APIResponse>;
 };
 //#endregion Type definitions
 
@@ -833,6 +834,25 @@ export const useUserData = (): UseUserDataReturnType => {
     return { data: APIResponse.data, error: null };
   }, [user])
 
+  const printReceipt = useCallback(async (purchaseKey: number) => {
+    if(!user)              return { data: null, error: "No user data available when deleting from remote cart" };
+    if(!user?.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
+    if(!user?.token)       return { data: null, error: "No token available when deleting from remote cart" };
+
+    setUserLoading(true);
+    const requestBody = {customerKey: user.customerKey, token: user.token, purchaseKey: purchaseKey};
+    //console.log(requestBody); // Object { customerKey: 1, token: "e66...44c6", purchaseKey: 193 }
+    const APIResponse = await CallAPI(requestBody, "generateReceipt");
+    if(APIResponse.error) {
+      console.log("Error in generateReceipt in useUserData:");
+      console.log(APIResponse);
+      return { data: null, error: APIResponse.error };
+    }
+
+    setUserLoading(false);
+    return { data: APIResponse.data, error: null };
+  }, [user])
+
   /**
    * Updates the user state based on the provided data.
    * The function can handle different types of input: Customer, Cart, or CartLine[].
@@ -896,7 +916,7 @@ export const useUserData = (): UseUserDataReturnType => {
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers
     addToCart, updateCartQuantity, deleteFromCart, 
-    createPaymentIntent, finalizePurchase, cancelPurchase,
+    createPaymentIntent, finalizePurchase, cancelPurchase, printReceipt,
     addAddress, deleteAddress
   };
 

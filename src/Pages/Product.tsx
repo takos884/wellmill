@@ -98,6 +98,7 @@ function Product() {
     const spinner = <img className={styles.spinner} src="/spinner.svg" alt="Spinner"/>;
     const addToCartButtonContent = (cartLoading || addingToCart) ? spinner : "カートに入れる";
     const viewCartButtonContent = (cartLoading || addingToCart) ? spinner : "カートを見る";
+    const viewShopButtonContent = (cartLoading || addingToCart) ? spinner : "商品一覧に戻る";
   
     const questionsNode = (
       <div className={styles.productFaq}>
@@ -274,7 +275,10 @@ function Product() {
     )
 
     const actionButton = productAddedToCart ? (
-      <Link to="/cart"><button className={`${styles.addToCart} ${styles.viewCart}`} onClick={undefined}>{viewCartButtonContent}</button></Link>
+      <>
+        <Link to="/cart"><button className={`${styles.addToCart} ${styles.viewCart}`} onClick={undefined}>{viewCartButtonContent}</button></Link>
+        <Link to="/shop"><button className={styles.addToCart} onClick={undefined}>{viewShopButtonContent}</button></Link>
+      </>
     ) : (
       <button className={styles.addToCart} onClick={handleAddToCart}>{addToCartButtonContent}</button>
     );

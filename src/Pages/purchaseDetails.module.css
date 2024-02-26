@@ -45,6 +45,7 @@ div.cancelFooter {
   display: grid;
   grid-template-columns: 50% 25% 5% 20%;
   white-space: nowrap;
+  margin-bottom: 1rem;
 }
 
 span.cancelOrder {

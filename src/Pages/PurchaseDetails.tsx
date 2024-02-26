@@ -20,7 +20,7 @@ const breadcrumbs = [
 
 export default function PurchaseDetails() {
   const { user, userLoading } = useContext(UserContext);
-  const { cancelPurchase } = useUserData();
+  const { cancelPurchase, printReceipt } = useUserData();
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const purchaseKey = (parseInt(useParams().purchaseKey || ""));
   const [cancelError, setCancelError] = useState("");
@@ -93,6 +93,7 @@ export default function PurchaseDetails() {
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>小計</span><span className={styles.alignEnd}>{subtotal?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>配送</span><span className={styles.alignEnd}>{shipping?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
       <div className={styles.detailsFooters}><span className={`${styles.thirdColumn} ${styles.alignEnd}`}>合計</span><span className={styles.alignEnd}>{totalCost?.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span></div>
+      <div className={styles.cancelFooter}><span className={styles.cancelOrder} onClick={HandlePrintReceipt}>(領収書をダウンロードする)</span></div>
       {canCancel     && <div className={styles.cancelFooter}><span className={styles.cancelOrder} onClick={HandleCancelOrder}>(注文キャンセルする)</span></div>}
       {isCanceled    && <div className={styles.cancelFooter}><span className={styles.cancelMessage}>(キャンセル済み)</span></div>}
       {userLoading   && <div className={styles.cancelFooter}><span className={styles.cancelSpinner}><img src="spinner.svg" className={styles.cancelSpinner} alt="Spinner" /></span></div>}
@@ -139,7 +140,25 @@ export default function PurchaseDetails() {
     setTimeout(() => {
       navigate('/order-list');
     }, 1500);
+  }
 
+  async function HandlePrintReceipt() {
+    if(!user) { return null; }
+    if(!user.customerKey) { return null; }
+    if(!user.token) { return null; }
+    if(userLoading) { return null; }
+
+    const purchase = user.purchases.find(pur => {return pur.purchaseKey === purchaseKey});
+    if(!purchase) { return null; }
+    if(purchase.lineItems.length === 0) { return null; }
+    const printReceiptReply = await printReceipt(purchaseKey);
+    console.log("Reply after printing receipt:");
+    console.log(printReceiptReply);
+    if(printReceiptReply.error) {
+      setCancelMessage("");
+      setCancelError(printReceiptReply.error);
+      return;
+    }
   }
 
   const uniqueAddresses:Address[] = [];

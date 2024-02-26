@@ -29,8 +29,29 @@ export default async function CallAPI(data:object, endpoint: string) {
       }
     }
 
-    const data = await response.json();
-    return { data: data, error: null };
+    const contentType = response.headers.get('Content-Type');
+
+    if (contentType?.includes('application/json')) {
+      const data = await response.json();
+      return { data: data, error: null };
+    }
+
+    if (contentType?.includes('application/pdf')) {
+      // Handle PDF (file download)
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = downloadUrl;
+      a.download = 'receipt.pdf'; // You can set a default name for the download
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      a.remove();
+      return { data: null, error: null };
+    }
+
+    return { data: null, error: "Unknown returned content type" };
 
   } catch (error: any) {
     return { data: null, error: error.message };

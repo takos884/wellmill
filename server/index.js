@@ -8,6 +8,7 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const PDFDocument = require('pdfkit');
 const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
 
 //const fetch = require('node-fetch');
@@ -1144,7 +1145,210 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
   })
 }
 
+app.post('/generateReceipt', async (req, res) => {
+  console.log("░▒▓█ Hit generateReceipt. Time: " + CurrentTime());
+  console.log(req.body);
 
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in addAddress: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  const { purchaseKey } = req.body.data;
+
+  let query = `
+    SELECT * 
+    FROM purchase
+    WHERE purchaseKey = ? AND customerKey = ?;
+  `;
+
+  let values = [purchaseKey, customerKey];
+
+  let purchase;
+  try {
+    const [purchaseResults] = await pool.query(query, values);
+    if (purchaseResults.length === 0) {
+      console.error('No purchase found for purchaseKey:', purchaseKey, ", customerKey:", customerKey);
+      return res.status(400).send('No purchase found');
+    } else {
+      purchase = purchaseResults[0];
+    }
+  } catch (error) {
+    console.error('Error in generateReceipt pulling purchase:', error);
+    return res.status(500).send('An error occurred');
+  }
+  const creationDate = new Date(purchase.creationTime);
+  const addressKey = purchase.addressKey;
+
+  query = `
+    SELECT * 
+    FROM lineItem
+    WHERE purchaseKey = ?;
+  `;
+  values = [purchaseKey];
+
+  let lineItems;
+  try {
+    const [lineItemResults] = await pool.query(query, values);
+    if (lineItemResults.length === 0) {
+      console.error('No line items found for purchaseKey:', purchaseKey);
+      return res.status(400).send('No line items found');
+    } else {
+      lineItems = lineItemResults;
+    }
+  } catch (error) {
+    console.error('Error in generateReceipt pulling line items:', error);
+    return res.status(500).send('An error occurred');
+  }
+
+  query = `
+    SELECT * 
+    FROM address
+    WHERE addressKey = ?;
+  `;
+  values = [addressKey];
+
+  let address;
+  try {
+    const [addressResults] = await pool.query(query, values);
+    if (addressResults.length > 0) {
+      address = addressResults[0];
+    }
+  } catch (error) {
+    console.error('Error in generateReceipt pulling address:', error);
+    return res.status(500).send('An error occurred');
+  }
+  const addressSource = address ? address : lineItems[0];
+
+  query = `
+    SELECT * 
+    FROM product;
+  `;
+  values = [];
+
+  let products;
+  try {
+    const [productResults] = await pool.query(query, values);
+    if (productResults.length > 0) {
+      products = productResults;
+    }
+  } catch (error) {
+    console.error('Error in generateReceipt pulling products:', error);
+    return res.status(500).send('An error occurred');
+  }
+
+  const options = {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+    timeZone: 'Asia/Tokyo'
+  };
+
+  const formattedPurchaseTime = new Intl.DateTimeFormat('ja-JP', options).format(creationDate);
+  const formattedCreationTime = new Intl.DateTimeFormat('ja-JP', options).format(Date.now());
+
+
+  const doc = new PDFDocument({
+    margins: {
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0
+    }
+  });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=receipt-purchase${purchaseKey}.pdf`);
+  doc.pipe(res);
+  doc.rect(10, 10, doc.page.width-20, 20).fill('#fbc600');
+  doc.image('logo.png', 50, 50, { width: 100 });
+  doc.fill('#000000');
+  doc.font('NotoSansJP-VariableFont_wght.ttf')
+  doc.fontSize(25).text('Receipt', 50, 100);
+  doc.fontSize(10).text("購入時間:", 50, 145);
+  doc.fontSize(10).text(formattedPurchaseTime, 100, 145);
+  doc.text("住所:", 50, 165);
+  doc.text(`${addressSource.lastName}, ${addressSource.firstName}`, 100, 165);
+  doc.text(`${addressSource.pref} ${addressSource.city} ${addressSource.ward} ${addressSource.address2}`, 100, 180);
+  doc.text(`〒${addressSource.postalCode.slice(0, 3)}-${addressSource.postalCode.slice(3)}`, 100, 195);
+  doc.text(`${addressSource.phoneNumber}`, 100, 210);
+  doc.rect(10, 225, doc.page.width-20, 2).fill('#000000');
+
+  const tableWidth = doc.page.width-100;
+
+  doc.rect(50, 240, tableWidth, 27).fill("#eeeeee");
+  doc.strokeColor('#888888').lineWidth(1);
+  doc.rect(50 + (tableWidth*0.0), 240, (tableWidth*0.1), 27).stroke();
+  doc.rect(50 + (tableWidth*0.1), 240, (tableWidth*0.5), 27).stroke();
+  doc.rect(50 + (tableWidth*0.6), 240, (tableWidth*0.2), 27).stroke();
+  doc.rect(50 + (tableWidth*0.8), 240, (tableWidth*0.2), 27).stroke();
+
+  doc.fill('#000000');
+  doc.fontSize(13).text("数量",    50 + (tableWidth*0.05) - doc.widthOfString("数量")/2, 244);
+  doc.fontSize(13).text("アイテム", 50 + (tableWidth*0.35) - doc.widthOfString("アイテム")/2, 244);
+  doc.fontSize(13).text("単価",    50 + (tableWidth*0.70) - doc.widthOfString("単価")/2, 244);
+  doc.fontSize(13).text("小計",    50 + (tableWidth*0.90) - doc.widthOfString("小計")/2, 244);
+
+
+  const lineHeight = 25;
+  const leftPadding = 20;
+  let overflowLines = 0;
+  let currentY = 270;
+  lineItems.forEach((lineItem, index) => {
+    const product = products.find(prod => prod.productKey === lineItem.productKey);
+    const unitPrice = Math.round(parseFloat(lineItem.unitPrice));
+    const linePrice = Math.round(parseFloat(lineItem.unitPrice) * parseFloat(lineItem.quantity));
+    currentY = 270 + (index * lineHeight) + (overflowLines * lineHeight);
+
+    doc.text(lineItem.quantity.toString(), 50 + (tableWidth*0.1) - doc.widthOfString(lineItem.quantity.toString()) - leftPadding, currentY);
+    if(doc.widthOfString(product.title) > (tableWidth*0.5)-30) {
+      doc.text(product.title.slice(0, Math.ceil(product.title.length/2)+3), 50 + (tableWidth*0.1) + 10, currentY);
+      doc.text(product.title.slice(Math.ceil(product.title.length/2)-3), 50 + (tableWidth*0.1) + 20, currentY + lineHeight);
+      overflowLines++;
+    } else {
+      doc.text(product.title, 50 + (tableWidth*0.1) + 10, currentY);
+    }
+    doc.text(`¥${unitPrice}`, 50 + (tableWidth*0.8) - doc.widthOfString(unitPrice.toString()) - leftPadding, currentY);
+    doc.text(`¥${linePrice}`, 50 + (tableWidth*1.00) - doc.widthOfString(linePrice.toString()) - leftPadding, currentY);
+  });
+
+  const totalWithoutTax = Math.round(lineItems.reduce((accumulator, lineItem) => {
+    return accumulator + (parseInt(lineItem.unitPrice) * parseInt(lineItem.quantity));
+  }, 0));
+
+  const totalTax = Math.round(lineItems.reduce((accumulator, lineItem) => {
+    return accumulator + (parseInt(lineItem.unitPrice) * parseFloat(lineItem.taxRate) * parseInt(lineItem.quantity));
+  }, 0));
+
+  const totalWithTax = totalWithoutTax + totalTax;
+
+  currentY = 270 + (lineItems.length * 25) + ((overflowLines) * 25);
+  doc.strokeColor('#888888').lineWidth(1);
+  doc.moveTo(50,currentY).lineTo(doc.page.width - 50, currentY).stroke();
+
+  currentY += 10;
+  doc.text("小計", 50 + (tableWidth*0.80) - doc.widthOfString("小計") - leftPadding, currentY);
+  doc.text(`¥${totalWithoutTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithoutTax.toString()) - leftPadding, currentY);
+
+  currentY += lineHeight;
+  doc.text("税金", 50 + (tableWidth*0.80) - doc.widthOfString("税金") - leftPadding, currentY);
+  doc.text(`¥${totalTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalTax.toString()) - leftPadding, currentY);
+
+  currentY += lineHeight;
+  doc.text("合計", 50 + (tableWidth*0.80) - doc.widthOfString("合計") - leftPadding, currentY);
+  doc.text(`¥${totalWithTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithTax.toString()) - leftPadding, currentY);
+  
+
+  const footerLeft = `#${purchaseKey} - 領収書は ${formattedCreationTime} に生成されました`;
+  const footerRight = "© 2024 www.well-mill.com";
+  doc.fontSize(10).text(footerLeft, 50, doc.page.height - 45);
+  doc.fontSize(10).text(footerRight, doc.page.width-50 - doc.widthOfString(footerRight), doc.page.height - 45);
+
+  const bottomBarStart = doc.page.height - 30;
+  doc.rect(10, bottomBarStart, doc.page.width-20, 20).fill('#fbc600');
+
+  doc.end();
+});
 
 app.post('/sendPassword', async (req, res) => {
   console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
