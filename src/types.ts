@@ -61,6 +61,7 @@ export const emptyCustomer:Customer = {
     },
     addresses: [],
     purchases: [],
+    coupons: [],
 }
 
 export type Customer = {
@@ -83,6 +84,7 @@ export type Customer = {
     cart: Cart,
     addresses: Address[],
     purchases: Purchase[],
+    coupons: Coupon[],
 }
 
 export type Cart = {
@@ -101,6 +103,17 @@ export type CartLine = {
     taxRate: number,
     quantity: number,
     purchaseKey?: number, // On checkout screen, after paymentIntentId has been made
+}
+
+export type Coupon = {
+    couponKey: number,
+    productKey: number,
+    hash: string,
+    type: number,
+    target: number,
+    targetUnit: string,
+    reward: number,
+    targetReward: string,
 }
 //#endregion
 

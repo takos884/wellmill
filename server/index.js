@@ -795,6 +795,8 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
     return accumulator + lineItemCost;
   }, 0));
 
+  const couponDiscount = purchase.couponDiscount ? parseInt(purchase.couponDiscount) : 0;
+
   const uniqueProductKeysSet = new Set();
   for (const item of lineItems) {
     uniqueProductKeysSet.add(item.productKey);
@@ -1041,13 +1043,18 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 <tr>
                   <td style="width: 300px; padding-bottom:2rem;"></td><td style="width: 150px; padding-bottom:2rem;">税金合計</td><td style="width: 150px; text-align: right; padding-bottom:2rem;">¥${totalTax}</td>
                 </tr>
+                ${couponDiscount > 0 ? `
+                  <tr>
+                    <td style="width: 300px; padding-bottom:2rem;"></td><td style="width: 150px; padding-bottom:2rem;">クーポン割引</td><td style="width: 150px; text-align: right; padding-bottom:2rem;">-¥${couponDiscount}</td>
+                  </tr>`
+                : ""}
 
                 <!-- Right half Separator -->
                 <tr>
                   <td style="width: 300px; height: 1px; overflow: hidden;"></td><td style="width: 150px; height: 1px; background-color: #eee; overflow: hidden;"></td><td style="width: 150px; height: 1px; background-color: #eee; overflow: hidden;"></td>
                 </tr>
                 <tr>
-                  <td style="width: 50%;"></td><td style="width: 25%">合計</td><td style="width: 25%; text-align: right; font-size: 1.5rem; font-weight: bold;">¥${totalCost} JPY</td>
+                  <td style="width: 50%;"></td><td style="width: 25%">合計</td><td style="width: 25%; text-align: right; font-size: 1.5rem; font-weight: bold;">¥${totalCost - (couponDiscount || 0)} JPY</td>
                 </tr>
               </table>
 
@@ -1548,6 +1555,8 @@ app.post('/login', async (req, res) => {
     return res.status(401).json({ error: "No customer credentials given" });
   }
 
+  console.log("customerData");
+  console.dir(customerData, { depth: null, colors: true });
   return res.json({customerData: customerData});
 });
 
@@ -2085,6 +2094,12 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
     const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
     customer.addresses = addresses;
 
+    // Pull all coupons (codes are hashed)
+    const coupons = await GetCoupons();
+    customer.coupons = coupons;
+    console.log("coupons2");
+    console.dir(coupons, { depth: null, colors: true });
+
     // Remove sensitive data before sending the customer object
     delete customer.passwordHash;
     customer.type = "customer";
@@ -2164,15 +2179,28 @@ async function GetPurchasesFromCustomerKey(customerKey) {
 }
 
 async function GetAddressesFromCustomerKey(customerKey) {
-  // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
     SELECT * FROM address
     WHERE customerKey = ?`;
 
-  // Execute the query using the promisified pool.query and wait for the promise to resolve
   try {
     const [addresses] = (await pool.query(selectQuery, [customerKey]));
     return ProcessAddresses(addresses);
+  } catch (error) {
+    console.error('Error in GetAddressesFromCustomerKey: ', error);
+    throw error;
+  }
+}
+
+async function GetCoupons() {
+  const selectQuery = `SELECT * FROM coupon`;
+
+  try {
+    const [coupons] = await pool.query(selectQuery, []);
+    const noCodeCoupons = ProcessCoupons(coupons);
+    console.log("noCodeCoupons");
+    console.dir(noCodeCoupons, { depth: null, colors: true });
+    return noCodeCoupons;
   } catch (error) {
     console.error('Error in GetAddressesFromCustomerKey: ', error);
     throw error;
@@ -2188,14 +2216,87 @@ function ProcessAddresses(addresses) {
   });
 }
 
+// Only send the coupon code hash so they are not sent in plain text
+function ProcessCoupons(coupons) {
+  const updatedCoupons = coupons.map(coupon => {
+    if(coupon === undefined) return null;
+    delete coupon.code;
+    return coupon;
+  });
+  return updatedCoupons;
+}
+
+async function sha1(str) {
+  const enc = new TextEncoder();
+  const hash = await crypto.subtle.digest('SHA-1', enc.encode(str));
+  return Array.from(new Uint8Array(hash))
+    .map(v => v.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+
+
 
 //#region Stripe
-const calculateOrderAmount = (cartLines) => {
-  return Math.round(cartLines.reduce((total, line) => {
+async function calculateOrderAmount(cartLines, couponCode = undefined) {
+  const totalBeforeCoupon = Math.round(cartLines.reduce((total, line) => {
     const lineCost = line.unitPrice * (1 + line.taxRate) * line.quantity;
     return total + lineCost;
   }, 0));
+  console.log("totalBeforeCoupon: " + totalBeforeCoupon);
+  if(couponCode === undefined) { return totalBeforeCoupon; }
+  const couponDiscount = await calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode);
+  console.log("couponDiscount2: " + couponDiscount);
+  const totalAfterCoupon = totalBeforeCoupon - couponDiscount;
+  return {purchaseTotal: totalAfterCoupon, couponDiscount: couponDiscount};
 };
+
+async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode) {
+  const selectQuery = `SELECT * FROM coupon WHERE code = ?`;
+  const [coupons] = await pool.query(selectQuery, [couponCode]);
+  console.log("coupons length: " + coupons.length);
+  if(coupons.length === 0) { return 0; }
+  const coupon = coupons[0];
+  const couponType = parseInt(coupon.type);
+  const couponTarget = parseInt(coupon.target);
+  const couponReward = parseInt(coupon.reward);
+  if(isNaN(couponType) || couponType < 0 || isNaN(couponTarget) || couponTarget < 0 || isNaN(couponReward) || couponReward < 0) { return 0; }
+
+  // This can be undefined for type 1 and 2
+  const couponProductKey = parseInt(coupon.productKey?.toString()) ?? undefined;
+  const productCount = cartLines.reduce((acc, line) => {
+    if (line.productKey === couponProductKey) {
+      return acc + line.quantity;
+    }
+    return acc;
+  }, 0) ?? 0;
+
+  if(couponType == "1") {
+    return (totalBeforeCoupon >= couponTarget) ? couponReward : 0;
+  }
+
+  if(couponType == "2") {
+    return (totalBeforeCoupon >= couponTarget) ? (couponReward/100 * totalBeforeCoupon) : 0;
+  }
+
+  if(couponType == "3") {
+    if(!productCount) { return 0; }
+    if(productCount >= couponTarget) {
+      return couponReward;
+    }
+    return 0;
+  }
+
+  if(couponType == "4") {
+    if(!productCount) { return 0; }
+    if(productCount >= couponTarget) {
+      return (couponReward/100 * totalBeforeCoupon);
+    }
+    return 0;
+  }
+
+  return 0;
+}
 
 app.post("/createPaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
@@ -2204,7 +2305,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
 
   const cartLines = req.body.data.cartLines;
-  const purchaseTotal = calculateOrderAmount(cartLines);
+  const purchaseTotal = await calculateOrderAmount(cartLines);
   if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
 
   const addressesState = req.body.data.addressesState;
@@ -2331,6 +2432,55 @@ app.post("/createPaymentIntent", async (req, res) => {
   }
 
   return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+});
+
+
+// This is to apply a coupon
+app.post("/updatePaymentIntent", async (req, res) => {
+  console.log("░▒▓█ Hit updatePaymentIntent. Time: " + CurrentTime());
+  console.dir(req.body, { depth: null, colors: true });
+
+  const validation = await ValidatePayload(req.body.data);
+  if(validation.valid === false) {
+    console.log(`Validation error in updatePaymentIntent: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  // Blank/undefined is ok, will reset to no discount
+  const couponCode = req.body.data.couponCode;
+
+  const cartLines = req.body.data.cartLines;
+  if(!cartLines) { return res.status(400).send('No cart lines provided'); }
+
+  const paymentIntentId = req.body.data.paymentIntentId;
+  if(!paymentIntentId) { return res.status(400).send('No payment intent provided'); }
+
+  const { purchaseTotal, couponDiscount } = await calculateOrderAmount(cartLines, couponCode);
+  if(isNaN(purchaseTotal) || purchaseTotal < 0) { return res.status(400).send('Malformed items in cart'); }
+  if(isNaN(couponDiscount) || couponDiscount < 0) { return res.status(400).send('Malformed coupon'); }
+
+  console.log("New purchaseTotal: " + purchaseTotal);
+  console.log("New couponDiscount: " + couponDiscount);
+
+  query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
+  values = [couponDiscount, paymentIntentId];
+  try {
+    await pool.query(query, values);
+  } catch (error) {
+    console.error('Error updating couponDiscount:', error);
+    return res.status(500).send('Error updating couponDiscount');
+  }
+
+  try {
+      const updatedPaymentIntent = await stripe.paymentIntents.update(paymentIntentId, {
+          amount: purchaseTotal,
+      });
+
+      res.json({ success: true, amount: purchaseTotal, paymentIntent: updatedPaymentIntent });
+  } catch (error) {
+      res.status(400).send("Failed to update intent");
+  }
 });
 
 

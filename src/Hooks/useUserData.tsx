@@ -462,6 +462,8 @@ export const useUserData = (): UseUserDataReturnType => {
   const createPaymentIntent = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
     setCartLoading(true);
     const paymentIntent = await createPaymentIntentFunction(cartLines, addressesState);
+    localStorage.setItem('currentPaymentIntent', paymentIntent.data.paymentIntentId);
+
     setCartLoading(true);
     return paymentIntent;
 

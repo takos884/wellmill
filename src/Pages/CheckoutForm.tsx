@@ -10,6 +10,7 @@ import { prefectures } from "../Utilities/addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
 import { LineItemAddressesArray } from "../types";
+import CallAPI from "../Utilities/CallAPI";
 
 type CheckoutFormProps = {
   setDisplayCheckout: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,6 +36,8 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   const defaultAddressKey = addresses.find(address => {return address.defaultAddress === true})?.addressKey || null;
   //#endregion
 
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(user?.email || "");
   const [emailError, setEmailError] = useState<boolean>(false); // undefined means user tried to submit as empty
@@ -82,6 +85,77 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     });
   }, [stripe]);
 
+  async function HandleCouponClick() {
+    if(!user) return;
+
+    const couponDiscount = Math.round(await CalculateCouponDiscount());
+    setCouponDiscount(Math.min(couponDiscount, cart.cost));
+
+    const paymentIntentId = localStorage.getItem('currentPaymentIntent');
+    if(!paymentIntentId) return;
+
+    const updateIntentData = {
+      customerKey: user.customerKey,
+      token: user.token,
+      paymentIntentId: paymentIntentId,
+      couponCode: couponCode,
+      cartLines: user.cart.lines,
+    }
+    const CallAPIResponse = await CallAPI(updateIntentData, "updatePaymentIntent")
+
+    if(CallAPIResponse.data.amount !== (cart.cost - couponDiscount)) {
+      console.log("Coupon discount did not match the expected amount.");
+      console.log("CallAPIResponse.data.amount: " + CallAPIResponse.data.amount + ", cart.cost - couponDiscount: " + (cart.cost - couponDiscount));
+    }
+  }
+
+  async function CalculateCouponDiscount() {
+    if(!user) return 0;
+    if(!couponCode) return 0;
+    const couponCodeHash = await sha1(couponCode);
+    const coupon = user.coupons.find(coupon => {return coupon.hash === couponCodeHash});
+    if(!coupon) return 0;
+
+    const couponType = parseInt(coupon.type.toString());
+    const couponTarget = parseInt(coupon.target.toString());
+    const couponReward = parseInt(coupon.reward.toString());
+    if(isNaN(couponType) || couponType < 0 || isNaN(couponTarget) || couponTarget < 0 || isNaN(couponReward) || couponReward < 0) { return 0; }
+  
+    // This can be undefined for type 1 and 2
+    const couponProductKey = parseInt(coupon.productKey?.toString()) || undefined;
+  
+    const productCount = user.cart.lines.reduce((acc, line) => {
+      if (line.productKey === couponProductKey) {
+        return acc + line.quantity;
+      }
+      return acc;
+    }, 0) ?? 0;
+
+    // Buy [$target] get [$reward] off
+    if(couponType === 1) {
+      return (cart.cost >= couponTarget) ? couponReward : 0;
+    }
+
+    // Buy [$target] get [reward%] off
+    if(couponType === 2) {
+      return (cart.cost >= couponTarget) ? (couponReward/100 * cart.cost) : 0;
+    }
+
+    // Buy [target] products get $y off
+    if(couponType === 3) {
+      if(productCount >= couponTarget) {
+        return couponReward;
+      }
+    }
+
+    if(couponType === 4) {
+      if(productCount >= couponTarget) {
+        return (couponReward/100 * cart.cost);
+      }
+    }
+
+    return 0;
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -99,6 +173,31 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       setMessage("正しいメールアドレスを入力してください。");
       return;
     }
+
+    const blockedDomains = [
+      "@docomo.ne.jp",
+      "@softbank.ne.jp",
+      "@i.softbank.jp",
+      "@vodafone.ne.jp",
+      "@ymobile.ne.jp",
+      "@ezweb.ne.jp",
+      "@au.com",
+      "@kddi.com",
+      "@rakuten.jp",
+      "@willcom.com",
+      "@emnet.ne.jp",
+      "@emobile.ne.jp",
+      "@ido.ne.jp",
+    ]
+
+    for (const domain of blockedDomains) {
+      if (email.endsWith(domain)) {
+        setEmailError(true);
+        setMessage(`申し訳ございませんが、「${domain}」で終わるメールはご登録いただけません。`) //`Sorry, you cannot register with an email ending in ${domain}`
+        return;
+      }
+    }
+
     const encodedEmail = encodeURIComponent(email);
 
     if(!address) {
@@ -106,12 +205,15 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
+    if(couponDiscount > 0) {
+      
+    }
+
     setIsSendingPayment(true);
     setMessage(null);
 
     const { error } = await stripe.confirmPayment({
       elements,
-      //confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
       confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
     });
 
@@ -182,7 +284,16 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       <div className={styles.checkoutTotal}><span>Subtotal:</span><span>{ToYen(cart.cost)}</span></div>
       <div className={styles.checkoutTotal}><span>Tax (included):</span><span>{ToYen(cart.includedTax)}</span></div>
       <div className={styles.checkoutTotal}><span>Shipping:</span><span>{ToYen(0)}</span></div>
-      <div className={styles.checkoutTotal} style={{fontWeight: "bold"}}><span>Total:</span><span>{ToYen(cart.cost)}</span></div>
+      {couponDiscount > 0 ? <div className={styles.checkoutTotal}><span>Coupon:</span><span>-{ToYen(couponDiscount)}</span></div> : null}
+      <div className={styles.checkoutTotal} style={{fontWeight: "bold"}}><span>Total:</span><span>{ToYen(cart.cost - couponDiscount)}</span></div>
+    </div>
+  ) : null;
+
+  const couponDiv = cart ? (
+    <div className={styles.couponDiv}>
+      <span>クーポン</span>
+      <input type="text" value={couponCode || ""} className={styles.couponInput} onChange={(e) => { setCouponCode(e.target.value) }} />
+      <button className={styles.couponButton} onClick={HandleCouponClick}>適用</button>
     </div>
   ) : null;
 
@@ -306,6 +417,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
                 {checkoutLines}
                 <div className={styles.checkoutSummary}>
                   {checkoutTotals}
+                  {couponDiv}
                   {addressCard}
                 </div>
               </div>
@@ -314,4 +426,12 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       </div>
     </>
   );
+}
+
+async function sha1(inputString: string) {
+  const enc = new TextEncoder();
+  const hash = await crypto.subtle.digest('SHA-1', enc.encode(inputString));
+  return Array.from(new Uint8Array(hash))
+    .map(v => v.toString(16).padStart(2, '0'))
+    .join('');
 }

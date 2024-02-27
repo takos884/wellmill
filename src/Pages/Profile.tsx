@@ -172,6 +172,7 @@ function Profile() {
       cart: user.cart,
       addresses: user.addresses,
       purchases: user.purchases,
+      coupons: user.coupons,
     };
 
     // This is my database update
@@ -241,6 +242,7 @@ function Profile() {
       cart: user.cart,
       addresses: user.addresses,
       purchases: user.purchases,
+      coupons: user.coupons,
     };
 
     // This is my database update
@@ -312,6 +314,9 @@ function Profile() {
       </div>
     </div>
   )
+
+  console.log("user");
+  console.log(user);
 
   return(
     <>

@@ -190,6 +190,7 @@ function Signup() {
       cart: {type: 'cart', quantity: 0, cost: 0, includedTax: 0, lines: []},
       addresses: [],
       purchases: [],
+      coupons: [],
     };
 
     setProcessingRegistration(true);
