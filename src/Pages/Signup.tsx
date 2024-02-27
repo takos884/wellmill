@@ -132,12 +132,6 @@ function Signup() {
       hasError = true;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    if(!emailRegex.test(inputs.email)) {
-      setInputErrors(prevErrors => ({ ...prevErrors, email: true }));
-      hasError = true;
-    }
-
     if(inputs.password.length < 8) {
       setInputErrors(prevErrors => ({ ...prevErrors, password: true }));
       hasError = true;
@@ -148,78 +142,109 @@ function Signup() {
       hasError = true;
     }
 
-    if (hasError) {
-      alert('Please fill in all required fields.');
-    } else {
-      const userData: Customer = {
-        type: 'customer',
-        email: inputs.email,
-        lastName: inputs.lastName.replace(validNameRegex, ''),
-        firstName: inputs.firstName.replace(validNameRegex, ''),
-        lastNameKana: inputs.lastNameKana.replace(validNameRegex, ''),
-        firstNameKana: inputs.firstNameKana.replace(validNameRegex, ''),
-        gender: inputs.gender,
-        birthday: inputs.birthday, 
-        password: inputs.password,
-        cart: {type: 'cart', quantity: 0, cost: 0, includedTax: 0, lines: []},
-        addresses: [],
-        purchases: [],
-      };
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    if(!emailRegex.test(inputs.email)) {
+      setInputErrors(prevErrors => ({ ...prevErrors, email: true }));
+      alert('有効なメールアドレスを入力してください');
+      return;
+    }
 
-      setProcessingRegistration(true);
-      // This is my database update
-      const response = await createUser(userData);
-      //console.log(response);  // {data: {customerKey: 24, token: 06...19, code: NV14 }}
+    const blockedDomains = [
+      "@docomo.ne.jp",
+      "@softbank.ne.jp",
+      "@i.softbank.jp",
+      "@vodafone.ne.jp",
+      "@ymobile.ne.jp",
+      "@ezweb.ne.jp",
+      "@au.com",
+      "@kddi.com",
+      "@rakuten.jp",
+      "@willcom.com",
+      "@emnet.ne.jp",
+      "@emobile.ne.jp",
+      "@ido.ne.jp",
+    ]
 
-      if(response.error) {
-        console.dir(response, { depth: null, colors: true });
-        console.log(`Create User Error: ${response.error}`);
-
-        if(response.error === "すでに登録されたメール") {
-          setDuplicateEmail(true);
-          setInputErrors(prevErrors => ({ ...prevErrors, email: true }));
-          alert(`このアドレスは既に使われています。${inputs.email}`);
-        } else {
-          setCreateUserResponse({data: null, error: response.error});
-        }
-
-        setProcessingRegistration(false);
+    for (const domain of blockedDomains) {
+      if (inputs.email.endsWith(domain)) {
+        alert(`申し訳ございませんが、「${domain}」で終わるメールはご登録いただけません。`) //`Sorry, you cannot register with an email ending in ${domain}`
+        setInputErrors(prevErrors => ({ ...prevErrors, email: true }));
         return;
       }
+    }
 
-      userData.customerKey = parseInt(response.data.customerKey);
-      userData.token = response.data.token;
-      userData.code = response.data.code;
-      userData.guest = false;
+    if (hasError) {
+      alert('すべての項目を入力してください');
+      return;
+    }
+    const userData: Customer = {
+      type: 'customer',
+      email: inputs.email,
+      lastName: inputs.lastName.replace(validNameRegex, ''),
+      firstName: inputs.firstName.replace(validNameRegex, ''),
+      lastNameKana: inputs.lastNameKana.replace(validNameRegex, ''),
+      firstNameKana: inputs.firstNameKana.replace(validNameRegex, ''),
+      gender: inputs.gender,
+      birthday: inputs.birthday, 
+      password: inputs.password,
+      cart: {type: 'cart', quantity: 0, cost: 0, includedTax: 0, lines: []},
+      addresses: [],
+      purchases: [],
+    };
 
-      if(userData.token) {
-        //console.log(`Going to login with token: ${userData.token}`);
-        loginUser({token: userData.token});
-        Cookies.set('WellMillToken', userData.token, { expires: 31, sameSite: 'Lax' });
+    setProcessingRegistration(true);
+    // This is my database update
+    const response = await createUser(userData);
+    //console.log(response);  // {data: {customerKey: 24, token: 06...19, code: NV14 }}
+
+    if(response.error) {
+      console.dir(response, { depth: null, colors: true });
+      console.log(`Create User Error: ${response.error}`);
+
+      if(response.error === "すでに登録されたメール") {
+        setDuplicateEmail(true);
+        setInputErrors(prevErrors => ({ ...prevErrors, email: true }));
+        alert(`このアドレスは既に使われています。${inputs.email}`);
+      } else {
+        setCreateUserResponse({data: null, error: response.error});
       }
 
-      // Azure demands these values
-      if(!userData.code || !userData.lastName || !userData.firstName) { return; }
-
-      const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
-      backupCustomerData(userData.customerKey, userData.token || "", userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, userData.birthday || "");
-
-      await sendWelcomeEmail(inputs.email);
-
-      // Ideally, I wouldn't need a reload after signing up, but it's so much simpler to just reload the page and force a new token login
-      setTimeout(() => {
-        if(localStorage.getItem('sampleID')) {
-          navigate('/sample-registration');
-          return
-        }
-
-        navigate('/new-customer');
-        // Adding an additional delay before reload
-        setTimeout(() => {
-           window.location.reload();
-        }, 200);
-      }, 500);
+      setProcessingRegistration(false);
+      return;
     }
+
+    userData.customerKey = parseInt(response.data.customerKey);
+    userData.token = response.data.token;
+    userData.code = response.data.code;
+    userData.guest = false;
+
+    if(userData.token) {
+      //console.log(`Going to login with token: ${userData.token}`);
+      loginUser({token: userData.token});
+      Cookies.set('WellMillToken', userData.token, { expires: 31, sameSite: 'Lax' });
+    }
+
+    // Azure demands these values
+    if(!userData.code || !userData.lastName || !userData.firstName) { return; }
+
+    const genderNumber = (inputs.gender === "male") ? 0 : (inputs.gender === "female") ? 1 : 9;
+    backupCustomerData(userData.customerKey, userData.token || "", userData.code, userData.lastName, userData.firstName, userData.lastNameKana || "", userData.firstNameKana || "", "", "", "", "", "", "", "", userData.email || "", 0, genderNumber, userData.birthday || "");
+
+    await sendWelcomeEmail(inputs.email);
+
+    // Ideally, I wouldn't need a reload after signing up, but it's so much simpler to just reload the page and force a new token login
+    setTimeout(() => {
+      if(localStorage.getItem('sampleID')) {
+        navigate('/sample-registration');
+        return
+      }
+
+      navigate('/new-customer');
+      // Adding an additional delay before reload
+      setTimeout(() => {
+          window.location.reload();
+      }, 200);
+    }, 500);
   }
 
   async function sendWelcomeEmail(recipient: string) {
