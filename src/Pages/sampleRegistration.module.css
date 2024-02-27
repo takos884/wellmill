@@ -129,3 +129,26 @@ span.unknownIdSmallPrint {
   font-size: 0.8rem;
   color: #222;
 }
+
+
+div.inputWrapper {
+  width: 100%;
+  padding: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+span.inputX {
+  position: absolute;
+  right: 1.5rem;
+  border: 1px solid #800;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 0.25rem;
+  background: #b00;
+  color: #fff;
+}

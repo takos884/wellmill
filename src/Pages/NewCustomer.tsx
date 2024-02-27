@@ -11,6 +11,15 @@ const breadcrumbs = [
   { text: "登録完了", url: "/new-customer" },
 ];
 
+const sampleID = localStorage.getItem('sampleID');
+const suggestAddress = (!!sampleID && false);
+const suggestAddressMessage = (
+  <div className={styles.registerMessage}>
+    <span>サンプルの登録を続けるには、アドレスを追加してください。</span>
+    <Link to="/address"><button>アドレスを登録する</button></Link>
+  </div>
+)
+
 export default function NewCustomer() {
   return(
     <>
@@ -22,6 +31,7 @@ export default function NewCustomer() {
         <span>登録したメールアドレスにも自動メールをお送りしています。</span>
         <Link to="/account"><button>アカウントページに進む</button></Link>
       </div>
+      {suggestAddress ? suggestAddressMessage : null}
       <Footer />
     </>
   );

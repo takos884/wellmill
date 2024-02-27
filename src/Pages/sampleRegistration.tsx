@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserContext } from "../Contexts/UserContext";
 import { Link } from "react-router-dom";
 import Header from "./Header";
@@ -23,6 +23,8 @@ function SampleRegistration() {
   const [kentaiIdLock, setKentaiIdLock] = useState(false);
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
 
   const now = new Date();
   now.setTime(now.getTime() + 9*60*60*1000); // Japan timezone = +9h
@@ -33,6 +35,20 @@ function SampleRegistration() {
 
   console.log("User");
   console.log(user);
+
+
+
+  useEffect(() => {
+    const localSampleId = localStorage.getItem('sampleID');
+
+    if(localSampleId) {
+      console.log(`Sample ID from local storage: ${localSampleId}`);
+      setKentaiId(localSampleId);
+      setKentaiIdLock(true);
+    }
+  }, []);
+
+
 
   useEffect(() => {
     const sampleId = searchParams.get('sample') || searchParams.get('sampleId');
@@ -99,11 +115,20 @@ function SampleRegistration() {
 
   //console.dir(sampleBackupData);
 
-  const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
-  const forceSigninMessage = `テストを登録するには<br/>サインインする必要があります`;
+  const forceSignin = (!userLoading && !user?.customerKey);
+  //const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
+  const forceSigninMessage = (
+    <>
+      テストを登録するには<br/>
+      サインインする必要があります
+    </>);
 
-  const forceAddress = (!userLoading && user?.addresses.length === 0 && kentaiIdLock);
-  const forceAddressMessage = `テストを登録するには<br/>住所を登録する必要があります`;
+  const forceAddress = (!userLoading && user?.addresses.length === 0 && kentaiIdLock && false);
+  const forceAddressMessage = (
+    <>
+      テストを登録するには<br/>
+      住所を登録する必要があります
+    </>);
 
   const forceModal = (
     <div className={styles.backdrop}>
@@ -111,7 +136,7 @@ function SampleRegistration() {
         <img className={styles.modalImg} src="Pencil.png" alt="Pencil" />
         <span className={styles.modalSpan}>{forceSignin ? forceSigninMessage : forceAddress ? forceAddressMessage : null}</span>
         <div className={styles.modalLinks}>
-          <Link to="/sample-registration" onClick={() => {setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>
+          <Link to="/sample-registration" onClick={() => {localStorage.removeItem('sampleID'); setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>
           {
             forceSignin ? <Link to="/login"><span className={styles.modalLinkPrimary}>サインイン</span></Link> :
             forceAddress ? <Link to="/address"><span className={styles.modalLinkPrimary}>住所を登録</span></Link> : null
@@ -121,9 +146,11 @@ function SampleRegistration() {
     </div>
   );
 
+  const clearButton = (<span className={styles.inputX} onClick={() => {localStorage.removeItem('sampleID'); setKentaiId(""); setKentaiIdLock(false); navigate("/sample-registration")}}>✖</span>);
+
   return(
     <>
-      {forceSignin && forceModal}
+      {(forceSignin || forceAddress) && forceModal}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">検体IDの登録</span>
@@ -133,7 +160,7 @@ function SampleRegistration() {
         <span className={styles.subHeader2}>（IDが一致しているか念の為ご確認ください）</span>
         <img src="registerQR.jpg" alt="Sample QR code"/>
         <span className={styles.inputHeader}>検体ID<span className={styles.required}>必須</span></span>
-        <input type="text" value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />
+        <div className={styles.inputWrapper}><input type="text" style={{width: "100%", marginLeft: 0, marginRight: 0}} value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />{kentaiIdLock ? clearButton : null}</div>
         {unknownId}
         <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
         <input type="date" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange}></input>

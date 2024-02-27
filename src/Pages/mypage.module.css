@@ -62,6 +62,13 @@ span.link:hover {
   border: 1px solid #af3e92;
 }
 
+span.suggestSpan {
+  display: flex;
+  justify-content: center;
+  background: #fba800;
+  padding: 0.25rem;
+  border-radius: 0 0 1rem 1rem;
+}
 
 div.advice {
   display: flex;

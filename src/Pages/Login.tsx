@@ -41,7 +41,11 @@ const Login = () => {
       localStorage.removeItem('userLocal');
 
       setTimeout(() => {
-        navigate('/account');
+        if(localStorage.getItem('sampleID')) {
+          navigate('/sample-registration');
+          return
+        }
+        navigate('/account');        
       }, 500);
     }
   };

@@ -54,6 +54,12 @@ const MyPage = () => {
 
   const logoutText = guest ? "買い物データ削除" : "ログアウト"
 
+  const suggestRegister = (localStorage.getItem('sampleID'));
+  const suggestRegisterMessage = (<span className={styles.suggestSpan}>サンプルを登録できます</span>);
+
+  const suggestAddress = (localStorage.getItem('sampleID') && user && user.addresses.length === 0 && false);
+  const suggestAddressMessage = (<span className={styles.suggestSpan}>サンプルの登録に必要です</span>);
+
   return (
     <>
       <div className="topDots" />
@@ -62,11 +68,11 @@ const MyPage = () => {
       <div className={styles.content}>
         <span className={styles.header}>{user.lastName} {user.firstName}様のマイページ</span>
         <div className={styles.linksGrid}>
-          <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span></Link>
+          <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span>{suggestRegister ? suggestRegisterMessage : null}</Link>
           <Link to="/result-list"><span className={styles.link}>検査結果の一覧</span></Link>
           <Link to="/how_to"><span className={styles.link}>採血の方法</span></Link>
           <Link to="/order-list"><span className={styles.link}>購入履歴</span></Link>
-          <Link to="/address"><span className={styles.link}>お届け先住所</span></Link>
+          <Link to="/address"><span className={styles.link}>お届け先住所</span>{suggestAddress ? suggestAddressMessage : null }</Link>
           <Link to="/profile"><span className={styles.link}>アカウント情報</span></Link>
         </div>
         {guest && makeAccountAdvice}

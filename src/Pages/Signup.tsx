@@ -208,6 +208,11 @@ function Signup() {
 
       // Ideally, I wouldn't need a reload after signing up, but it's so much simpler to just reload the page and force a new token login
       setTimeout(() => {
+        if(localStorage.getItem('sampleID')) {
+          navigate('/sample-registration');
+          return
+        }
+
         navigate('/new-customer');
         // Adding an additional delay before reload
         setTimeout(() => {

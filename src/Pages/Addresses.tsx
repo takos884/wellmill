@@ -11,6 +11,7 @@ import NewAddress from "./NewAddress";
 
 import { Address } from "../types";
 import { prefectures } from "../Utilities/addressData"
+import { Link } from "react-router-dom";
 
 
 const breadcrumbs = [
@@ -84,12 +85,22 @@ function Addresses() {
     </>
   )
 
+  const sampleId = localStorage.getItem('sampleID');
+  const suggestRegister = (sampleId && user && user.addresses.length > 0 && false);
+  const suggestRegisterMessage = (
+    <div className={styles.registerMessage}>
+      <span>サンプルを登録することができます。</span>
+      <Link to="/sample-registration"><button>サンプル登録</button></Link>
+    </div>
+  )
+
   return(
     <>
       {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">お届け先住所</span>
+      {suggestRegister ? suggestRegisterMessage : null}
       {userLoading === false && (<button onClick={() => {setSelectedAddressKey(null); setShowNewAddress(true)}}>新しい住所を追加</button>)}
       <div className={styles.contentWrapper}>
         {userLoading === true && loadingAddressesMessage}
