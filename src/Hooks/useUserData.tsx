@@ -462,7 +462,7 @@ export const useUserData = (): UseUserDataReturnType => {
   const createPaymentIntent = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
     setCartLoading(true);
     const paymentIntent = await createPaymentIntentFunction(cartLines, addressesState);
-    localStorage.setItem('currentPaymentIntent', paymentIntent.data.paymentIntentId);
+    localStorage.setItem('paymentIntentId', paymentIntent.data.paymentIntentId);
 
     setCartLoading(true);
     return paymentIntent;
@@ -582,6 +582,7 @@ export const useUserData = (): UseUserDataReturnType => {
       paymentIntentId: paymentIntentId,
       note: null,
       amount: user.cart.cost,
+      couponDiscount: 0,
       email: null,
       newPurchaseJson: null,
       lineItems: lineItems,
@@ -633,6 +634,9 @@ export const useUserData = (): UseUserDataReturnType => {
 
     const purchase = user.purchases.find(pur => {return pur.paymentIntentId === paymentIntentId})
     if(!purchase) { return { data: null, error: "No purchase" }; }
+    const localCouponDiscount = parseInt(localStorage.getItem('couponDiscount') || "0");
+    purchase.couponDiscount = localCouponDiscount;
+
     const purchaseLineItems = purchase.lineItems;
     console.log("purchaseLineItems");
     console.log(purchaseLineItems);
@@ -785,6 +789,7 @@ export const useUserData = (): UseUserDataReturnType => {
     */
 
     const requestBody = {email: email, purchase: purchase, addresses: addresses, lineItems: purchase.lineItems, products: products};
+    console.log("requestBody before sendOrderEmail");
     console.log(requestBody);
 
     const APIResponse = await CallAPI(requestBody, "sendOrderEmail");

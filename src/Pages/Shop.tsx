@@ -22,7 +22,7 @@ function Shop() {
         <div className="topDots" />
         <Header breadcrumbs={breadcrumbs} />
         <span className="topHeader">SHOP</span>
-        <span className={styles.shoppingDescription} >検査キット到着後、専用アプリにて検査項目を自由に選べます。ご購入の際は、検査する項目数だけ選んでください。</span>
+        <span className={styles.shoppingDescription} >専用アプリにて検査項目を自由に選べます。ご購入の際は、検査する項目数だけ選んでください。</span>
         {productsLoading && <p>Loading...</p>}
         {productsError && <p>Error: {productsError}</p>}
         <div className={styles.productGrid}>

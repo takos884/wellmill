@@ -42,6 +42,7 @@ const pool = mysql.createPool({
 // const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
 //const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 const PRODUCTS_FILE_PATH = path.join('/var/www/wellmill/products.json');
+const COUPONS_FILE_PATH = path.join('/var/www/wellmill/coupons.json');
 const ORDER_BACKUP_FILE_PATH = path.join('/var/www/wellmill/order-WindsorAction.json');
 
 // used for both creating a file, and calculating cart totals
@@ -106,8 +107,7 @@ async function fetchProducts() {
   query = `
     SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
     FROM product p
-    LEFT JOIN image i ON p.productKey = i.productKey
-  `;
+    LEFT JOIN image i ON p.productKey = i.productKey`;
   //console.log("Query: " + query);
 
   try{
@@ -149,16 +149,33 @@ async function fetchProducts() {
         });
       }
     });
-
-    // Write the products to a file
-    fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
-    console.log(`[${CurrentTime()}] Updated modern products.json`);
-
-    return Promise.resolve(true);
   } catch(error) {
     console.error(`[${CurrentTime()}] Error fetching products:`, error);
     return Promise.reject(error);
   }
+
+  // Write the products to a file
+  fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
+  console.log(`[${CurrentTime()}] Updated modern products.json`);
+
+
+  query = `SELECT * FROM coupon`;
+
+  try{
+    const [coupons] = (await pool.query(query));
+
+    coupons.forEach(coupon => {
+      delete coupon.code;
+    });
+
+    fs.writeFileSync(COUPONS_FILE_PATH, JSON.stringify(Object.values(coupons), null, 2));
+    console.log(`[${CurrentTime()}] Updated coupons.json`);
+  } catch(error) {
+    console.error(`[${CurrentTime()}] Error fetching coupons:`, error);
+    return Promise.reject(error);
+  }
+
+  return Promise.resolve(true);
 }
 
 fetchProducts();
@@ -1346,7 +1363,7 @@ app.post('/generateReceipt', async (req, res) => {
   doc.text(`¥${totalWithTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithTax.toString()) - leftPadding, currentY);
   
 
-  const footerAddress = "株式会社リプロセル\nウェルミルサービス事業\n〒222-0033\n神奈川県横浜市港北区新横浜三丁目8-11\nメットライフ新横浜ビル9階"
+  const footerAddress = "株式会社リプロセル\nウェルミルサービス事業\n〒222-0033\n神奈川県横浜市港北区新横浜三丁目8-11\nメットライフ新横浜ビル9階\n登録番号：T2020001086778"
   const footerRight = `#${purchaseKey} - 領収書は ${formattedCreationTime} に生成されました`;
   //const footerRight = "© 2024 www.well-mill.com";
   doc.fontSize(10).text(footerAddress, 50,                                                 doc.page.height - 45 - doc.heightOfString(footerRight));
@@ -2319,16 +2336,30 @@ app.post("/createPaymentIntent", async (req, res) => {
 
 
   if(req.body.data.guest === true) {
-    //createGuestPaymentIntent(req, res)
-    console.log("Created paymentIntent for guest");
+    // Save the purchase intention for guest (no customer key)
+    query = `
+      INSERT INTO purchase (paymentIntentId, amount)
+      VALUES (?, ?)`;
+    values = [paymentIntent.id, paymentIntent.amount];
+
+    let purchaseInsertId;
+    try {
+      const [results] = await pool.query(query, values);
+      purchaseInsertId = results.insertId;
+    } catch (error) {
+      console.error('Error creating purchase intention: ', error);
+      return res.status(500).send('Error creating purchase intention: ' + error);
+    }
+
+    console.log("Created paymentIntent for guest and saved in database");
     return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
   }
 
-  console.log("Created paymentIntent");
+  console.log("Created paymentIntent (not a guest)");
   //console.log(paymentIntent);
 
 
-  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
+  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate their customer key
   const validation = await ValidatePayload(req.body.data);
   if(validation.valid === false) {
     console.log(`Validation error in createPaymentIntent: ${validation.message}`);
@@ -2440,15 +2471,23 @@ app.post("/updatePaymentIntent", async (req, res) => {
   console.log("░▒▓█ Hit updatePaymentIntent. Time: " + CurrentTime());
   console.dir(req.body, { depth: null, colors: true });
 
-  const validation = await ValidatePayload(req.body.data);
-  if(validation.valid === false) {
-    console.log(`Validation error in updatePaymentIntent: ${validation.message}`);
-    return res.status(400).send("Validation error");
-  }
-  const customerKey = validation.customerKey;
+  // Can't validate like normal. A guest can do this, but won't have a token.
+  // If the sender knows the paymentIntentId, they can apply a coupon
+
+  //const validation = await ValidatePayload(req.body.data);
+  //if(validation.valid === false) {
+  //  console.log(`Validation error in updatePaymentIntent: ${validation.message}`);
+  //  return res.status(400).send("Validation error");
+  //}
+  //const customerKey = validation.customerKey;
 
   // Blank/undefined is ok, will reset to no discount
   const couponCode = req.body.data.couponCode;
+  const couponRegex = /^[\p{L}\p{N}\p{Pd}\p{Pc}\s.,]+$/u;
+  if(!couponRegex.test(couponCode)) {
+    console.log(`Malformed coupon code: ${couponCode}`);
+    return res.status(400).send('Malformed coupon code');
+  }
 
   const cartLines = req.body.data.cartLines;
   if(!cartLines) { return res.status(400).send('No cart lines provided'); }
@@ -2477,7 +2516,7 @@ app.post("/updatePaymentIntent", async (req, res) => {
           amount: purchaseTotal,
       });
 
-      res.json({ success: true, amount: purchaseTotal, paymentIntent: updatedPaymentIntent });
+      res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
   } catch (error) {
       res.status(400).send("Failed to update intent");
   }
@@ -2487,23 +2526,28 @@ app.post("/updatePaymentIntent", async (req, res) => {
 app.post("/finalizePurchase", async (req, res) => {
   console.log("░▒▓█ Hit finalizePurchase. Time: " + CurrentTime());
   console.log(req.body);
-  if(req.body.data.guest === true) {
-    return res.json({error: "Guest cannot finalizePurchase on server"});
+//  if(req.body.data.guest === true) {
+//    return res.json({error: "Guest cannot finalizePurchase on server"});
+//  }
+//
+//  const validation = await ValidatePayload(req.body.data);
+//  if(validation.valid === false) {
+//    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
+//    return res.status(400).send("Validation error");
+//  }
+//  const customerKey = validation.customerKey;
+  const keyRegex = /^[1-9]\d*$/;
+  const customerKey = req.body.data.customerKey;
+  if(!keyRegex.test(customerKey)) {
+    return res.status(400).send('Malformed customer key');
   }
-
-  const validation = await ValidatePayload(req.body.data);
-  if(validation.valid === false) {
-    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
-    return res.status(400).send("Validation error");
-  }
-  const customerKey = validation.customerKey;
 
   // Validate the email
   const email = req.body.data.email;
   const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if(!regex.test(email)) { return res.status(400).send('Malformed email address'); }
 
-  // I use their token to validate registered users, not using this secret
+  // I use the paymentIntentId to validate users request, not using this secret
   const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);

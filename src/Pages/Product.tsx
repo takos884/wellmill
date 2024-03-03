@@ -91,7 +91,7 @@ function Product() {
           <input  className={styles.quantityInput} type="text" value={productQuantity} readOnly style={{ width: '50px', textAlign: 'center' }}/>
           <button className={styles.quantityButton} onClick={() => { if (productQuantity < 10) { setProductQuantity(prevQuantity => prevQuantity + 1); } }}>+</button>
         </div>
-        {false && <span className={styles.quantityInfo}>※検査キット到着後、専用アプリにて検査項目を自由に選べます。ご購入の際は、検査する項目数だけ選んでください。</span>}
+        {false && <span className={styles.quantityInfo}>※専用アプリにて検査項目を自由に選べます。ご購入の際は、検査する項目数だけ選んでください。</span>}
       </>
     )
 

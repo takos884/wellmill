@@ -115,7 +115,7 @@ function SampleRegistration() {
 
   //console.dir(sampleBackupData);
 
-  const forceSignin = (!userLoading && !user?.customerKey);
+  const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
   //const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
   const forceSigninMessage = (
     <>

@@ -9,7 +9,7 @@ import { useProducts } from "../Contexts/ProductContext";
 import { prefectures } from "../Utilities/addressData"
 import styles from './checkoutForm.module.css';
 import NewAddress from "./NewAddress";
-import { LineItemAddressesArray } from "../types";
+import { Coupon, LineItemAddressesArray } from "../types";
 import CallAPI from "../Utilities/CallAPI";
 
 type CheckoutFormProps = {
@@ -23,7 +23,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   const stripe = useStripe();
   const elements = useElements();
 
-  const { user, setCartLoading } = useContext(UserContext);
+  const { user, setUser, setCartLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
 
   //#region Addresses
@@ -53,6 +53,11 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     address.addressKey === selectedAddressKey;
   });
 
+  useEffect(() => {
+    if(addresses.length === 0) {
+      setShowNewAddress(true);
+    }
+  }, [addresses]);
 
   // Changes the cursor to wait for the whole page while sending payment
   useEffect(() => {
@@ -86,13 +91,23 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   }, [stripe]);
 
   async function HandleCouponClick() {
-    if(!user) return;
+    if(!user) {
+      console.log("User is not defined when trying to apply a coupon.");
+      return;
+    }
+
+    const paymentIntentId = localStorage.getItem('paymentIntentId');
+    if(!paymentIntentId) return;
+
+    const purchase = user.purchases.find(purchase => {return purchase.paymentIntentId === paymentIntentId});
+    if(!purchase) {
+      console.log("Purchase not found in user.purchases.");
+      return;
+    }
 
     const couponDiscount = Math.round(await CalculateCouponDiscount());
     setCouponDiscount(Math.min(couponDiscount, cart.cost));
-
-    const paymentIntentId = localStorage.getItem('currentPaymentIntent');
-    if(!paymentIntentId) return;
+    localStorage.setItem('couponDiscount', couponDiscount.toString());
 
     const updateIntentData = {
       customerKey: user.customerKey,
@@ -107,22 +122,63 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       console.log("Coupon discount did not match the expected amount.");
       console.log("CallAPIResponse.data.amount: " + CallAPIResponse.data.amount + ", cart.cost - couponDiscount: " + (cart.cost - couponDiscount));
     }
+
+    const returnedCouponDiscount = CallAPIResponse.data.couponDiscount;
+    if(returnedCouponDiscount !== couponDiscount) {
+      console.log("Coupon discount did not match the expected amount.");
+      console.log("returnedCouponDiscount: " + returnedCouponDiscount + ", couponDiscount: " + couponDiscount);
+    }
+
+    //console.log("purchase");
+    //console.log(purchase);
+    //console.log("CallAPIResponse");
+    //console.log(CallAPIResponse);
+    //console.log("couponDiscount");
+    //console.log(couponDiscount);
+    //console.log("user.purchases");
+    //console.log(user.purchases);
+
+    setUser(prevUser => {
+      if(!prevUser) return null;
+      const newPurchases = prevUser.purchases.map(prch => {
+        if(prch.paymentIntentId === paymentIntentId) { // Directly use paymentIntentId assuming it's available in this scope
+          return {...prch, couponDiscount: couponDiscount};
+        }
+        return prch;
+      });
+      return {...prevUser, purchases: newPurchases};
+    });
   }
 
   async function CalculateCouponDiscount() {
-    if(!user) return 0;
-    if(!couponCode) return 0;
+    if(!user) {
+      console.log("User is not defined when trying to calculate a coupon value.");
+      return 0;
+      }
+    if(!couponCode) {
+      console.log("Coupon code is not defined when trying to calculate a coupon value.");
+      return 0;
+    }
     const couponCodeHash = await sha1(couponCode);
-    const coupon = user.coupons.find(coupon => {return coupon.hash === couponCodeHash});
-    if(!coupon) return 0;
+
+    const currentCoupons = user.coupons.length > 0 ? user.coupons : JSON.parse(localStorage.getItem('coupons') || "[]");
+    const coupon = currentCoupons.find((coupon: Coupon) => {return coupon.hash === couponCodeHash});
+    if(!coupon) {
+      console.log("Coupon not found in currentCoupons.");
+      console.log(currentCoupons);
+      return 0;
+    }
 
     const couponType = parseInt(coupon.type.toString());
     const couponTarget = parseInt(coupon.target.toString());
     const couponReward = parseInt(coupon.reward.toString());
-    if(isNaN(couponType) || couponType < 0 || isNaN(couponTarget) || couponTarget < 0 || isNaN(couponReward) || couponReward < 0) { return 0; }
+    if(isNaN(couponType) || couponType < 0 || isNaN(couponTarget) || couponTarget < 0 || isNaN(couponReward) || couponReward < 0) {
+      console.log("Coupon type, target, or reward is not a valid number.");
+      return 0;
+    }
   
     // This can be undefined for type 1 and 2
-    const couponProductKey = parseInt(coupon.productKey?.toString()) || undefined;
+    const couponProductKey = parseInt(coupon.productKey?.toString() || "") || undefined;
   
     const productCount = user.cart.lines.reduce((acc, line) => {
       if (line.productKey === couponProductKey) {
@@ -154,6 +210,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       }
     }
 
+    console.log("Coupon type did not match any of the expected types.");
     return 0;
   }
 
@@ -389,6 +446,10 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   );
 
   // const paymentElementOptions: StripePaymentElementOptions = { layout: "tabs" }
+
+  if(selectedAddressKey === null && addresses.length === 1) {
+    setSelectedAddressKey(addresses[0].addressKey || null)
+  }
 
   return (
     <>

@@ -34,7 +34,8 @@ export type Product = {
     price: number,
     taxRate: number,
     type: number,
-    images: Image[]
+    images: Image[],
+    coupons?: Coupon[],
 }
 
 export type Image = {
@@ -107,13 +108,11 @@ export type CartLine = {
 
 export type Coupon = {
     couponKey: number,
-    productKey: number,
+    productKey: number | null,
     hash: string,
     type: number,
     target: number,
-    targetUnit: string,
     reward: number,
-    targetReward: string,
 }
 //#endregion
 
@@ -174,6 +173,7 @@ export type Purchase = {
     paymentIntentId: string,
     note: string | null,
     amount: number,
+    couponDiscount: number,
     email: string | null,
     newPurchaseJson: string | null,
     lineItems: LineItem[],

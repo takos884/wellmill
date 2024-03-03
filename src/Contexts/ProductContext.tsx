@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from '../types';
+import { Coupon, Product } from '../types';
 
 type ProductContextType = {
   products: Product[] | undefined;
@@ -59,9 +59,28 @@ export function ProductProvider({ children }: ProductProviderProps) {
           setLoading(false);
         }
       }
+
+
+      try {
+        const response = await fetch('/coupons.json');
+        if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
+        const rawResponse = await response.json();
+
+        // Data might come back as a top-level array, or within an object, and the field value is "products"
+        const rawCouponss = (Array.isArray(rawResponse) ? rawResponse : (rawResponse.products && Array.isArray(rawResponse.products)) ? rawResponse.products : [])
+
+        // Values within products are all strings, convert to numbers and bools
+        const fetchedCoupons = transformCoupons(rawCouponss);
+        console.log("fetchedCoupons");
+        console.log(fetchedCoupons);
+        localStorage.setItem('coupons', JSON.stringify(fetchedCoupons));
+      } catch (err) {
+          setError(err instanceof Error ? err.message : 'An error occurred while fetching coupons.');
+      }
     }
 
     fetchProducts();
+
 
     // Cleanup function to set isMounted to false when component unmounts
     return () => { isMounted = false; };
@@ -83,6 +102,21 @@ export function ProductProvider({ children }: ProductProviderProps) {
       };
   
       return product;
+    });
+  }
+
+  function transformCoupons(rawData: any[]): Coupon[] {
+    return rawData.map((rawCoupon) => {
+      const coupon: Coupon = {
+        couponKey: Number(rawCoupon.couponKey),
+        productKey: Number(rawCoupon.productKey),
+        hash: String(rawCoupon.hash),
+        type: Number(rawCoupon.type),
+        target: Number(rawCoupon.target),
+        reward: Number(rawCoupon.reward),
+      };
+
+      return coupon;
     });
   }
 
