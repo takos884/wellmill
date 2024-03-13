@@ -472,6 +472,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
                     {isSendingPayment ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
                   </span>
                 </button>
+                <button style={{marginTop: 0}} onClick={() => { console.log("setDisplayCheckout(false) 3"); setCartLoading(false); setDisplayCheckout(false); }}>カートに戻る</button>
                 {message && <div id="payment-message" className={styles.paymentMessage}>{message}</div>}
               </form>
               <div className={styles.checkoutFormProducts}>

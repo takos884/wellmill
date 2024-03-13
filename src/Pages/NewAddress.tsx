@@ -220,7 +220,7 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
     <div className={styles.newAddressWrapper} onClick={HideNewAddress}>
       <div className={styles.newAddressContent}>
         <span className={styles.newAddressX} onClick={() => { setShowNewAddress(false); }}>✖</span>
-        <span className="topHeader">{addressKey === null ? "新しい住所を追加" : "住所を編集する"}</span>
+        <span className="topHeader">{addressKey === null ? "配送先の入力" : "住所を編集する"}</span>
         <form className={styles.newAddressForm}>
           <div>
             <span className={styles.subheader}>名前を入力してください<span className={styles.red}>必須</span></span>
@@ -232,8 +232,8 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
 
           <span className={styles.subheader}>住所<span className={styles.red}>必須</span></span>
           <div className={styles.labeledInput}>
-            <input type="text" value={displayedPostalCode} placeholder="〒100-8111" ref={postalCodeRef} onChange={handlePostalCodeChange} onFocus={() => PostalCodeFormatter()} onBlur={() => PostalCodeFormatter()} />
-            <span className={styles.inputLabel}>郵便番号</span>
+            <input type="text" value={displayedPostalCode} placeholder="〒" ref={postalCodeRef} onChange={handlePostalCodeChange} onFocus={() => PostalCodeFormatter()} onBlur={() => PostalCodeFormatter()} />
+            <span className={styles.inputLabel}>郵便番号 (半角入力)</span>
           </div>
           <div className={styles.labeledInput}>
             <select className={fetchingAddress ? styles.shimmering : ""} value={address?.prefCode || ""} onChange={(e) => handleAddressChange("prefCode", e.target.value)}>
@@ -254,10 +254,10 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
             <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="港北区新横浜3-8-11" value={address?.ward || ""} onChange={(e) => handleAddressChange("ward", e.target.value)} />
           </div>
           <div>
-            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="メットライフ新横浜ビル" value={address?.address2 || ""} onChange={(e) => handleAddressChange("address2", e.target.value)} />
+            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="マンション名・部屋番号" value={address?.address2 || ""} onChange={(e) => handleAddressChange("address2", e.target.value)} />
           </div>
           <div className={styles.inputRow}>
-            <span className={styles.subheader}>電話番号</span>
+            <span className={styles.subheader}>電話番号 (半角入力)</span>
             <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="080-1234-5678" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} onBlur={sanitizePhoneNumber} />
           </div>
 
