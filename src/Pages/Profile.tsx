@@ -153,12 +153,12 @@ function Profile() {
         hasError = true;
       }
     }
-    console.log("got everything")
 
     if (hasError) {
       alert('Please fill in all required fields.');
       return;
     }
+    console.log("got everything")
 
     const userData: Customer = {
       type: 'customer',

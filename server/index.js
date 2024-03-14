@@ -2120,6 +2120,10 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
     console.log("coupons2");
     console.dir(coupons, { depth: null, colors: true });
 
+    // Adjust date for timezone, adding 12h should make anything from -12h to +11h work, which is most of the world
+    // It's kinda a hack, but this site will likely only ever run in Japan
+    customer.birthday = new Date(customer.birthday.getTime() + (12*60*60*1000))
+
     // Remove sensitive data before sending the customer object
     delete customer.passwordHash;
     customer.type = "customer";
@@ -2345,17 +2349,17 @@ app.post("/createPaymentIntent", async (req, res) => {
       VALUES (?, ?)`;
     values = [paymentIntent.id, paymentIntent.amount];
 
-    let purchaseInsertId;
+    let purchaseKey;
     try {
       const [results] = await pool.query(query, values);
-      purchaseInsertId = results.insertId;
+      purchaseKey = results.insertId;
     } catch (error) {
       console.error('Error creating purchase intention: ', error);
       return res.status(500).send('Error creating purchase intention: ' + error);
     }
 
     console.log("Created paymentIntent for guest and saved in database");
-    return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+    return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, purchaseKey: purchaseKey});
   }
 
   console.log("Created paymentIntent (not a guest)");

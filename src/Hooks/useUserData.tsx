@@ -467,22 +467,133 @@ export const useUserData = (): UseUserDataReturnType => {
     setCartLoading(true);
     return paymentIntent;
 
+    let APIResponse;
+    let purchaseKey: number;
+
     async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
       if(guest) {
-        return createPaymentIntentLocal(cartLines, addressesState); // { data: xxx, error: yyy }
+        if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
+        if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
+        if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when creating payment intent locally" };
+    
+        APIResponse = await createPaymentIntentLocal(cartLines, addressesState); // { data: xxx, error: yyy }
+
+        if(APIResponse.error) {
+          console.log("Error in createPaymentIntent as guest in useUserData:");
+          console.log(APIResponse);
+          return APIResponse;
+        }  
+
+        purchaseKey = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
+    
+      } else {
+        if(!user)              return { data: null, error: "No user data available when creating payment intent" };
+        if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
+        if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
+        const requestBody = {customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState, guest: guest };
+        APIResponse = await CallAPI(requestBody, "createPaymentIntent");
+  
+        if(APIResponse.error) {
+          console.log("Error in createPaymentIntent as non-guest in useUserData:");
+          console.log(APIResponse);
+          return APIResponse;
+        }  
+
+        purchaseKey = parseInt(APIResponse.data.purchaseKey);
       }
 
-      if(!user)              return { data: null, error: "No user data available when creating payment intent" };
-      if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
-      if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
-      const requestBody = {customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState, guest: guest };
-      const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
+      const paymentIntentId = APIResponse.data.paymentIntentId;
+      const clientSecret = APIResponse.data.clientSecret;
+      const defaultAddress = user.addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
 
-      if(APIResponse.error) {
-        console.log("Error in createPaymentIntent in useUserData:");
-        console.log(APIResponse);
-        return APIResponse;
+
+      const lineItems: LineItem[] = [];
+      cartLines.forEach(cartLine => {
+        const addressData = addressesState.find(addrSt => {return addrSt.lineItemKey === cartLine.lineItemKey});
+        if(!addressData) { return {data: null, error: `addressData for lineItemKey: ${cartLine.lineItemKey} not found`}; }
+
+        // Addresses for this item are not split up
+        if(addressData.addresses === null) {
+          //if(!defaultAddress || !defaultAddress.addressKey) { return {data: null, error: `No default address and no specific address for lineItemKey: ${cartLine.lineItemKey}`}; }
+          const newLineItem: LineItem = {
+            type: "lineItem",
+            lineItemKey: cartLine.lineItemKey,
+            productKey: cartLine.productKey,
+            customerKey: null,
+            purchaseKey: purchaseKey,
+            addressKey: defaultAddress?.addressKey || 0,
+            quantity: cartLine.quantity,
+            addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+            unitPrice: cartLine.unitPrice,
+            taxRate: cartLine.taxRate,
+            firstName: defaultAddress?.firstName || null,
+            lastName: defaultAddress?.lastName || null,
+            postalCode: defaultAddress?.postalCode || null,
+            prefCode: defaultAddress?.prefCode || null,
+            pref: defaultAddress?.pref || null,
+            city: defaultAddress?.city || null,
+            ward: defaultAddress?.ward || null,
+            address2: defaultAddress?.address2 || null,
+            phoneNumber: defaultAddress?.phoneNumber || null,
+          }
+          lineItems.push(newLineItem);
+        }
+
+        // Addresses for this item are split up
+        else {
+          addressData.addresses.forEach(addrData => {
+            const address = user.addresses.find(addr => {return addr.addressKey === addrData.addressKey })
+            if(!address || !address.addressKey) { return {data: null, error: `address for addressData addressKey: ${addrData.addressKey} not found`}; }
+            const newLineItem: LineItem = {
+              type: "lineItem",
+              lineItemKey: cartLine.lineItemKey,
+              productKey: cartLine.productKey,
+              customerKey: null,
+              purchaseKey: purchaseKey,
+              addressKey: address.addressKey,
+              quantity: addrData.quantity,
+              addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+              unitPrice: cartLine.unitPrice,
+              taxRate: cartLine.taxRate,
+              firstName: address.firstName || null,
+              lastName: address.lastName || null,
+              postalCode: address.postalCode || null,
+              prefCode: address.prefCode || null,
+              pref: address.pref || null,
+              city: address.city || null,
+              ward: address.ward || null,
+              address2: address.address2 || null,
+              phoneNumber: address.phoneNumber || null,
+            }
+            lineItems.push(newLineItem);
+          });
+        }
+      });
+
+      // make purchase in user "purchase array, include my paymentIntentId + amount"
+      const newPurchase: Purchase = {
+        purchaseKey: purchaseKey,
+        customerKey: null,
+        status: "created",
+        creationTime: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
+        purchaseTime: null,
+        shippedTime: null,
+        refundTime: null,
+        paymentIntentId: paymentIntentId,
+        note: null,
+        amount: user.cart.cost,
+        couponDiscount: 0,
+        email: null,
+        newPurchaseJson: null,
+        lineItems: lineItems,
+        cartLines: [],
       }
+
+      const userClone: Customer = JSON.parse(JSON.stringify(user));
+      userClone.purchases.push(newPurchase);
+      UpdateUser(userClone);
+      localStorage.setItem('userLocal', JSON.stringify(userClone));
+      console.log(JSON.parse(localStorage.getItem('userLocal') || ""));
 
       //UpdateUser(APIResponse.data);
       return APIResponse;
@@ -490,10 +601,6 @@ export const useUserData = (): UseUserDataReturnType => {
   }, [guest, user])
 
   const createPaymentIntentLocal = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
-    if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
-    if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
-    if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when creating payment intent locally" };
-
     const requestBody = {cartLines: cartLines, addressesState: addressesState, guest: guest};
     const APIResponse = await CallAPI(requestBody, "createPaymentIntent");
     if(APIResponse.error) {
@@ -501,99 +608,6 @@ export const useUserData = (): UseUserDataReturnType => {
       console.log(APIResponse);
       return APIResponse;
     }
-
-    const defaultAddress = user.addresses.find(addr => {return addr.defaultAddress === true}) || (user.addresses.length > 0 && user.addresses[0]) || null;
-    const purchaseKeyLocal = Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER -1000002) +1000001)
-    const paymentIntentId = APIResponse.data.paymentIntentId;
-    const clientSecret = APIResponse.data.clientSecret;
-
-    const lineItems: LineItem[] = [];
-    cartLines.forEach(cartLine => {
-      const addressData = addressesState.find(addrSt => {return addrSt.lineItemKey === cartLine.lineItemKey});
-      if(!addressData) { return {data: null, error: `addressData for lineItemKey: ${cartLine.lineItemKey} not found`}; }
-
-      // Addresses for this item are not split up
-      if(addressData.addresses === null) {
-        //if(!defaultAddress || !defaultAddress.addressKey) { return {data: null, error: `No default address and no specific address for lineItemKey: ${cartLine.lineItemKey}`}; }
-        const newLineItem: LineItem = {
-          type: "lineItem",
-          lineItemKey: cartLine.lineItemKey,
-          productKey: cartLine.productKey,
-          customerKey: null,
-          purchaseKey: purchaseKeyLocal,
-          addressKey: defaultAddress?.addressKey || 0,
-          quantity: cartLine.quantity,
-          addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
-          unitPrice: cartLine.unitPrice,
-          taxRate: cartLine.taxRate,
-          firstName: defaultAddress?.firstName || null,
-          lastName: defaultAddress?.lastName || null,
-          postalCode: defaultAddress?.postalCode || null,
-          prefCode: defaultAddress?.prefCode || null,
-          pref: defaultAddress?.pref || null,
-          city: defaultAddress?.city || null,
-          ward: defaultAddress?.ward || null,
-          address2: defaultAddress?.address2 || null,
-          phoneNumber: defaultAddress?.phoneNumber || null,
-        }
-        lineItems.push(newLineItem);
-      }
-
-      // Addresses for this item are split up
-      else {
-        addressData.addresses.forEach(addrData => {
-          const address = user.addresses.find(addr => {return addr.addressKey === addrData.addressKey })
-          if(!address || !address.addressKey) { return {data: null, error: `address for addressData addressKey: ${addrData.addressKey} not found`}; }
-          const newLineItem: LineItem = {
-            type: "lineItem",
-            lineItemKey: cartLine.lineItemKey,
-            productKey: cartLine.productKey,
-            customerKey: null,
-            purchaseKey: purchaseKeyLocal,
-            addressKey: address.addressKey,
-            quantity: addrData.quantity,
-            addedAt: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
-            unitPrice: cartLine.unitPrice,
-            taxRate: cartLine.taxRate,
-            firstName: address.firstName || null,
-            lastName: address.lastName || null,
-            postalCode: address.postalCode || null,
-            prefCode: address.prefCode || null,
-            pref: address.pref || null,
-            city: address.city || null,
-            ward: address.ward || null,
-            address2: address.address2 || null,
-            phoneNumber: address.phoneNumber || null,
-          }
-          lineItems.push(newLineItem);
-        });
-      }
-    });
-
-    // make purchase in user "purchase array, include my paymentIntentId + amount"
-    const newPurchase: Purchase = {
-      purchaseKey: purchaseKeyLocal,
-      customerKey: null,
-      status: "created",
-      creationTime: new Date().toISOString().replace(/[T]/g, ' ').substring(0,19),
-      purchaseTime: null,
-      shippedTime: null,
-      refundTime: null,
-      paymentIntentId: paymentIntentId,
-      note: null,
-      amount: user.cart.cost,
-      couponDiscount: 0,
-      email: null,
-      newPurchaseJson: null,
-      lineItems: lineItems,
-      cartLines: [],
-    }
-
-    const userClone: Customer = JSON.parse(JSON.stringify(user));
-    userClone.purchases.push(newPurchase);
-    UpdateUser(userClone);
-    localStorage.setItem('userLocal', JSON.stringify(userClone));
-    console.log(JSON.parse(localStorage.getItem('userLocal') || ""))
 
     return APIResponse;
   }, [user]);

@@ -102,6 +102,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     const purchase = user.purchases.find(purchase => {return purchase.paymentIntentId === paymentIntentId});
     if(!purchase) {
       console.log("Purchase not found in user.purchases.");
+      console.log(user.purchases);
       return;
     }
 
