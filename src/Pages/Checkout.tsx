@@ -15,10 +15,10 @@ type CheckoutProps = {
 };
 
 // This is our *publishable* test API key.
-const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
+//const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
 // This is our *publishable* production API key.
-//const stripePromise = loadStripe("pk_live_51OZRPgKbzugMLft3UUXVWuMLrYnM0IkDU7Y8c5FqTOsRycYXzVx9fZcLn0nLViTsqG6vfUkAOX3UitSRwvrbsesw00FljV7keZ");
+const stripePromise = loadStripe("pk_live_51OZRPgKbzugMLft3UUXVWuMLrYnM0IkDU7Y8c5FqTOsRycYXzVx9fZcLn0nLViTsqG6vfUkAOX3UitSRwvrbsesw00FljV7keZ");
 
 function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
   const { user } = useContext(UserContext);
