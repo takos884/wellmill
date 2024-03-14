@@ -9,7 +9,7 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
-const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
+const stripe = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
 
 //const fetch = require('node-fetch');
 let fetch;
@@ -1875,7 +1875,8 @@ app.post('/deleteLineItem', async (req, res) => {
 
 
 //#region Azure backup
-const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
+//const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
+const BASE_URL = 'https://wellmill-api-mgmnt.azure-api.net/api/';
 
 
 // This storeBackupData Works a charm
@@ -1893,7 +1894,8 @@ app.post('/storeBackupData', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
       },
       body: JSON.stringify(inputData),
     };
@@ -1988,7 +1990,8 @@ async function StoreBackupData(endpoint, inputData) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
       },
       body: JSON.stringify(inputData),
     };

@@ -271,7 +271,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
 
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `https://stage.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+      confirmParams: { return_url: `https://shop.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
     });
 
     // This point will only be reached if there is an immediate error when
