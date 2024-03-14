@@ -19,7 +19,7 @@ type CheckoutFormProps = {
 
 
 export default function CheckoutForm({ setDisplayCheckout, addressesState }: CheckoutFormProps) {
-  console.log("Rendering CheckoutForm")
+  //console.log("Rendering CheckoutForm")
   const stripe = useStripe();
   const elements = useElements();
 
@@ -117,7 +117,10 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       couponCode: couponCode,
       cartLines: user.cart.lines,
     }
-    const CallAPIResponse = await CallAPI(updateIntentData, "updatePaymentIntent")
+    //console.log("updateIntentData");
+    //console.log(updateIntentData);
+
+    const CallAPIResponse = await CallAPI(updateIntentData, "updatePaymentIntent");
 
     if(CallAPIResponse.data.amount !== (cart.cost - couponDiscount)) {
       console.log("Coupon discount did not match the expected amount.");
@@ -457,7 +460,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       {showNewAddress && <NewAddress addressKey={selectedAddressKey} setShowNewAddress={setShowNewAddress} />}
       {selectedAddressKey === null && addressCards.length > 0 && selectAddressModal}
       <div className={styles.checkoutModal}>
-        <span className={styles.checkoutX} onClick={() => { console.log("setDisplayCheckout(false) 2"); setCartLoading(false); setDisplayCheckout(false); }}>✖</span>
+        <span className={styles.checkoutX} onClick={() => { console.log("setDisplayCheckout(false) 2"); setCartLoading(false); setDisplayCheckout(false); window.location.reload(); }}>✖</span>
           <div className={styles.checkoutFormWrapper}>
             <img src="logo.svg" alt="Logo" />
             <span className={styles.checkoutHeader}>Checkout</span>
@@ -473,7 +476,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
                     {isSendingPayment ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}
                   </span>
                 </button>
-                <button style={{marginTop: 0}} onClick={() => { console.log("setDisplayCheckout(false) 3"); setCartLoading(false); setDisplayCheckout(false); }}>カートに戻る</button>
+                <button style={{marginTop: 0}} onClick={() => { console.log("setDisplayCheckout(false) 3"); setCartLoading(false); setDisplayCheckout(false); window.location.reload(); }}>カートに戻る</button>
                 {message && <div id="payment-message" className={styles.paymentMessage}>{message}</div>}
               </form>
               <div className={styles.checkoutFormProducts}>

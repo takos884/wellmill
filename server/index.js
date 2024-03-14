@@ -9,7 +9,8 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
-const stripe = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
+const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
+//const stripe = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
 
 //const fetch = require('node-fetch');
 let fetch;
@@ -594,7 +595,7 @@ app.post('/sendWelcome', async (req, res) => {
           <img src="cid:logo" alt="Logo">
           <span style="font-size: 1.5rem; display: flex; margin-top: 1rem;">ウェルミル（デストサイト）へようこそ!</span>
           <span style="color: #444; display: flex; margin: 1rem 0;">会員登録いただきありがとうございます。引き続きお買い物をお楽しみください。</span>
-          <a href="https://stage.well-mill.com/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
+          <a href="https://shop.well-mill.com/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
           </div>
         </div>
         <hr/>
@@ -673,7 +674,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 2rem 1rem;">
-                <a href="https://stage.well-mill.com/shop" class="button" style="color: #FFFFFF">
+                <a href="https://shop.well-mill.com/shop" class="button" style="color: #FFFFFF">
                   ショップにアクセスする
                 </a>
               </td>
@@ -1026,12 +1027,12 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 <!-- Button -->
                 <tr style="font-size: 1.25rem;">
                   <td align="left" style="width: 200px; padding: 2rem 1rem;">
-                    <a href="https://stage.well-mill.com/account" class="button" style="color: #FFFFFF;">
+                    <a href="https://shop.well-mill.com/account" class="button" style="color: #FFFFFF;">
                       注文を表示する
                     </a>
                   </td>
                   <td style="width: 400px;">
-                    または<a href="https://stage.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
+                    または<a href="https://shop.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
                   </td>
                 </tr>
                 <tr>
@@ -1475,7 +1476,7 @@ app.post('/sendPassword', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 1rem 0;">
-                <a href="https://stage.well-mill.com/login" class="button" style="color: #FFFFFF">
+                <a href="https://shop.well-mill.com/login" class="button" style="color: #FFFFFF">
                   今すぐサインイン
                 </a>
               </td>
@@ -1894,8 +1895,8 @@ app.post('/storeBackupData', async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
-        'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        //'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
       },
       body: JSON.stringify(inputData),
     };
@@ -1990,8 +1991,8 @@ async function StoreBackupData(endpoint, inputData) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
-        'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
+        //'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
       },
       body: JSON.stringify(inputData),
     };
@@ -2296,17 +2297,17 @@ async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode)
   }, 0) ?? 0;
 
   if(couponType == "1") {
-    return (totalBeforeCoupon >= couponTarget) ? couponReward : 0;
+    return (totalBeforeCoupon >= couponTarget) ? Math.round(couponReward) : 0;
   }
 
   if(couponType == "2") {
-    return (totalBeforeCoupon >= couponTarget) ? (couponReward/100 * totalBeforeCoupon) : 0;
+    return (totalBeforeCoupon >= couponTarget) ? Math.round(couponReward/100 * totalBeforeCoupon) : 0;
   }
 
   if(couponType == "3") {
     if(!productCount) { return 0; }
     if(productCount >= couponTarget) {
-      return couponReward;
+      return Math.round(couponReward);
     }
     return 0;
   }
@@ -2314,7 +2315,7 @@ async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode)
   if(couponType == "4") {
     if(!productCount) { return 0; }
     if(productCount >= couponTarget) {
-      return (couponReward/100 * totalBeforeCoupon);
+      return Math.round(couponReward/100 * totalBeforeCoupon);
     }
     return 0;
   }
@@ -2525,7 +2526,8 @@ app.post("/updatePaymentIntent", async (req, res) => {
 
       res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
   } catch (error) {
-      res.status(400).send("Failed to update intent");
+    console.error('Error updating paymentIntent:', error);
+    res.status(400).send("Failed to update intent");
   }
 });
 

@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { UserContext } from '../Contexts/UserContext';
 
-const localEndpoint = 'https://stage.well-mill.com/api/storeBackupData';
+const localEndpoint = 'https://shop.well-mill.com/api/storeBackupData';
 
 export const useBackupDB = <T extends unknown>() => {
   const [data, setData] = useState<T | null>(null);

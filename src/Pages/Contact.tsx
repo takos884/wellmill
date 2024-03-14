@@ -40,7 +40,7 @@ function Contact() {
     event.preventDefault();
 
     try {
-        const response = await fetch('https://stage.well-mill.com/api/sendEmail', {
+        const response = await fetch('https://shop.well-mill.com/api/sendEmail', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ function Contact() {
         });
 
         if (response.ok) {
-            alert("Email sent successfully - Yes actually, I used my personal gmail, so I hope you didn't say anything rude. 😁");
+            alert("Email sent successfully");
             setFormData({  // Reset form
                 name: '',
                 email: '',
