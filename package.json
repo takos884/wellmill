@@ -2,7 +2,6 @@
   "name": "wellmill",
   "version": "0.1.0",
   "private": true,
-
   "proxy": "https://wellmill-api-mgmnt.azure-api.net",
   "dependencies": {
     "@sendgrid/mail": "^8.1.0",

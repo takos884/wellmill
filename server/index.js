@@ -552,7 +552,8 @@ app.post('/sendEmail', async (req, res) => {
 
   let mailOptions = {
       from: 'cdehaan@gmail.com', 
-      to: 'cdehaan@gmail.com', 
+      //to: 'cdehaan@gmail.com', 
+      to: 'wellmill@reprocell.com', 
       subject: 'New Contact Form Submission',
       text: `Name: ${req.body.name}\nEmail: ${req.body.email}\nPhone: ${req.body.phone}\nInquiry: ${req.body.inquiry}\nMessage: ${req.body.message}`
   };
@@ -1714,6 +1715,8 @@ app.post('/cancelPurchase', async (req, res) => {
   const customerKey = validation.customerKey;
 
   const purchaseKey = req.body.data.purchaseKey;
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
 
   // Sanitize input
   if (!Number.isInteger(purchaseKey) || purchaseKey.toString().length > 50) {
@@ -1772,7 +1775,7 @@ app.post('/cancelPurchase', async (req, res) => {
       originalPurchaseJson.touroku_kbn = 9; // 9 is for delete
       console.log("originalPurchaseJson");
       console.dir(originalPurchaseJson, { depth: null, colors: true });
-      const responseData = await StoreBackupData("chumon_renkei_api", originalPurchaseJson);
+      const responseData = await StoreBackupData("chumon_renkei_api", originalPurchaseJson, subdomain);
       console.log("responseData");
       console.log(responseData);
     } else {
@@ -1876,7 +1879,7 @@ app.post('/deleteLineItem', async (req, res) => {
 
 
 //#region Azure backup
-//const BASE_URL = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
+const BASE_URL_STAGE = 'https://wellmill-test-api-mgmnt.azure-api.net/api/';
 const BASE_URL = 'https://wellmill-api-mgmnt.azure-api.net/api/';
 
 
@@ -1942,6 +1945,9 @@ app.post('/storeBackupData', async (req, res) => {
 
   const { endpoint, paymentIntentId, inputData } = req.body.data;
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+
   if(endpoint === "kentai_id_check_api") {
     if(inputData.kentai_saishubi) {
       const dateRegex = /^(?:19|20)\d\d[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12][0-9]|3[01])$/;
@@ -1959,7 +1965,7 @@ app.post('/storeBackupData', async (req, res) => {
     console.log(`paymentStatus: ${paymentStatus}`);
 
     if(paymentStatus === 'succeeded') {
-      const result = await StoreBackupData(endpoint, inputData);
+      const result = await StoreBackupData(endpoint, inputData, subdomain);
 
       if (result.error) {
         return res.status(result.status).json({ message: result.message });
@@ -1970,7 +1976,7 @@ app.post('/storeBackupData', async (req, res) => {
 
     return res.status(400).json({ message: "Payment not succeeded" });  
   } else {
-    const result = await StoreBackupData(endpoint, inputData);
+    const result = await StoreBackupData(endpoint, inputData, subdomain);
 
     if (result.error) {
       return res.status(result.status).json({ message: result.message });
@@ -1981,18 +1987,21 @@ app.post('/storeBackupData', async (req, res) => {
 
 });
 
-async function StoreBackupData(endpoint, inputData) {
+async function StoreBackupData(endpoint, inputData, subdomain) {
   console.log("░▒▓█ Hit storeBackupData function. Time: " + CurrentTime());
   console.dir({endpoint, inputData}, { depth: null, colors: true });
 
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const fullEndpoint = `${stageSubdomain ? BASE_URL_STAGE : BASE_URL}${endpoint}`;
+  const subscriptionKey = stageSubdomain ? process.env.AZURE_TEST_API_KEY : process.env.AZURE_API_KEY;
   try {
-    const fullEndpoint = `${BASE_URL}${endpoint}`;
     const fullFetchContent = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
-        'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
+        //'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
+        'Ocp-Apim-Subscription-Key': subscriptionKey,
       },
       body: JSON.stringify(inputData),
     };
@@ -2545,6 +2554,10 @@ app.post("/finalizePurchase", async (req, res) => {
 //    return res.status(400).send("Validation error");
 //  }
 //  const customerKey = validation.customerKey;
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+
   const keyRegex = /^[1-9]\d*$/;
   const customerKey = req.body.data.customerKey;
   if(!keyRegex.test(customerKey)) {
@@ -2818,7 +2831,7 @@ app.post("/finalizePurchase", async (req, res) => {
         }
         console.log("backupData (for order)");
         console.dir(backupData, { depth: null, colors: true });
-        const backupResults = await StoreBackupData("chumon_renkei_api", backupData);
+        const backupResults = await StoreBackupData("chumon_renkei_api", backupData, subdomain);
         console.log("backupResults");
         console.log(backupResults);
         //#endregion
@@ -2870,6 +2883,9 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   console.log("req.headers:");
   console.dir(req.headers, { depth: null, colors: true });
   let query, values; // For MySQL
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
 
   //#region Validate inputs
   const purchaseKey = parseInt(req.body.chumon_no.replace(/\D/g, ''));

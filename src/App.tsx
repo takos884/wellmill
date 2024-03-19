@@ -28,6 +28,7 @@ import Faq from './Pages/Faq';
 import PurchaseDetails from './Pages/PurchaseDetails';
 import NewCustomer from './Pages/NewCustomer';
 import PasswordRecover from './Pages/PasswordRecover';
+import GTMHead from './Utilities/GTMHead';
 
 function Layout() {
   const location = useLocation();
@@ -38,39 +39,59 @@ function Layout() {
 
   // Most specific at the top
   return (
-    <Routes>
-      <Route path="/remote-examination" element={<Remote />} />
-      <Route path="/shop/:productId" element={<Product />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/post-purchase" element={<PostPurchase />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/sign-up" element={<Signup />} />
-      <Route path="/new-customer" element={<NewCustomer />} />
-      <Route path="/password-recover" element={<PasswordRecover />} />
+    <>
+      <GTMHead />
+      <Routes>
+        <Route path="/remote-examination" element={<Remote />} />
+        <Route path="/shop/:productId" element={<Product />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/post-purchase" element={<PostPurchase />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/sign-up" element={<Signup />} />
+        <Route path="/new-customer" element={<NewCustomer />} />
+        <Route path="/password-recover" element={<PasswordRecover />} />
 
-      <Route path="/account" element={<MyPage />} />
-      <Route path="/sample-registration" element={<SampleRegistration />} />
-      <Route path="/research" element={<Research />} />
-      <Route path="/result-list" element={<ResultList />} />
-      <Route path="/how_to" element={<HowTo />} />
-      <Route path="/order-list" element={<OrderList />} />
-      <Route path="/purchaseDetails/:purchaseKey" element={<PurchaseDetails />} />
-      <Route path="/address" element={<Addresses />} />
-      <Route path="/profile" element={<Profile />} />
+        <Route path="/account" element={<MyPage />} />
+        <Route path="/sample-registration" element={<SampleRegistration />} />
+        <Route path="/research" element={<Research />} />
+        <Route path="/result-list" element={<ResultList />} />
+        <Route path="/how_to" element={<HowTo />} />
+        <Route path="/order-list" element={<OrderList />} />
+        <Route path="/purchaseDetails/:purchaseKey" element={<PurchaseDetails />} />
+        <Route path="/address" element={<Addresses />} />
+        <Route path="/profile" element={<Profile />} />
 
-      <Route path="/payment" element={<Payment />} />
-      <Route path="/delivery" element={<Delivery />} />
-      <Route path="/return-policy" element={<ReturnPolicy />} />
-      <Route path="/privacy-policy" element={<Privacy />} />
-      <Route path="/qa" element={<Faq />} />
-      <Route path="/" element={<Home />} />
-    </Routes>
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/delivery" element={<Delivery />} />
+        <Route path="/return-policy" element={<ReturnPolicy />} />
+        <Route path="/privacy-policy" element={<Privacy />} />
+        <Route path="/qa" element={<Faq />} />
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </>
   )
 }
 
 function App() {
+  useEffect(() => {
+    (window as any).piAId = '1035241';
+    (window as any).piCId = '';
+    (window as any).piHostname = 'to.reprocell.co.jp';
+
+    // Salesforce script
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.async = true;
+    script.src = (document.location.protocol === 'https:' ? 'https://' : 'http://') + 'to.reprocell.co.jp/pd.js';
+    document.body.appendChild(script);
+  
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+  
   return (
     <ProductProvider>
       <UserProvider>

@@ -71,8 +71,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
 
         // Values within products are all strings, convert to numbers and bools
         const fetchedCoupons = transformCoupons(rawCouponss);
-        console.log("fetchedCoupons");
-        console.log(fetchedCoupons);
+        //console.log("fetchedCoupons");
+        //console.log(fetchedCoupons);
         localStorage.setItem('coupons', JSON.stringify(fetchedCoupons));
       } catch (err) {
           setError(err instanceof Error ? err.message : 'An error occurred while fetching coupons.');

@@ -94,20 +94,23 @@ function Checkout({ setDisplayCheckout, addressesState }: CheckoutProps) {
       </div>
     </Elements>) : null;
 
+  const oldHelmet = (
+    <Helmet>
+      <meta
+        http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self' https://zipcloud.ibsnet.co.jp; 
+          script-src 'self' 'unsafe-inline' https://js.stripe.com; 
+          style-src 'self' 'unsafe-inline'; 
+          frame-src https://js.stripe.com;
+          connect-src 'self' https://zipcloud.ibsnet.co.jp;
+        "
+      />
+    </Helmet>
+  )
+
   return (
     <>
-      <Helmet>
-        <meta
-          http-equiv="Content-Security-Policy"
-          content="
-            default-src 'self' https://zipcloud.ibsnet.co.jp; 
-            script-src 'self' 'unsafe-inline' https://js.stripe.com; 
-            style-src 'self' 'unsafe-inline'; 
-            frame-src https://js.stripe.com;
-            connect-src 'self' https://zipcloud.ibsnet.co.jp;
-          "
-        />
-      </Helmet>
       {StripeElements}
     </>
   );

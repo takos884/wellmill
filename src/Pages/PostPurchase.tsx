@@ -104,7 +104,10 @@ function PostPurchaseContent() {
 
     const customerKey = user.customerKey;
 
-    if(customerKey === prevCustomerKey.current) { console.log("Don't verify on re-render"); return; }
+    if(customerKey === prevCustomerKey.current) {
+      //console.log("Don't verify on re-render");
+      return;
+    }
     prevCustomerKey.current = customerKey;
 
     asyncFinalizePurchase(paymentIntentId, email, billingAddressKey);
@@ -116,7 +119,7 @@ function PostPurchaseContent() {
         console.log(finalizeReply);
         return;
       }
-      console.log(finalizeReply);
+      //console.log(finalizeReply);
     }
 
   }, [user, products, paymentStatus, billingAddressKey, email, paymentIntentId, paymentIntentClientSecret]);

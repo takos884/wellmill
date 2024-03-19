@@ -136,12 +136,12 @@ function Profile() {
   }
 
   async function HandleRegistrationClick() {
-    console.log("update time. user:")
-    console.dir(user, { depth: null, colors: true });
+    //console.log("update time. user:")
+    //console.dir(user, { depth: null, colors: true });
 
     // Can't do an update without existing user data
     if(!user) { return; }
-    console.log("ready to go")
+    //console.log("ready to go")
 
     const requiredFields = ['lastName', 'firstName', 'lastNameKana', 'firstNameKana', 'gender', 'birthday'];
     let hasError = false;
@@ -158,7 +158,7 @@ function Profile() {
       alert('Please fill in all required fields.');
       return;
     }
-    console.log("got everything")
+    //console.log("got everything")
 
     const userData: Customer = {
       type: 'customer',
@@ -177,10 +177,10 @@ function Profile() {
 
     // This is my database update
     // A user code (i.e. NV-198) comes back after creating a user, but only a token is returned after an update
-    console.log("Update, with userData:")
-    console.dir(userData, { depth: null, colors: true });
+    //console.log("Update, with userData:")
+    //console.dir(userData, { depth: null, colors: true });
     const response = await updateUser(userData);
-    console.log(response);  // { data: {token: 06...19 }}
+    //console.log(response);  // { data: {token: 06...19 }}
 
     if(response.error) {
       console.log(`Create User Error: ${response.error}`);
@@ -315,8 +315,8 @@ function Profile() {
     </div>
   )
 
-  console.log("user");
-  console.log(user);
+  //console.log("user");
+  //console.log(user);
 
   return(
     <>
@@ -346,10 +346,10 @@ function Profile() {
           <span onClick={() => {setShowPasswordModal(prev => {return !prev})}} style={{textDecoration: "underline", cursor: "pointer"}}>パスワードを変更する</span>
         </div>
         <button className={styles.register} style={{maxWidth: "100%"}} onClick={HandleRegistrationClick}>登録</button>
-        {updateUserResponse?.data && <p>User created: {JSON.stringify(updateUserResponse.data)}</p>}
-        {updateUserResponse?.error && <p>Error: {updateUserResponse.error}</p>}
-        {customerBackupData?.Status && (<span>{(customerBackupData?.Status === 200) ? "✔" : "Error"}</span>)}
-        {customerBackupError && (<span>{JSON.stringify(customerBackupError)}</span>)}
+        {updateUserResponse?.data && false && <p>User created: {JSON.stringify(updateUserResponse?.data)}</p>}
+        {updateUserResponse?.error && false && <p>Error: {updateUserResponse?.error}</p>}
+        {customerBackupData?.Status && false && (<span>{(customerBackupData?.Status === 200) ? "✔" : "Error"}</span>)}
+        {customerBackupError && false && (<span>{JSON.stringify(customerBackupError)}</span>)}
       </div>
       <Footer />
     </>
