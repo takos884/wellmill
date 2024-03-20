@@ -54,10 +54,12 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
         </div>          
     )
 
+    //<div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="/logo.svg" alt="Logo" /></Link></div>
+
     return (
         <>
             <div className={styles.header}>
-                <div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="/logo.svg" alt="Logo" /></Link></div>
+                <div className={styles.headerLogo}><a href="https://well-mill.com"><img src="/logo.svg" alt="Logo" /></a></div>
                 {false && (<span>{user?.customerKey ? user?.customerKey : "-"}</span>)}
                 {false && (<span>{user?.addresses.length ? user?.addresses.length : "-"}</span>)}
                 <div className={styles.navItems}>
