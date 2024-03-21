@@ -54,6 +54,14 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
         </div>          
     )
 
+    const breadcrumbsList = breadcrumbs.map((breadcrumb, index) => (
+        <span key={index}>
+            {breadcrumb.url ? (breadcrumb.url === "/" ? <a href="https://well-mill.com">{breadcrumb.text}</a> : <Link to={breadcrumb.url}>{breadcrumb.text}</Link>) : breadcrumb.text}
+            {index < breadcrumbs.length - 1 && " ›› "}
+        </span>
+    ))
+
+
     //<div className={styles.headerLogo}><Link to="/" onClick={handleHomeClick}><img src="/logo.svg" alt="Logo" /></Link></div>
 
     return (
@@ -74,12 +82,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
                 </div>
             </div>
             <div className={styles.breadcrumbs}>
-                {breadcrumbs.map((breadcrumb, index) => (
-                    <span key={index}>
-                        {breadcrumb.url ? <Link to={breadcrumb.url}>{breadcrumb.text}</Link> : breadcrumb.text}
-                        {index < breadcrumbs.length - 1 && " ›› "}
-                    </span>
-                ))}
+                {breadcrumbsList}
             </div>
             {mainMenu}
         </>
