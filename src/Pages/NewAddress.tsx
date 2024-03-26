@@ -247,18 +247,18 @@ export default function NewAddress({ addressKey, setShowNewAddress }: NewAddress
             <span className={styles.inputLabel}>都道府県</span>
           </div>
           <div className={styles.labeledInput}>
-            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="横浜市" value={address?.city || ""} onChange={(e) => handleAddressChange("city", e.target.value)} />
+            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="（例）横浜市" value={address?.city || ""} onChange={(e) => handleAddressChange("city", e.target.value)} />
             <span className={styles.inputLabel}>市区町村</span>
           </div>
           <div>
-            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="港北区新横浜3-8-11" value={address?.ward || ""} onChange={(e) => handleAddressChange("ward", e.target.value)} />
+            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="（例）港北区新横浜3-8-11" value={address?.ward || ""} onChange={(e) => handleAddressChange("ward", e.target.value)} />
           </div>
           <div>
             <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="マンション名・部屋番号" value={address?.address2 || ""} onChange={(e) => handleAddressChange("address2", e.target.value)} />
           </div>
           <div className={styles.inputRow}>
             <span className={styles.subheader}>電話番号 (半角入力)</span>
-            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="080-1234-5678" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} onBlur={sanitizePhoneNumber} />
+            <input type="text" className={fetchingAddress ? styles.shimmering : ""} placeholder="" value={address?.phoneNumber || ""} onChange={(e) => handleAddressChange("phoneNumber", e.target.value)} onBlur={sanitizePhoneNumber} />
           </div>
 
           <div className="customCheckbox">

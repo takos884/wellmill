@@ -1025,17 +1025,19 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                     注文の発送準備を行なっております。商品を発送いたしましたら、改めてお 知らせいたします。
                   </td>
                 </tr>
-                <!-- Button -->
-                <tr style="font-size: 1.25rem;">
-                  <td align="left" style="width: 200px; padding: 2rem 1rem;">
-                    <a href="https://shop.well-mill.com/account" class="button" style="color: #FFFFFF;">
-                      注文を表示する
-                    </a>
-                  </td>
-                  <td style="width: 400px;">
-                    または<a href="https://shop.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
-                  </td>
-                </tr>
+                ${/*
+                    <!-- Button -->
+                    <tr style="font-size: 1.25rem;">
+                      <td align="left" style="width: 200px; padding: 2rem 1rem;">
+                        <a href="https://shop.well-mill.com/account" class="button" style="color: #FFFFFF;">
+                          注文を表示する
+                        </a>
+                      </td>
+                      <td style="width: 400px;">
+                        または<a href="https://shop.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
+                      </td>
+                    </tr>
+                */ true ? "" : ""}
                 <tr>
                   <td colspan="2" style="font-size: 1.5rem; padding-top: 4rem; padding-bottom: 2rem;">
                     注文概要
@@ -1357,7 +1359,7 @@ app.post('/generateReceipt', async (req, res) => {
   doc.text(`¥${totalWithoutTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithoutTax.toString()) - leftPadding, currentY);
 
   currentY += lineHeight;
-  doc.text("税金", 50 + (tableWidth*0.80) - doc.widthOfString("税金") - leftPadding, currentY);
+  doc.text("税金（消費税10%）", 50 + (tableWidth*0.80) - doc.widthOfString("税金（消費税10%）") - leftPadding, currentY);
   doc.text(`¥${totalTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalTax.toString()) - leftPadding, currentY);
 
   currentY += lineHeight;
@@ -1365,10 +1367,10 @@ app.post('/generateReceipt', async (req, res) => {
   doc.text(`¥${totalWithTax}`, 50 + (tableWidth*1.00) - doc.widthOfString(totalWithTax.toString()) - leftPadding, currentY);
   
 
-  const footerAddress = "株式会社リプロセル\nウェルミルサービス事業\n〒222-0033\n神奈川県横浜市港北区新横浜三丁目8-11\nメットライフ新横浜ビル9階\n登録番号：T2020001086778"
+  const footerAddress = "登録番号：T2020001086778\n株式会社リプロセル\nウェルミルサービス事業\n〒222-0033\n神奈川県横浜市港北区新横浜三丁目8-11\nメットライフ新横浜ビル9階"
   const footerRight = `#${purchaseKey} - 領収書は ${formattedCreationTime} に生成されました`;
   //const footerRight = "© 2024 www.well-mill.com";
-  doc.fontSize(10).text(footerAddress, 50,                                                 doc.page.height - 45 - doc.heightOfString(footerRight));
+  doc.fontSize(10).text(footerAddress, 50,                                                 doc.page.height + 13 - doc.heightOfString(footerAddress) + doc.heightOfString(footerRight));
   doc.fontSize(10).text(footerRight,   doc.page.width-50 - doc.widthOfString(footerRight), doc.page.height - 45);
 
   const bottomBarStart = doc.page.height - 30;
@@ -2536,7 +2538,7 @@ app.post("/updatePaymentIntent", async (req, res) => {
       res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
   } catch (error) {
     console.error('Error updating paymentIntent:', error);
-    res.status(400).send("Failed to update intent");
+    res.status(400).send("Failed to update intent:" + error);
   }
 });
 

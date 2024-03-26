@@ -71,7 +71,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
                 {false && (<span>{user?.customerKey ? user?.customerKey : "-"}</span>)}
                 {false && (<span>{user?.addresses.length ? user?.addresses.length : "-"}</span>)}
                 <div className={styles.navItems}>
-                    <div className={styles.navItem}><Link to="/remote-examination">モータリング検索は?</Link></div>
+                    <div className={styles.navItem}><Link to="/remote-examination">リモート検査とは？</Link></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><Link to="/shop">SHOP</Link></div>
                     <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
                     {headerButton}

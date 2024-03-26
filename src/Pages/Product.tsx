@@ -97,7 +97,7 @@ function Product() {
 
     const spinner = <img className={styles.spinner} src="/spinner.svg" alt="Spinner"/>;
     const addToCartButtonContent = (cartLoading || addingToCart) ? spinner : "カートに入れる";
-    const viewCartButtonContent = (cartLoading || addingToCart) ? spinner : "カートを見る";
+    const viewCartButtonContent = (cartLoading || addingToCart) ? spinner : "レジにすすむ"; //カートを見る
     const viewShopButtonContent = (cartLoading || addingToCart) ? spinner : "商品一覧に戻る";
   
     const questionsNode = (
