@@ -183,6 +183,14 @@ div.checkoutTotal {
   justify-content: space-between;
 }
 
+span.couponMessage {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  top: 2rem;
+  font-size: 0.8rem;
+}
+
 div.couponDiv {
   display: flex;
   align-items: center;

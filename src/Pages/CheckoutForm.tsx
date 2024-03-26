@@ -41,6 +41,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(user?.email || "");
   const [emailError, setEmailError] = useState<boolean>(false); // undefined means user tried to submit as empty
   const [isSendingPayment, setIsSendingPayment] = useState(false);
@@ -108,9 +109,16 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
+    setCouponMessage(null);
+
     const calculatedCouponDiscount = Math.round(await CalculateCouponDiscount());
-    setCouponDiscount(Math.min(calculatedCouponDiscount, cart.cost));
-    localStorage.setItem('couponDiscount', calculatedCouponDiscount.toString());
+    const actualCouponDiscount = ((cart.cost - calculatedCouponDiscount) > 0 && (cart.cost - calculatedCouponDiscount) < 50) ? (cart.cost - 50) : calculatedCouponDiscount;
+    if(calculatedCouponDiscount !== actualCouponDiscount) {
+      setCouponMessage("最低支払額は50円です。");
+    }
+
+    setCouponDiscount(Math.min(actualCouponDiscount, cart.cost));
+    localStorage.setItem('couponDiscount', actualCouponDiscount.toString());
 
     const updateIntentData = {
       customerKey: user.customerKey,
@@ -120,7 +128,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       cartLines: user.cart.lines,
     }
 
-    const expectedNewTotal = cart.cost - calculatedCouponDiscount;
+    const expectedNewTotal = cart.cost - actualCouponDiscount;
     if(expectedNewTotal > 0 && expectedNewTotal < 50) {
       console.log("Coupon cannot cause total cost to be 1yen to 49yen. New total: " + expectedNewTotal);
       return;
@@ -134,9 +142,9 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     }
 
     const returnedCouponDiscount = CallAPIResponse.data.couponDiscount;
-    if(returnedCouponDiscount !== calculatedCouponDiscount) {
+    if(returnedCouponDiscount !== actualCouponDiscount) {
       console.log("Coupon discount did not match the expected amount.");
-      console.log("returnedCouponDiscount: " + returnedCouponDiscount + ", couponDiscount: " + calculatedCouponDiscount);
+      console.log("returnedCouponDiscount: " + returnedCouponDiscount + ", couponDiscount: " + actualCouponDiscount);
     }
 
     //console.log("purchase");
@@ -152,7 +160,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       if(!prevUser) return null;
       const newPurchases = prevUser.purchases.map(prch => {
         if(prch.paymentIntentId === paymentIntentId) { // Directly use paymentIntentId assuming it's available in this scope
-          return {...prch, couponDiscount: calculatedCouponDiscount};
+          return {...prch, couponDiscount: actualCouponDiscount};
         }
         return prch;
       });
@@ -360,11 +368,14 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   ) : null;
 
   const couponDiv = cart ? (
+    <>
+    <span className={styles.couponMessage}>{couponMessage}</span>
     <div className={styles.couponDiv}>
       <span>クーポン</span>
       <input type="text" value={couponCode || ""} className={styles.couponInput} onChange={(e) => { setCouponCode(e.target.value) }} />
       <button className={styles.couponButton} onClick={HandleCouponClick}>適用</button>
     </div>
+    </>
   ) : null;
 
 
