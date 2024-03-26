@@ -2521,6 +2521,10 @@ app.post("/updatePaymentIntent", async (req, res) => {
   console.log("New purchaseTotal: " + purchaseTotal);
   console.log("New couponDiscount: " + couponDiscount);
 
+  // Stripe doesn't allow payments of less than 50 yen
+  // A 0 yen payment is a free purchase, so it's allowed, we won't use Stripe for it
+  if(purchaseTotal > 0 && purchaseTotal < 50) { return res.status(400).send('Coupon cannot cause final price to be from 1 to 49 yen.'); }
+
   query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
   values = [couponDiscount, paymentIntentId];
   try {
@@ -2531,7 +2535,8 @@ app.post("/updatePaymentIntent", async (req, res) => {
   }
 
   try {
-      const updatedPaymentIntent = await stripe.paymentIntents.update(paymentIntentId, {
+      // payment intent at Stripe is not updated if the purchase total is 0 (sending a free order)
+      const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripe.paymentIntents.update(paymentIntentId, {
           amount: purchaseTotal,
       });
 
@@ -2574,12 +2579,23 @@ app.post("/finalizePurchase", async (req, res) => {
   // I use the paymentIntentId to validate users request, not using this secret
   const {paymentIntentId, paymentIntentClientSecret } = req.body.data;
 
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-  if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+  query = `SELECT * FROM purchase WHERE paymentIntentId = ?`;
+  values = [paymentIntentId];
+  const [purchaseResults] = await pool.query(query, values);
+  const purchase = purchaseResults[0];
+  const totalAfterCoupon = purchase.amount - purchase.couponDiscount;
 
-  const paymentStatus = paymentIntent.status;
-  console.log("paymentIntent");
-  console.log(paymentIntent);
+  let paymentStatus = "succeeded";
+  if(totalAfterCoupon === 0) {
+    console.log("No charge for this purchase, no payment status available from Stripe. Default to succeeded");
+  } else {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
+
+    paymentStatus = paymentIntent.status;
+    console.log("paymentIntent");
+    console.log(paymentIntent);  
+  }
 
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
@@ -3113,3 +3129,15 @@ process.on('exit', (code) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });
+
+/*
+  query = "SELECT * FROM purchase WHERE paymentIntentId = ?";
+  values = [paymentIntentId];
+  const [payments] = await pool.query(query, values);
+  if (payments.length === 0) {
+    console.error('Error pulling purchase data with paymentIntentId before payment verification. paymentIntentId: ', paymentIntentId);
+    return res.status(500).send('Error pulling purchase data with paymentIntentId before payment verification. paymentIntentId: ', paymentIntentId);
+  }
+  const payment = payments[0];
+  const totalAfterCoupon = payment.amount - payment.couponDiscount;
+*/

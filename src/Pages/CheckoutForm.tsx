@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 //import { StripePaymentElementOptions } from "@stripe/stripe-js";
@@ -25,6 +26,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
 
   const { user, setUser, setCartLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
+  const navigate = useNavigate();
 
   //#region Addresses
   const addresses = (user?.addresses || []).sort((a, b) => {
@@ -106,9 +108,9 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
-    const couponDiscount = Math.round(await CalculateCouponDiscount());
-    setCouponDiscount(Math.min(couponDiscount, cart.cost));
-    localStorage.setItem('couponDiscount', couponDiscount.toString());
+    const calculatedCouponDiscount = Math.round(await CalculateCouponDiscount());
+    setCouponDiscount(Math.min(calculatedCouponDiscount, cart.cost));
+    localStorage.setItem('couponDiscount', calculatedCouponDiscount.toString());
 
     const updateIntentData = {
       customerKey: user.customerKey,
@@ -117,20 +119,24 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       couponCode: couponCode,
       cartLines: user.cart.lines,
     }
-    //console.log("updateIntentData");
-    //console.log(updateIntentData);
+
+    const expectedNewTotal = cart.cost - calculatedCouponDiscount;
+    if(expectedNewTotal > 0 && expectedNewTotal < 50) {
+      console.log("Coupon cannot cause total cost to be 1yen to 49yen. New total: " + expectedNewTotal);
+      return;
+    }
 
     const CallAPIResponse = await CallAPI(updateIntentData, "updatePaymentIntent");
 
-    if(CallAPIResponse.data.amount !== (cart.cost - couponDiscount)) {
+    if(CallAPIResponse.data.amount !== (expectedNewTotal)) {
       console.log("Coupon discount did not match the expected amount.");
-      console.log("CallAPIResponse.data.amount: " + CallAPIResponse.data.amount + ", cart.cost - couponDiscount: " + (cart.cost - couponDiscount));
+      console.log("CallAPIResponse.data.amount: " + CallAPIResponse.data.amount + ", expectedNewTotal: " + (expectedNewTotal));
     }
 
     const returnedCouponDiscount = CallAPIResponse.data.couponDiscount;
-    if(returnedCouponDiscount !== couponDiscount) {
+    if(returnedCouponDiscount !== calculatedCouponDiscount) {
       console.log("Coupon discount did not match the expected amount.");
-      console.log("returnedCouponDiscount: " + returnedCouponDiscount + ", couponDiscount: " + couponDiscount);
+      console.log("returnedCouponDiscount: " + returnedCouponDiscount + ", couponDiscount: " + calculatedCouponDiscount);
     }
 
     //console.log("purchase");
@@ -146,7 +152,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       if(!prevUser) return null;
       const newPurchases = prevUser.purchases.map(prch => {
         if(prch.paymentIntentId === paymentIntentId) { // Directly use paymentIntentId assuming it's available in this scope
-          return {...prch, couponDiscount: couponDiscount};
+          return {...prch, couponDiscount: calculatedCouponDiscount};
         }
         return prch;
       });
@@ -266,27 +272,30 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
-    if(couponDiscount > 0) {
-      
-    }
-
     setIsSendingPayment(true);
     setMessage(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: `https://shop.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
-    });
+    const totalAfterCoupon = cart.cost - couponDiscount;
+    if(totalAfterCoupon === 0) {
+      navigate(`/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}&pass=true`);
+    } else if (totalAfterCoupon >= 50) {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `https://shop.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+      });
 
-    // This point will only be reached if there is an immediate error when
-    // confirming the payment. Otherwise, your customer will be redirected to
-    // your `return_url`. For some payment methods like iDEAL, your customer will
-    // be redirected to an intermediate site first to authorize the payment, then
-    // redirected to the `return_url`.
-    if (error?.type === "card_error" || error?.type === "validation_error") {
-      setMessage(error.message ? error.message : "Unknown error returned from confirmPayment");
+      // This point will only be reached if there is an immediate error when
+      // confirming the payment. Otherwise, your customer will be redirected to
+      // your `return_url`. For some payment methods like iDEAL, your customer will
+      // be redirected to an intermediate site first to authorize the payment, then
+      // redirected to the `return_url`.
+      if (error?.type === "card_error" || error?.type === "validation_error") {
+        setMessage(error.message ? error.message : "Unknown error returned from confirmPayment");
+      } else {
+        setMessage("An unexpected error occurred during confirmPayment.");
+      }
     } else {
-      setMessage("An unexpected error occurred during confirmPayment.");
+      console.log("Total cost is not zero but less than 50yen. Not sending payment.");
     }
 
     setIsSendingPayment(false);

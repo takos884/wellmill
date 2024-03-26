@@ -56,13 +56,15 @@ function PostPurchaseContent() {
   const parsedUrl = new URL(window.location.href);
   const params = new URLSearchParams(parsedUrl.search);
 
-  const paymentIntentId = params.get("payment_intent");
+  const passStripe = params.get("pass") === "true" ? true : false;
+  const paymentIntentId = params.get("payment_intent") || localStorage.getItem('paymentIntentId');
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
-  const redirectStatus = params.get("redirect_status");
+  const redirectStatus = passStripe ? "succeeded" : params.get("redirect_status");
   const billingAddressKey = parseInt(params.get("ak") || "");
-
   const email = decodeURIComponent(params.get("email") || '');
-  let guest: boolean;
+  useEffect(() => {
+    if (passStripe) { setPaymentStatus("succeeded"); }
+  }, [passStripe]);
 
   const header = (redirectStatus === "succeeded") ? <span className={styles.received}>ご注文を承りました</span> : <span>There was an error</span>
   const paymentInProgress = <span className={styles.wait}>お支払い処理中です、少々お待ちください</span>
@@ -74,10 +76,9 @@ function PostPurchaseContent() {
 
   // Set payment message pulled from Stripe
   useEffect(() => {
-    const clientSecret = new URLSearchParams(window.location.search).get( "payment_intent_client_secret" );
-    if (!clientSecret) { setStripeMessage(null); return; }
+    if (!paymentIntentClientSecret) { setStripeMessage(null); return; }
 
-    retrievePaymentIntentFunction(clientSecret);
+    retrievePaymentIntentFunction(paymentIntentClientSecret);
 
     async function retrievePaymentIntentFunction(clientSecret:string) {
       if (!stripe) { setStripeMessage("Loading Stripe."); return; }
@@ -99,7 +100,7 @@ function PostPurchaseContent() {
   useEffect(() => {
     if(!user) { console.log("No User"); return; }
     if(!products) { console.log("No products"); return; }
-    if(!paymentStatus) { console.log("No paymentStatus"); return; }
+    if(!paymentStatus && !passStripe) { console.log("No paymentStatus, even though we used Stripe"); return; } // either payment was for zero yen (so stripe wasn't used) or we must have status from Stripe
     if(!paymentIntentId) { console.log("No paymentIntentId"); return; }
 
     const customerKey = user.customerKey;
@@ -119,11 +120,11 @@ function PostPurchaseContent() {
         console.log(finalizeReply);
         return;
       }
+      localStorage.setItem('paymentIntentId', "");
       //console.log(finalizeReply);
     }
 
   }, [user, products, paymentStatus, billingAddressKey, email, paymentIntentId, paymentIntentClientSecret]);
-
   
   return (
     <>
