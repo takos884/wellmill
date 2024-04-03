@@ -79,7 +79,7 @@ export type Customer = {
     birthday?: string,
     phoneNumber?: string, 
     password?: string,
-    newPassword1?: string, // TODO this needs to go, it's a hack for password updates
+    newPassword1?: string, // TODO this should change or be removed, it's a poor way to do password updates
     newPassword2?: string,
     token?: string,
     cart: Cart,

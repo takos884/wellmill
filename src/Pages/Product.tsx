@@ -36,6 +36,13 @@ function Product() {
       image.src = 'spinner.svg';
     }, []);
 
+    // run-once debugging code
+    useEffect(() => {
+      if(user) {
+        console.log(`User key in Product: ${user.customerKey}`);
+      }
+    }, [user]);
+
     async function handleAddToCart() {
       if(!currentProduct) {
         console.log(`addToCart called without currentProduct (${currentProduct}).`);

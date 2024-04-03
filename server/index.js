@@ -389,17 +389,22 @@ app.post('/registerGuest', async (req, res) => {
   const code = "NV" + customerKey;
 
   let query = `
-    INSERT INTO customer (customerKey, token)
+    INSERT INTO customer (token, guest)
     VALUES (?, ?)`;
-  let values = [customerKey, token];
+  let values = [token, 1];
+
 
   try {
-    await pool.query(query, values);
-    console.log(`Registered guest with customerKey: ${customerKey}, token: ${token}, and code: ${code}`);
+    const [results] = await pool.query(query, values);
+  
+    const customerKey = results.insertId;
+    const code = "NV" + customerKey;
+
+    console.log(`Registered guest with customerKey: ${customerKey}, token: ${token} and code: ${code}`);
     return res.json({ customerKey: customerKey, token: token, code: code });
   } catch (error) {
-    console.error('Error creating guest:', error);
-    return res.status(500).send('Error creating guest: ' + error);
+    console.error('Error registering guest:', error);
+    return res.status(500).send('Error registering guest: ' + error);
   }
 });
 
@@ -2138,6 +2143,7 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
 
     // A customer exists
     const customer = results[0];
+    customer.guest = (customer.guest === 1 || customer.guest === "1");
 
     // Pull customer's cart
     const cartData = await GetCartFromCustomerKey(customer.customerKey);
@@ -2632,6 +2638,7 @@ app.post("/finalizePurchase", async (req, res) => {
   }
 
   const customer = results[0];
+  customer.guest = (customer.guest === 1 || customer.guest === "1");
 
   // This is the address key to use for line items that don't have a line-item level address specified
   const billingAddressKey = parseInt(req.body.data.billingAddressKey);
