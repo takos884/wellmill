@@ -286,9 +286,9 @@ export const useUserData = (): UseUserDataReturnType => {
         return addToCartLocal(product, quantity);
       }
   
-      if(!user)              return { data: null, error: "No customer key available when adding to remote cart" };
-      if(!user?.customerKey) return { data: null, error: "No customer key available when adding to remote cart" };
-      if(!user?.token)       return { data: null, error: "No token available when adding to remote cart" };
+      if(!user)             return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!user.customerKey) return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!user.token)       return { data: null, error: "No token available when adding to remote cart" };
       const requestBody = {productKey: productKey, customerKey: user.customerKey, token: user.token, unitPrice: product.price, taxRate: product.taxRate, quantity: quantity};
       const APIResponse = await CallAPI(requestBody, "addToCart");
 
@@ -351,9 +351,9 @@ export const useUserData = (): UseUserDataReturnType => {
         return updateCartQuantityLocal(lineItemKey, quantity); // { data: xxx, error: yyy }
       }
   
-      if(!user)              return { data: null, error: "No user data available when updating remote cart quantity" };
-      if(!user?.customerKey) return { data: null, error: "No customer key available when updating remote cart quantity" };
-      if(!user?.token)       return { data: null, error: "No token available when updating remote cart quantity" };
+      if(!user)             return { data: null, error: "No user data available when updating remote cart quantity" };
+      if(!user.customerKey) return { data: null, error: "No customer key available when updating remote cart quantity" };
+      if(!user.token)       return { data: null, error: "No token available when updating remote cart quantity" };
       const requestBody = {customerKey: user.customerKey, token: user.token, lineItemKey: lineItemKey, quantity: quantity};
       const APIResponse = await CallAPI(requestBody, "updateCartQuantity");
 
@@ -403,9 +403,9 @@ export const useUserData = (): UseUserDataReturnType => {
         return deleteFromCartLocal(lineItemKey); // { data: xxx, error: yyy }
       }
 
-      if(!user)              return { data: null, error: "No user data available when deleting from remote cart" };
-      if(!user?.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
-      if(!user?.token)       return { data: null, error: "No token available when deleting from remote cart" };
+      if(!user)             return { data: null, error: "No user data available when deleting from remote cart" };
+      if(!user.customerKey) return { data: null, error: "No customer key available when deleting from remote cart" };
+      if(!user.token)       return { data: null, error: "No token available when deleting from remote cart" };
       const requestBody = {customerKey: user.customerKey, token: user.token, lineItemKey: lineItemKey};
       const APIResponse = await CallAPI(requestBody, "deleteFromCart");
 
