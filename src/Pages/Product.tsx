@@ -16,8 +16,8 @@ function Product() {
     const { productId } = useParams<{ productId: string }>();
     const productIdNum = productId ? parseInt(productId) : undefined;
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
-    const { user, cartLoading } = useContext(UserContext);
-    const { addToCart } = useUserData();
+    const { user, setGuest, cartLoading } = useContext(UserContext);
+    const { addToCart, registerGuest } = useUserData();
 
     const [ productQuantity, setProductQuantity ] = useState(1);
     const [ showModal, setShowModal ] = useState(false);
@@ -41,8 +41,25 @@ function Product() {
         console.log(`addToCart called without currentProduct (${currentProduct}).`);
         return;
       }
+      if(!user) {
+        console.log(`addToCart called without user (${user}).`);
+        return;
+      }
 
       setAddingToCart(true);
+      if(!user.customerKey) {
+        const newGuestUser = await registerGuest();
+        console.log("New guest user: " + newGuestUser.data);
+        setGuest(false);
+
+        const returnedCart = await addToCart(currentProduct.productKey, productQuantity, newGuestUser.data);
+        if(returnedCart.error) {
+          console.log("Add to cart error: " + returnedCart.error);
+          return;
+        }
+  
+      }
+
       const returnedCart = await addToCart(currentProduct.productKey, productQuantity);
       if(returnedCart.error) {
         console.log("Add to cart error: " + returnedCart.error);

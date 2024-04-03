@@ -253,7 +253,6 @@ app.post('/updateUser', async (req, res) => {
   const customerKey = validation.customerKey;
 
   const userData = req.body.data;
-  const token = userData.token;
 
   const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
   const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -378,6 +377,31 @@ function ValidateBirthday(birthdayInput) {
   return `${year}-${month}-${day}`;
   //return `${year}年${month}月${day}日`;
 }
+
+app.post('/registerGuest', async (req, res) => {
+  console.log("░▒▓█ Hit registerGuest. Time: " + CurrentTime());
+  console.log(req.body);
+  const requestData = req.body.data;
+
+  // random number between 1000000000 and 2000000000 (cut off first and last 2 numbers, potential edge cases)
+  const customerKey = Math.floor(Math.random() * 1000000002) + 1000000000 -4;
+  const token = crypto.randomBytes(48).toString('hex');
+  const code = "NV" + customerKey;
+
+  let query = `
+    INSERT INTO customer (customerKey, token)
+    VALUES (?, ?)`;
+  let values = [customerKey, token];
+
+  try {
+    await pool.query(query, values);
+    console.log(`Registered guest with customerKey: ${customerKey}, token: ${token}, and code: ${code}`);
+    return res.json({ customerKey: customerKey, token: token, code: code });
+  } catch (error) {
+    console.error('Error creating guest:', error);
+    return res.status(500).send('Error creating guest: ' + error);
+  }
+});
 
 app.post('/addAddress', async (req, res) => {
   console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
@@ -1640,6 +1664,7 @@ app.post('/addToCart', async (req, res) => {
     return res.status(500).send('An error occurred');
   }
 });
+
 
 app.post('/updateCartQuantity', async (req, res) => {
   console.log("░▒▓█ Hit updateCartQuantity. Time: " + CurrentTime());

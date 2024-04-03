@@ -19,11 +19,12 @@ type APIResponse = {
 type UseUserDataReturnType = {
   createUser: (userData: Customer) => Promise<APIResponse>;
   updateUser: (userData: Customer) => Promise<APIResponse>;
+  registerGuest: () => Promise<APIResponse>;
   loginUser: (credentials: UserCredentials) => Promise<APIResponse>;
   addAddress: (address: Address) => Promise<APIResponse>;
   deleteAddress: (addressKey: number) => Promise<APIResponse>;
 
-  addToCart: (productKey: number, quantity: number) => Promise<APIResponse>;
+  addToCart: (productKey: number, quantity: number, explicitUser? : Customer) => Promise<APIResponse>;
   updateCartQuantity: (lineItemKey: number, quantity: number) => Promise<APIResponse>;
   deleteFromCart: (lineItemKey: number) => Promise<APIResponse>;
 
@@ -119,6 +120,27 @@ export const useUserData = (): UseUserDataReturnType => {
     return{ data: APIResponse.data.customerData, error: null };
   };
 
+  async function registerGuest() {
+    console.log("Going to registerGuest");
+    const APIResponse = await CallAPI({}, "registerGuest");    
+
+    if(APIResponse.error) {
+      console.log(APIResponse.error);
+      return { data: null, error: APIResponse.error };
+    }
+
+    if(!APIResponse.data.code) {
+      console.log("No code returned on user create");
+      return { data: null, error: "No code returned on user create" };
+    }
+
+    setUser((prev) => {
+      const newUser = {...prev, ...APIResponse.data}
+      return newUser;
+    });
+
+    return { data: {...user, ...APIResponse.data}, error: null };  
+  }
 
 
 
@@ -268,13 +290,15 @@ export const useUserData = (): UseUserDataReturnType => {
 
 
   //#region Add to cart
-  const addToCart = useCallback(async (productKey: number, quantity: number) => {
+  const addToCart = useCallback(async (productKey: number, quantity: number, explicitUser? : Customer ) => {
     setCartLoading(true);
-    const updatedCart = await addToCartFunction(productKey, quantity);
+    const currentUser = explicitUser || user || null;
+    const updatedCart = await addToCartFunction(productKey, quantity, currentUser);
     setCartLoading(false);
     return updatedCart;
 
-    async function addToCartFunction(productKey: number, quantity: number) {
+    async function addToCartFunction(productKey: number, quantity: number, currentUser: Customer | null) {
+      if(!currentUser) return { data: null, error: "No user data available when adding to cart" };
       const product = products?.find(product => {return product.productKey === productKey});
       if(!product) {
         console.log(`Error in addToCart in useUserData - product not found. productKey: ${productKey}, products:`);
@@ -286,10 +310,11 @@ export const useUserData = (): UseUserDataReturnType => {
         return addToCartLocal(product, quantity);
       }
   
-      if(!user)             return { data: null, error: "No customer key available when adding to remote cart" };
-      if(!user.customerKey) return { data: null, error: "No customer key available when adding to remote cart" };
-      if(!user.token)       return { data: null, error: "No token available when adding to remote cart" };
-      const requestBody = {productKey: productKey, customerKey: user.customerKey, token: user.token, unitPrice: product.price, taxRate: product.taxRate, quantity: quantity};
+      // currentUser must be used because when a guest adds to cart, the guest will be registered (given a customerKey and token) but this update might not be reflected in the user state yet
+      if(!currentUser)             return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!currentUser.customerKey) return { data: null, error: "No customer key available when adding to remote cart" };
+      if(!currentUser.token)       return { data: null, error: "No token available when adding to remote cart" };
+      const requestBody = {productKey: productKey, customerKey: currentUser.customerKey, token: currentUser.token, unitPrice: product.price, taxRate: product.taxRate, quantity: quantity};
       const APIResponse = await CallAPI(requestBody, "addToCart");
 
       if(APIResponse.error) {
@@ -936,6 +961,7 @@ export const useUserData = (): UseUserDataReturnType => {
 
   return {
     createUser, loginUser, updateUser, // Not available for non-registered customers
+    registerGuest,
     addToCart, updateCartQuantity, deleteFromCart, 
     createPaymentIntent, finalizePurchase, cancelPurchase, printReceipt,
     addAddress, deleteAddress
