@@ -1,4 +1,5 @@
 import { useContext, useCallback } from 'react';
+import Cookies from 'js-cookie';
 
 import { UserContext } from '../Contexts/UserContext';
 import { useBackupDB } from "../Hooks/useBackupDB";
@@ -132,6 +133,10 @@ export const useUserData = (): UseUserDataReturnType => {
     if(!APIResponse.data.code) {
       console.log("No code returned on user create");
       return { data: null, error: "No code returned on user create" };
+    }
+
+    if (APIResponse.data?.token) {
+      Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
     }
 
     setUser((prev) => {

@@ -56,7 +56,8 @@ function Product() {
       setAddingToCart(true);
       if(!user.customerKey) {
         const newGuestUser = await registerGuest();
-        console.log("New guest user: " + newGuestUser.data);
+        console.log("New guest user: ");
+        console.log(newGuestUser.data);
         setGuest(false);
 
         const returnedCart = await addToCart(currentProduct.productKey, productQuantity, newGuestUser.data);
