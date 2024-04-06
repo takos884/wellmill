@@ -94,13 +94,13 @@ const Login = () => {
         <button className={styles.loginSignup} onClick={handleNewGuest}>ゲストとして続ける</button>
         <div className={styles.loginLine}></div>
         <button className={styles.loginSignup} onClick={() => {navigate('/sign-up')}}>新規登録はこちら</button>
-        {guest && userMeaningful && (<>
+        {((guest && userMeaningful) || user?.customerKey) && (<>
           <div className={styles.loginLine}></div>
           <button className={styles.loginSignup} onClick={handleWipeGuest}>ゲストデータを削除する</button>
         </>)}
       </div>
 
-      {!guest && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}
+      {!guest && false && <span>You are already signed in {user?.firstName}. Go to <Link to='/account'>My Page</Link> or <span onClick={handleLogout}>Logout</span>.</span>}
       <Footer />
     </>
   );

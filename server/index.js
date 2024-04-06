@@ -9,15 +9,14 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
-//const stripe = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
-const stripe = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
+
+// STAGETODO - Find all stripeProduction, add a check
+const stripeStage = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
+const stripeProduction = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
 
 //const fetch = require('node-fetch');
 let fetch;
-
-(async () => {
-  fetch = (await import('node-fetch')).default;
-})();
+(async () => { fetch = (await import('node-fetch')).default; })();
 
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_NODE_API_KEY)
@@ -29,19 +28,24 @@ app.use(bodyParser.json());
 
 
 
-const pool = mysql.createPool({
+const poolStage = mysql.createPool({
   connectionLimit: 10,
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+  database: process.env.DB_NAME_STAGE,
+});
+
+const poolProduction = mysql.createPool({
+  connectionLimit: 10,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME_PRODUCTION,
 });
 
 
 
-// const PRODUCTS_FILE_PATH = path.join(__dirname, '../products.json');
-// const ORDER_BACKUP_FILE_PATH = path.join(__dirname, '../order-WindsorAction.json');
-//const CARTS_FILE_PATH = path.resolve(__dirname, 'carts.json');
 const PRODUCTS_FILE_PATH = path.join('/var/www/wellmill/products.json');
 const COUPONS_FILE_PATH = path.join('/var/www/wellmill/coupons.json');
 const ORDER_BACKUP_FILE_PATH = path.join('/var/www/wellmill/order-WindsorAction.json');
@@ -112,7 +116,7 @@ async function fetchProducts() {
   //console.log("Query: " + query);
 
   try{
-    const [results] = (await pool.query(query));
+    const [results] = (await poolProduction.query(query));
 
     if (!results) {
       console.log("Products not found");
@@ -163,7 +167,7 @@ async function fetchProducts() {
   query = `SELECT * FROM coupon`;
 
   try{
-    const [coupons] = (await pool.query(query));
+    const [coupons] = (await poolProduction.query(query));
 
     coupons.forEach(coupon => {
       delete coupon.code;
@@ -186,6 +190,7 @@ app.post('/createUser', async (req, res) => {
     console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
     console.log(req.body);
     const userData = req.body.data;
+    const stageSubdomain = subdomain === "stage" ? true : false;
 
     const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -209,7 +214,7 @@ app.post('/createUser', async (req, res) => {
 
     query = "SELECT COUNT(*) FROM customer WHERE email = ?";
     try {
-      const [existingCustomerCount] = await pool.query(query, [email]);
+      const [existingCustomerCount] = await poolProduction.query(query, [email]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
         //return res.status(400).send("すでに登録されたメール"); // Email already registered
         return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
@@ -225,7 +230,7 @@ app.post('/createUser', async (req, res) => {
     values = [firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, hashedPassword, token];
 
   try {
-    const [results] = await pool.query(query, values);
+    const [results] = await poolProduction.query(query, values);
     //console.log("Results after adding new customer:");
     //console.log(results);
 
@@ -289,7 +294,7 @@ app.post('/updateUser', async (req, res) => {
   if(email) {
     query = "SELECT COUNT(*) FROM customer WHERE email = ? AND customerKey != ?";
     try {
-      const [existingCustomerCount] = await pool.query(query, [email, customerKey]);
+      const [existingCustomerCount] = await poolProduction.query(query, [email, customerKey]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
         return res.status(400).json({data: null, error: "※すでにこのメールアドレスのユーザーが存在しています。"}); // Email already registered
       }
@@ -302,7 +307,7 @@ app.post('/updateUser', async (req, res) => {
   //#region Query to get customer info by customerKey and verify current password, if given
   try {
     query = `SELECT passwordHash FROM customer WHERE customerKey = ?`;
-    const [results] = await pool.query(query, [customerKey]);
+    const [results] = await poolProduction.query(query, [customerKey]);
 
     // If no results, customer not found
     if (results.length === 0) {
@@ -350,7 +355,7 @@ app.post('/updateUser', async (req, res) => {
   console.log(values)
 
   try {
-    const [results] = await pool.query(query, values);
+    const [results] = await poolProduction.query(query, values);
     console.log("Results after updating customer:");
     console.log(results);
 
@@ -395,7 +400,7 @@ app.post('/registerGuest', async (req, res) => {
 
 
   try {
-    const [results] = await pool.query(query, values);
+    const [results] = await poolProduction.query(query, values);
   
     const customerKey = results.insertId;
     const code = "NV" + customerKey;
@@ -451,7 +456,7 @@ app.post('/addAddress', async (req, res) => {
   // When addressKey is null, the ? IS NULL condition becomes true, so the addressKey <> ? part is effectively ignored.
   query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ? AND (? IS NULL OR addressKey <> ?)";
   try {
-    const [defaultsCount] = await pool.query(query, [customerKey, addressKey, addressKey]);
+    const [defaultsCount] = await poolProduction.query(query, [customerKey, addressKey, addressKey]);
     if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = "1"; }
   } catch(error) {
     console.error('Error counting address defaults:', error);
@@ -463,7 +468,7 @@ app.post('/addAddress', async (req, res) => {
   if(defaultAddress === "1") {
     query = "UPDATE address SET defaultAddress = 0 WHERE customerKey = ?;"
     try {
-      await pool.query(query, [customerKey]);
+      await poolProduction.query(query, [customerKey]);
     } catch(error) {
       console.error('Error updating old address defaults:', error);
       return res.status(500).send('Error updating old address defaults: ' + error);  
@@ -489,7 +494,7 @@ app.post('/addAddress', async (req, res) => {
 
   // Make the change in the database
   try {
-    await pool.query(query, values);
+    await poolProduction.query(query, values);
     //const addressKey = results[0].insertId;
     //console.log('Generated Address Key:', addressKey);
   } catch (error) {
@@ -527,7 +532,7 @@ app.post('/deleteAddress', async (req, res) => {
 
   query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
   try {
-    await pool.query(query, [addressKey, customerKey]);
+    await poolProduction.query(query, [addressKey, customerKey]);
   } catch(error) {
     const errorMessage = `Error deleting address, addressKey: ${addressKey}, customerKey: ${customerKey}`;
     console.error(errorMessage);
@@ -537,7 +542,7 @@ app.post('/deleteAddress', async (req, res) => {
   let forceNewDefault = false;
   query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ?";
   try {
-    const [defaultsCount] = await pool.query(query, [customerKey]);
+    const [defaultsCount] = await poolProduction.query(query, [customerKey]);
     if(defaultsCount[0]['COUNT(*)'] === 0) { forceNewDefault = true; }
   } catch(error) {
     console.error('Error counting address defaults after delete:', error);
@@ -546,7 +551,7 @@ app.post('/deleteAddress', async (req, res) => {
 
   if(forceNewDefault) {
     query = `UPDATE address SET defaultAddress = ? WHERE customerKey = ? LIMIT 1`;
-    await pool.query(query, [true, customerKey]);
+    await poolProduction.query(query, [true, customerKey]);
   }
 
   const freshAddresses = await PullFreshAddresses(customerKey)
@@ -557,7 +562,7 @@ async function PullFreshAddresses(customerKey) {
   // Pull fresh copy of all addresses to send back
   query = "SELECT * FROM address WHERE customerKey = ?";
   try {
-    const [addresses] = await pool.query(query, [customerKey]);
+    const [addresses] = await poolProduction.query(query, [customerKey]);
 
     // MySQL uses 1 and 0 for true and false, but I want real bools
     addresses.forEach(address => {address.defaultAddress = (address.defaultAddress === 1) ? true : false});
@@ -1225,7 +1230,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let purchase;
   try {
-    const [purchaseResults] = await pool.query(query, values);
+    const [purchaseResults] = await poolProduction.query(query, values);
     if (purchaseResults.length === 0) {
       console.error('No purchase found for purchaseKey:', purchaseKey, ", customerKey:", customerKey);
       return res.status(400).send('No purchase found');
@@ -1248,7 +1253,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let lineItems;
   try {
-    const [lineItemResults] = await pool.query(query, values);
+    const [lineItemResults] = await poolProduction.query(query, values);
     if (lineItemResults.length === 0) {
       console.error('No line items found for purchaseKey:', purchaseKey);
       return res.status(400).send('No line items found');
@@ -1269,7 +1274,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let address;
   try {
-    const [addressResults] = await pool.query(query, values);
+    const [addressResults] = await poolProduction.query(query, values);
     if (addressResults.length > 0) {
       address = addressResults[0];
     }
@@ -1287,7 +1292,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let products;
   try {
-    const [productResults] = await pool.query(query, values);
+    const [productResults] = await poolProduction.query(query, values);
     if (productResults.length > 0) {
       products = productResults;
     }
@@ -1424,7 +1429,7 @@ app.post('/sendPassword', async (req, res) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 salt rounds
   
   query = `UPDATE customer SET passwordHash = ? WHERE email = ?`;
-  await pool.query(query, [hashedPassword, recipient]);
+  await poolProduction.query(query, [hashedPassword, recipient]);
 
 
   let transporter = nodemailer.createTransport({
@@ -1648,17 +1653,17 @@ app.post('/addToCart', async (req, res) => {
       AND lineItem.unitPrice = ?
       AND lineItem.taxRate = ?
       AND (lineItem.purchaseKey IS NULL OR purchase.status = 'created');`;
-    const [existingItem] = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
+    const [existingItem] = (await poolProduction.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
   
     if (existingItem.length > 0) {
       // Item exists, update the quantity
       const newQuantity = existingItem[0].quantity + quantity;
       const updateQuery = "UPDATE lineItem SET quantity = ? WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-      await pool.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
+      await poolProduction.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
     } else {
       // Insert data into the database
       const insertQuery = "INSERT INTO lineItem (productKey, customerKey, unitPrice, taxRate, quantity) VALUES (?, ?, ?, ?, ?)";
-      await pool.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity]);
+      await poolProduction.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity]);
     }
   
     // Get updated cart data
@@ -1693,7 +1698,7 @@ app.post('/updateCartQuantity', async (req, res) => {
   try {
     // Update line quantity in the database
     const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
-    await pool.query(updateQuery, [quantity, customerKey, lineItemKey]);
+    await poolProduction.query(updateQuery, [quantity, customerKey, lineItemKey]);
   
     // Get updated cart data
     const updatedCart = await GetCartFromCustomerKey(customerKey);
@@ -1725,7 +1730,7 @@ app.post('/deleteFromCart', async (req, res) => {
   try {
     // Delete line from the database
     const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
-    await pool.query(deleteQuery, [customerKey, lineItemKey]);
+    await poolProduction.query(deleteQuery, [customerKey, lineItemKey]);
   
     // Get updated cart data
     const updatedCart = await GetCartFromCustomerKey(customerKey);
@@ -1755,7 +1760,7 @@ app.post('/cancelPurchase', async (req, res) => {
       return res.status(400).send('Invalid input');
   }
 
-  const connection = await pool.getConnection();
+  const connection = await poolProduction.getConnection();
   try {
     // Delete query for lineItem table
     //const deleteLineItemQuery = "DELETE FROM lineItem WHERE customerKey = ? AND purchaseKey = ?";
@@ -1799,7 +1804,7 @@ app.post('/cancelPurchase', async (req, res) => {
   console.log(query);
 
   try {
-    const [results] = await pool.query(query, [purchaseKey]);
+    const [results] = await poolProduction.query(query, [purchaseKey]);
     if (results.length > 0) {
       console.log("results");
       console.dir(results, { depth: null, colors: true });
@@ -1821,20 +1826,27 @@ app.post('/cancelPurchase', async (req, res) => {
   }
 
   try {
-    query = `SELECT paymentIntentId FROM purchase WHERE purchaseKey = ?`;
-    const [paymentIntentIds] = (await pool.query(query, [purchaseKey]));
+    query = `SELECT paymentIntentId, amount, couponDiscount FROM purchase WHERE purchaseKey = ?`;
+    const [paymentIntents] = (await poolProduction.query(query, [purchaseKey]));
 
-    if (paymentIntentIds.length > 0) {
-      const paymentIntentId = paymentIntentIds[0].paymentIntentId;
-      // Payment exists, use the paymentIntentId to cancel the payment
-      try {
-        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' });
-        console.log("refund done");
-        console.log(refund);  
-      } catch (error) {
-        console.log("refund failed");
-        console.dir(error, { depth: null, colors: true });
-        return res.status(500).send('Stripe refund failed');
+    if (paymentIntents.length > 0) {
+      const paymentIntentId = paymentIntents[0].paymentIntentId;
+      const paymentIntentAmount = paymentIntents[0].amount;
+      const paymentIntentCouponDiscount = paymentIntents[0].couponDiscount;
+      const paymentIntentAmountAfterDiscount = paymentIntentAmount - paymentIntentCouponDiscount;
+      if(paymentIntentAmountAfterDiscount > 0) {
+        // Non-zero payment exists, use the paymentIntentId to cancel the payment
+        try {
+          const refund = await stripeProduction.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' });
+          console.log("refund done");
+          console.log(refund);  
+        } catch (error) {
+          console.log("refund failed");
+          console.dir(error, { depth: null, colors: true });
+          return res.status(500).send('Stripe refund failed');
+        }
+      } else {
+        console.log("Payment for zero amount, no refund needed");
       }
     } else {
       console.log("paymentIntentIds.length > 0 failed when selecting paymentIntentId using purchaseKey: " + purchaseKey);
@@ -1879,7 +1891,7 @@ app.post('/deleteLineItem', async (req, res) => {
   `;
 
   try {
-    const results = await pool.query(query, [lineItemKey]);
+    const results = await poolProduction.query(query, [lineItemKey]);
     if (results.length > 0) {
         const originalPurchaseJson = JSON.parse(results[0].newPurchaseJson);
         console.log("originalPurchaseJson");
@@ -1898,7 +1910,7 @@ app.post('/deleteLineItem', async (req, res) => {
   try {
     // Delete line from the database
     const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
-    await pool.query(deleteQuery, [customerKey, lineItemKey]);
+    await poolProduction.query(deleteQuery, [customerKey, lineItemKey]);
   
     // Get updated cart data
     const updatedCart = await GetCartFromCustomerKey(customerKey);
@@ -1990,7 +2002,7 @@ app.post('/storeBackupData', async (req, res) => {
   }
 
   if(paymentIntentId) {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await stripeProduction.paymentIntents.retrieve(paymentIntentId);
     if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
 
     const paymentStatus = paymentIntent.status;
@@ -2067,7 +2079,7 @@ async function GetCustomerDataFromCredentials(email, password) {
     query = `SELECT * FROM customer WHERE email = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await pool.query(query, [email]);
+    const [results] = await poolProduction.query(query, [email]);
 
     // If no results, the email is not registered
     if (results.length === 0) {
@@ -2109,7 +2121,7 @@ async function GetCustomerDataFromToken(token) {
     query = `SELECT * FROM customer WHERE token = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await pool.query(query, [token]);
+    const [results] = await poolProduction.query(query, [token]);
 
     // If no results, the token does not exist
     if (results.length === 0) {
@@ -2133,7 +2145,7 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
     query = `SELECT * FROM customer WHERE customerKey = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await pool.query(query, [customerKey]);
+    const [results] = await poolProduction.query(query, [customerKey]);
 
     // If no results, the customer does not exist
     if (results.length === 0) {
@@ -2165,7 +2177,9 @@ async function GetCustomerDataFromCustomerKey(customerKey) {
 
     // Adjust date for timezone, adding 12h should make anything from -12h to +11h work, which is most of the world
     // It's kinda a hack, but this site will likely only ever run in Japan
-    customer.birthday = new Date(customer.birthday.getTime() + (12*60*60*1000))
+    if(customer.birthday) {
+      customer.birthday = new Date(customer.birthday.getTime() + (12*60*60*1000))
+    }
 
     // Remove sensitive data before sending the customer object
     delete customer.passwordHash;
@@ -2185,7 +2199,7 @@ async function GetCartFromCustomerKey(customerKey) {
 
   // Execute the query then calculate metadata
   try {
-    const [linesResults] = (await pool.query(selectQuery, [customerKey]));
+    const [linesResults] = (await poolProduction.query(selectQuery, [customerKey]));
 
     linesResults.forEach(line => {line.type = "lineItem"});
     const cartQuantity = Math.round(linesResults.reduce((sum, lineItem) => sum + lineItem.quantity, 0));
@@ -2209,7 +2223,7 @@ async function GetPurchasesFromCustomerKey(customerKey) {
     WHERE customerKey = ?
     AND purchase.status != 'created';`;
 
-    const [purchases] = await pool.query(query, [customerKey]);
+    const [purchases] = await poolProduction.query(query, [customerKey]);
     const purchaseKeys = purchases.map(pur => { return pur.purchaseKey; })
     const fallbackPurchaseKeys = purchaseKeys.length > 0 ? purchaseKeys : [-1];
 
@@ -2218,7 +2232,7 @@ async function GetPurchasesFromCustomerKey(customerKey) {
       FROM lineItem
       WHERE purchaseKey IN (?);`
 
-    const [lineItems] = await pool.query(query, [fallbackPurchaseKeys]);
+    const [lineItems] = await poolProduction.query(query, [fallbackPurchaseKeys]);
 
     purchases.forEach((purchase) => {
       const purchaseKey = purchase.purchaseKey;
@@ -2251,7 +2265,7 @@ async function GetAddressesFromCustomerKey(customerKey) {
     WHERE customerKey = ?`;
 
   try {
-    const [addresses] = (await pool.query(selectQuery, [customerKey]));
+    const [addresses] = (await poolProduction.query(selectQuery, [customerKey]));
     return ProcessAddresses(addresses);
   } catch (error) {
     console.error('Error in GetAddressesFromCustomerKey: ', error);
@@ -2263,7 +2277,7 @@ async function GetCoupons() {
   const selectQuery = `SELECT * FROM coupon`;
 
   try {
-    const [coupons] = await pool.query(selectQuery, []);
+    const [coupons] = await poolProduction.query(selectQuery, []);
     const noCodeCoupons = ProcessCoupons(coupons);
     console.log("noCodeCoupons");
     console.dir(noCodeCoupons, { depth: null, colors: true });
@@ -2320,7 +2334,7 @@ async function calculateOrderAmount(cartLines, couponCode = undefined) {
 
 async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode) {
   const selectQuery = `SELECT * FROM coupon WHERE code = ?`;
-  const [coupons] = await pool.query(selectQuery, [couponCode]);
+  const [coupons] = await poolProduction.query(selectQuery, [couponCode]);
   console.log("coupons length: " + coupons.length);
   if(coupons.length === 0) { return 0; }
   const coupon = coupons[0];
@@ -2379,7 +2393,7 @@ app.post("/createPaymentIntent", async (req, res) => {
 
   // Create a PaymentIntent with the order amount and currency
   // Make a purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await stripeProduction.paymentIntents.create({
     amount: purchaseTotal,
     currency: "jpy",
   });
@@ -2394,7 +2408,7 @@ app.post("/createPaymentIntent", async (req, res) => {
 
     let purchaseKey;
     try {
-      const [results] = await pool.query(query, values);
+      const [results] = await poolProduction.query(query, values);
       purchaseKey = results.insertId;
     } catch (error) {
       console.error('Error creating purchase intention: ', error);
@@ -2425,7 +2439,7 @@ app.post("/createPaymentIntent", async (req, res) => {
 
   let purchaseInsertId;
   try {
-    const [results] = await pool.query(query, values);
+    const [results] = await poolProduction.query(query, values);
     purchaseInsertId = results.insertId;
   } catch (error) {
     console.error('Error creating purchase intention: ', error);
@@ -2441,7 +2455,7 @@ app.post("/createPaymentIntent", async (req, res) => {
   values = [purchaseInsertId, cartLineKeys];
 
   try {
-    const [results] = await pool.query(query, values);
+    const [results] = await poolProduction.query(query, values);
     //console.log("Results after saving purchase in MySQL:");
     //console.log(results);
   } catch (error) {
@@ -2476,7 +2490,7 @@ app.post("/createPaymentIntent", async (req, res) => {
 
     for(let duplicateLoop = 1; duplicateLoop < copiesNeeded; duplicateLoop++) {
       try {
-        const [results] = await pool.query(query, values);
+        const [results] = await poolProduction.query(query, values);
         lineItemKeys.push(results.insertId);
         console.log(`lineItemKeys: ${lineItemKeys}`);
       } catch (error) {
@@ -2504,7 +2518,7 @@ app.post("/createPaymentIntent", async (req, res) => {
       const values = [addressKey, quantity, address.firstName, address.lastName, address.postalCode, address.prefCode, address.pref, address.city, address.ward, address.address2, address.phoneNumber, lineItemKeys[index]];
 
       try {
-        await pool.query(query, values);
+        await poolProduction.query(query, values);
       } catch (error) {
         console.error('Error populating duplicated line item:', error);
         throw error;
@@ -2559,7 +2573,7 @@ app.post("/updatePaymentIntent", async (req, res) => {
   query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
   values = [couponDiscount, paymentIntentId];
   try {
-    await pool.query(query, values);
+    await poolProduction.query(query, values);
   } catch (error) {
     console.error('Error updating couponDiscount:', error);
     return res.status(500).send('Error updating couponDiscount');
@@ -2567,7 +2581,7 @@ app.post("/updatePaymentIntent", async (req, res) => {
 
   try {
       // payment intent at Stripe is not updated if the purchase total is 0 (sending a free order)
-      const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripe.paymentIntents.update(paymentIntentId, {
+      const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripeProduction.paymentIntents.update(paymentIntentId, {
           amount: purchaseTotal,
       });
 
@@ -2612,7 +2626,7 @@ app.post("/finalizePurchase", async (req, res) => {
 
   query = `SELECT * FROM purchase WHERE paymentIntentId = ?`;
   values = [paymentIntentId];
-  const [purchaseResults] = await pool.query(query, values);
+  const [purchaseResults] = await poolProduction.query(query, values);
   const purchase = purchaseResults[0];
   const totalAfterCoupon = purchase.amount - purchase.couponDiscount;
 
@@ -2620,7 +2634,7 @@ app.post("/finalizePurchase", async (req, res) => {
   if(totalAfterCoupon === 0) {
     console.log("No charge for this purchase, no payment status available from Stripe. Default to succeeded");
   } else {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await stripeProduction.paymentIntents.retrieve(paymentIntentId);
     if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
 
     paymentStatus = paymentIntent.status;
@@ -2630,7 +2644,7 @@ app.post("/finalizePurchase", async (req, res) => {
 
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
-  const [results] = await pool.query(query, values);
+  const [results] = await poolProduction.query(query, values);
 
   if (results.length === 0) {
     console.error('Error pulling customer data with key before payment verification. Customer Key: ', customerKey);
@@ -2654,7 +2668,7 @@ app.post("/finalizePurchase", async (req, res) => {
     //LIMIT 1`;
   values = [customerKey, billingAddressKey];
 
-  const [addresses] = await pool.query(query, values);
+  const [addresses] = await poolProduction.query(query, values);
 
   // If no results, there are no addresses for this user
   if (addresses.length === 0) {
@@ -2678,7 +2692,7 @@ app.post("/finalizePurchase", async (req, res) => {
     values = [paymentStatus, email, billingAddressKey, paymentIntentId, paymentStatus];
 
     try {
-      const [finalizePurchaseResults] = await pool.query(query, values);
+      const [finalizePurchaseResults] = await poolProduction.query(query, values);
       console.log("finalizePurchase results");
       console.log(finalizePurchaseResults);
 
@@ -2686,7 +2700,7 @@ app.post("/finalizePurchase", async (req, res) => {
       if(paymentStatus === 'succeeded' && finalizePurchaseResults.affectedRows > 0) {
         //await SendOrderToAzure(paymentIntentId);
         query = `SELECT * FROM product`;
-        const [products] = await pool.query(query);
+        const [products] = await poolProduction.query(query);
 
         // If no results, no products found
         if (products.length === 0) {
@@ -2695,14 +2709,14 @@ app.post("/finalizePurchase", async (req, res) => {
         }
 
         query = `SELECT * FROM image`;
-        const [images] = await pool.query(query);
+        const [images] = await poolProduction.query(query);
 
         query = `
           SELECT * FROM purchase 
           WHERE paymentIntentId = ?`;
         values = [paymentIntentId];
 
-        const [purchaseResults] = await pool.query(query, values);
+        const [purchaseResults] = await poolProduction.query(query, values);
 
         // If no results, the purchase isn't found
         if (purchaseResults.length === 0) {
@@ -2717,7 +2731,7 @@ app.post("/finalizePurchase", async (req, res) => {
           WHERE purchaseKey = ?`;
         values = [purchase.purchaseKey];
 
-        const [lineItemResults] = await pool.query(query, values);
+        const [lineItemResults] = await poolProduction.query(query, values);
 
         // If no results, no item in the purchase is found
         if (lineItemResults.length === 0) {
@@ -2741,7 +2755,7 @@ app.post("/finalizePurchase", async (req, res) => {
           values = [defaultAddress.addressKey, defaultAddress.firstName, defaultAddress.lastName, defaultAddress.postalCode, defaultAddress.prefCode, defaultAddress.pref, defaultAddress.city, defaultAddress.ward, defaultAddress.address2, defaultAddress.phoneNumber, lineItem.lineItemKey];
 
           try {
-              await pool.query(query, values);
+              await poolProduction.query(query, values);
               console.log(`Updated line item ${lineItem.lineItemKey} with default address.`);
           } catch (error) {
               console.error(`Error updating line item ${lineItem.lineItemKey}:`, error);
@@ -2754,7 +2768,7 @@ app.post("/finalizePurchase", async (req, res) => {
           WHERE purchaseKey = ?`;
         values = [purchase.purchaseKey];
 
-        const [lineItemUpdatedResults] = await pool.query(query, values);
+        const [lineItemUpdatedResults] = await poolProduction.query(query, values);
 
         console.log("lineItemUpdatedResults");
         console.log(lineItemUpdatedResults);
@@ -2891,7 +2905,7 @@ app.post("/finalizePurchase", async (req, res) => {
         const backupDataJSON = JSON.stringify(backupData);
         query = "UPDATE purchase SET newPurchaseJson = ? WHERE paymentIntentId = ?;";
         try {
-          await pool.query(query, [backupDataJSON, paymentIntentId]);
+          await poolProduction.query(query, [backupDataJSON, paymentIntentId]);
         } catch (error) {
           console.log("Error while updating newPurchaseJson:");
           console.dir(error, { depth: null, colors: true });
@@ -3016,7 +3030,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   values = [purchaseKey, shippedLineItemKeys];
 
   try {
-    const [result] = await pool.query(query, values);
+    const [result] = await poolProduction.query(query, values);
     if(result.length === 0) {
       const returnPayload = {
         "status": "error",
@@ -3042,7 +3056,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   values = ['shipped', purchaseKey, shippedLineItemKeys, 'shipped'];
 
   try{
-    const [result] = await pool.query(query, values);
+    const [result] = await poolProduction.query(query, values);
     console.log("Query:", query);
     console.log("Values:", values);
     console.log("result:");
@@ -3098,7 +3112,7 @@ async function ValidatePayload(payload) {
     if(!hexRegex.test(token)) { return {valid: false, message: "Malformed token"};}
 
     query = `SELECT * FROM customer WHERE token = ? AND customerKey = ?`;
-    const [results] = await pool.query(query, [token, customerKey]);
+    const [results] = await poolProduction.query(query, [token, customerKey]);
     if (results.length === 0) { return {valid: false, message: "Token not found"};}
 
     return {valid: true, message: "Valid token", customerKey: customerKey};
@@ -3116,7 +3130,7 @@ async function ValidatePayload(payload) {
     const password = payload.password;
 
     let query = `SELECT * FROM customer WHERE email = ?`;
-    const [results] = await pool.query(query, [email]);
+    const [results] = await poolProduction.query(query, [email]);
     if (results.length === 0) { return {valid: false, message: "Email / Password incorrect"};}
 
     const [customer] = results;

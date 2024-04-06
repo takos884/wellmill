@@ -28,7 +28,7 @@ const MyPage = () => {
       navigate('/login');
     }
 
-    if(guest) {
+    if(!user?.customerKey) {
       const confirmationMessage = "アカウントデータの削除を確認しますか？カート内の商品、保存された住所、ローカルに保存されたテスト結果が削除されます。これはローカルデータのみに影響します。";
       if(window.confirm(confirmationMessage)) {
         localStorage.removeItem('userLocal');

@@ -122,7 +122,6 @@ export const useUserData = (): UseUserDataReturnType => {
   };
 
   async function registerGuest() {
-    console.log("Going to registerGuest");
     const APIResponse = await CallAPI({}, "registerGuest");    
 
     if(APIResponse.error) {
@@ -159,7 +158,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return addAddressResults;
 
     async function addAddressFunction(address: Address) {
-      if(guest) {
+      if(!user?.customerKey) {
         return addAddressLocal(address);
       }
 
@@ -248,7 +247,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return deleteAddressResults;
 
     async function deleteAddressFunction(addressKey: number) {
-      if(guest) {
+      if(!user?.customerKey) {
         return deleteAddressLocal(addressKey);
       }
 
@@ -297,6 +296,10 @@ export const useUserData = (): UseUserDataReturnType => {
   //#region Add to cart
   const addToCart = useCallback(async (productKey: number, quantity: number, explicitUser? : Customer ) => {
     setCartLoading(true);
+    if(explicitUser) {
+      //console.log("Explicit user in addToCart in useUserData:");
+      //console.log(explicitUser);
+    }
     const currentUser = explicitUser || user || null;
     const updatedCart = await addToCartFunction(productKey, quantity, currentUser);
     setCartLoading(false);
@@ -311,7 +314,8 @@ export const useUserData = (): UseUserDataReturnType => {
         return { data: null, error: "Product not found" };
       }
   
-      if(guest) {
+      if(!currentUser?.customerKey) {
+        console.log("No customer key available when adding to cart, so adding to local cart.");
         return addToCartLocal(product, quantity);
       }
   
@@ -328,6 +332,8 @@ export const useUserData = (): UseUserDataReturnType => {
         return { data: null, error: APIResponse.error };
       }
   
+      console.log("Updating user in addToCart in useUserData:");
+      console.log(APIResponse.data);
       UpdateUser(APIResponse.data);
       return { data: APIResponse.data, error: null };
     }
@@ -377,7 +383,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return updatedCart;
 
     async function updateCartQuantityFunction(lineItemKey: number, quantity: number) {
-      if(guest) {
+      if(!user?.customerKey) {
         return updateCartQuantityLocal(lineItemKey, quantity); // { data: xxx, error: yyy }
       }
   
@@ -429,7 +435,7 @@ export const useUserData = (): UseUserDataReturnType => {
     return updatedCart;
 
     async function deleteFromCartFunction(lineItemKey: number) {
-      if(guest) {
+      if(!user?.customerKey) {
         return deleteFromCartLocal(lineItemKey); // { data: xxx, error: yyy }
       }
 
@@ -501,7 +507,7 @@ export const useUserData = (): UseUserDataReturnType => {
     let purchaseKey: number;
 
     async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
-      if(guest) {
+      if(!user?.customerKey) {
         if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
         if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
         if(!user.cart.lines) return { data: null, error: "No cart lineitem data available when creating payment intent locally" };
@@ -648,7 +654,7 @@ export const useUserData = (): UseUserDataReturnType => {
 
 
   const finalizePurchase = useCallback(async (paymentIntentId:string, email:string, billingAddressKey: number) => {
-    if(guest) {
+    if(!user?.customerKey) {
       return await finalizePurchaseLocal(paymentIntentId, email, billingAddressKey);
     }
 

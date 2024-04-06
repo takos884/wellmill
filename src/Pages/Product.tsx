@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import Cookies from 'js-cookie';
 
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "../Contexts/ProductContext";
@@ -17,7 +18,7 @@ function Product() {
     const productIdNum = productId ? parseInt(productId) : undefined;
     const { products, isLoading: productsLoading, error: productsError } = useProducts();
     const { user, setGuest, cartLoading } = useContext(UserContext);
-    const { addToCart, registerGuest } = useUserData();
+    const { addToCart, registerGuest, loginUser } = useUserData();
 
     const [ productQuantity, setProductQuantity ] = useState(1);
     const [ showModal, setShowModal ] = useState(false);
@@ -39,7 +40,18 @@ function Product() {
     // run-once debugging code
     useEffect(() => {
       if(user) {
-        console.log(`User key in Product: ${user.customerKey}`);
+        //console.log(`User key in Product: ${user.customerKey}`);
+        //console.log(`User guest status:`);
+        //console.log(user.guest);
+      }
+    }, [user]);
+
+    // run when user loads to see if this product is already in their cart
+    useEffect(() => {
+      if(user) {
+        if(user.cart.lines.some(line => line.productKey === productIdNum)) {
+          setProductAddedToCart(true);
+        }
       }
     }, [user]);
 
@@ -56,23 +68,29 @@ function Product() {
       setAddingToCart(true);
       if(!user.customerKey) {
         const newGuestUser = await registerGuest();
-        console.log("New guest user: ");
-        console.log(newGuestUser.data);
         setGuest(false);
 
-        const returnedCart = await addToCart(currentProduct.productKey, productQuantity, newGuestUser.data);
+
+        setTimeout(async () => {
+          const returnedCart = await addToCart(currentProduct.productKey, productQuantity, newGuestUser.data);
+          if(returnedCart.error) {
+            console.log("Add to cart error: " + returnedCart.error);
+            return;
+          }
+        }, 100);
+
+        setTimeout(() => {
+          //window.location.reload();
+        }, 900);
+  
+      } else {
+        const returnedCart = await addToCart(currentProduct.productKey, productQuantity);
         if(returnedCart.error) {
           console.log("Add to cart error: " + returnedCart.error);
           return;
-        }
-  
+        }  
       }
 
-      const returnedCart = await addToCart(currentProduct.productKey, productQuantity);
-      if(returnedCart.error) {
-        console.log("Add to cart error: " + returnedCart.error);
-        return;
-      }
 
       setTimeout(() => {
         setAddingToCart(false);
