@@ -33,6 +33,8 @@ export type Product = {
     stock: number,
     price: number,
     taxRate: number,
+    discountRate: number | null,
+    discountValue: number | null,
     type: number,
     images: Image[],
     coupons?: Coupon[],

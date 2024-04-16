@@ -30,6 +30,7 @@ interface InputFields {
   email: string;
   password: string;
   agreement: boolean;
+  token?: string;
 }
 
 // Define a type/interface for input errors
@@ -79,6 +80,9 @@ function Signup() {
     agreement: false,
   });
 
+  const newUser = Cookies.get('WellMillToken') ? false : true;
+  console.log('newUser in HandleRegistrationClick: ', newUser);
+
   function HandleInputChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = event.target;
     const newValue = type === 'checkbox' ? checked : value;
@@ -113,6 +117,15 @@ function Signup() {
         hasError = true;
       }
     }
+
+    const newUser = Cookies.get('WellMillToken') ? false : true;
+    console.log('newUser in HandleRegistrationClick: ', newUser);
+    if(!newUser){
+      const guestKeyCookie = Cookies.get('WellMillToken');
+      const token = guestKeyCookie ? guestKeyCookie : undefined;
+      inputs.token = token ? token : undefined;
+    }
+
 
     const validNameRegex = /[^\p{L}\p{Z}]/gu;
     if(inputs.lastName.replace(validNameRegex, '').length === 0) {
@@ -179,6 +192,7 @@ function Signup() {
     }
     const userData: Customer = {
       type: 'customer',
+      token: inputs.token,
       email: inputs.email,
       lastName: inputs.lastName.replace(validNameRegex, ''),
       firstName: inputs.firstName.replace(validNameRegex, ''),

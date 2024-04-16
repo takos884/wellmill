@@ -97,6 +97,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
         stock: Number(rawProduct.stock) || 0,
         price: Number(rawProduct.price) || 0,
         taxRate: Number(rawProduct.taxRate) || 0,
+        discountRate: Number(rawProduct.discountRate) || 0,
+        discountValue: Number(rawProduct.discountValue) || 0,
         type: Number(rawProduct.type) || 0,
         images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
       };

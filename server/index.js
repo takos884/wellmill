@@ -190,6 +190,8 @@ app.post('/createUser', async (req, res) => {
     console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
     console.log(req.body);
     const userData = req.body.data;
+    const subdomains = req.subdomains;
+    const subdomain = subdomains.length > 0 ? subdomains[0] : null;
     const stageSubdomain = subdomain === "stage" ? true : false;
 
     const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -206,11 +208,15 @@ app.post('/createUser', async (req, res) => {
     if(!userData.password || !passwordRegex.test(userData.password)) { return res.status(400).send('Missing or malformed password'); }
     const password = userData.password;
 
+    const newUser = userData.token ? false : true;
+    console.log("New user in createUser: " + newUser);
+    const tokenRegex = /^[0-9a-f]+$/i;
+    if(userData.token && !tokenRegex.test(userData.token)) { return {authenticated: false, message: "Malformed token"};}
+    const token = newUser ? crypto.randomBytes(48).toString('hex') : userData.token;
+
     const birthday = ValidateBirthday(userData.birthday);
 
     const hashedPassword = await bcrypt.hash(password, 10); // 10 salt rounds
-  
-    const token = crypto.randomBytes(48).toString('hex');
 
     query = "SELECT COUNT(*) FROM customer WHERE email = ?";
     try {
@@ -224,9 +230,9 @@ app.post('/createUser', async (req, res) => {
       return res.status(500).send('Error counting existing users by email');  
     }
 
-    query = `
-      INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, passwordHash, token)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    query = newUser ?
+      `INSERT INTO customer (firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, passwordHash, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)` :
+      `UPDATE customer SET firstName = ?, lastName = ?, firstNameKana = ?, lastNameKana = ?, gender = ?, birthday = ?, email = ?, passwordHash = ?, guest = FALSE WHERE token = ?`;
     values = [firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, hashedPassword, token];
 
   try {
@@ -234,11 +240,31 @@ app.post('/createUser', async (req, res) => {
     //console.log("Results after adding new customer:");
     //console.log(results);
 
-    const customerKey = results.insertId;
-    const code = "NV" + customerKey;
+    if(newUser) {
+      const customerKey = results.insertId;
+      const code = "NV" + customerKey;
+  
+      console.log(`Created user with customerKey: ${customerKey}, token: ${token} and code: ${code}`);
+      return res.json({ customerKey: customerKey, token: token, code: code });
+    } else {
+      // it's an existing user, so they sent a token to update their info, but no user was found with that token
+      if (results.affectedRows === 0) {
+        console.error('No user found with token:', token);
+        return res.status(404).send('No user found with the given token'); // It's more semantically appropriate to return a 404 status here
+      }
+      query = "SELECT customerKey FROM customer WHERE token = ?";
+      values = [token];
+      const [customerKeyResults] = await poolProduction.query(query, values);
+      if(customerKeyResults.affectedRows === 0) {
+        console.error('No user found with token: ', token);
+        return res.status(404).send('No user found with the given token'); // It's more semantically appropriate to return a 404 status here
+      }
+      const customerKey = customerKeyResults[0].customerKey;
+      const code = "NV" + customerKey;
+      console.log(`Registered user with customerKey: ${customerKey}, token: ${token} and code: ${code}`);
+      return res.json({ customerKey: customerKey, token: token, code: code });
+    }
 
-    console.log(`Created user with customerKey: ${customerKey}, token: ${token} and code: ${code}`);
-    return res.json({ customerKey: customerKey, token: token, code: code });
   } catch (error) {
     console.error('Error creating user:', error);
     return res.status(500).send('Error creating user: ' + error);
@@ -1057,6 +1083,13 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 <tr>
                   <td colspan="2" align="left" style="font-size: 1.25rem; color: #444; padding: 0;">
                     注文の発送準備を行なっております。商品を発送いたしましたら、改めてお 知らせいたします。
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" align="left" style="font-size: 1.25rem; color: #444; padding: 0;">
+                    <a href="https://shop.well-mill.com/order-list">
+                      購入履歴確認
+                    </a>
                   </td>
                 </tr>
                 ${/*
@@ -2875,11 +2908,22 @@ app.post("/finalizePurchase", async (req, res) => {
         console.log("delivery");
         console.dir(delivery, { depth: null, colors: true });
 
+        // 'userAddress' contains the first matching address or the default address if none were found.
+        const orderAddress = lineItemUpdatedResults.reduce((foundAddress, purchaseLineItem) => {
+          if (!foundAddress) {
+            const address = addresses.find(ad => ad.addressKey === purchaseLineItem.addressKey);
+            if (address) {
+              return address;
+            }
+          }
+          return foundAddress;
+        }, defaultAddress);
+
         const backupData = {
           "chumon_no": "NVP-" + purchase.purchaseKey,
           "chumon_no2": "NVP-" + purchase.purchaseKey,
           "chumon_date": formatDate(purchase.purchaseTime),
-          "konyu_name": `${customer.lastName} ${customer.firstName}` || "",
+          "konyu_name": `${customer.lastName || orderAddress.lastName} ${customer.firstName || orderAddress.firstName}`,
           "nebiki": 0,
           "soryo": 0,
           "zei1": Math.round(purchase.amount * (1/1.1)),
@@ -2888,7 +2932,7 @@ app.post("/finalizePurchase", async (req, res) => {
           "zei_ritsu2": 0,
           "zei3": 0,
           "zei_ritsu3": 0,
-          "konyu_mail_address": customer.email || "",
+          "konyu_mail_address": (customer.email || orderAddress.email || ""),
           "touroku_kbn": 0,
           "chumon_meisai": orderDetails,
           "haiso": delivery,

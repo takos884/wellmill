@@ -30,6 +30,10 @@ function Product() {
     const otherProducts = products?.filter(p => p.productKey !== productIdNum);
     const priceWithoutTax = currentProduct ? Math.round(currentProduct.price) : 0;
     const taxIncludedPrice = currentProduct ? Math.round(currentProduct.price * (1+currentProduct.taxRate)) : 0;
+    const discountRate = currentProduct?.discountRate ? currentProduct.discountRate : 0;
+    const regularPriceWithoutTax = Math.round(priceWithoutTax / (1 - discountRate));
+    const regularTaxIncludedPrice = Math.round(taxIncludedPrice / (1 - discountRate));
+
 
     // pre-loads spinner so it shows right away
     useEffect(() => {
@@ -80,7 +84,7 @@ function Product() {
         }, 100);
 
         setTimeout(() => {
-          //window.location.reload();
+          window.location.reload();
         }, 900);
   
       } else {
@@ -126,6 +130,15 @@ function Product() {
         style={index === 0 ? { gridColumn: 'span 2' } : {}}
       />
     ));
+
+    const noTaxText = discountRate === 0 ?
+      <span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span> :
+      <><span className={styles.productPriceWithoutTaxStrikeout}>¥{regularPriceWithoutTax.toLocaleString('en-US')}（税抜）</span><span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span></>;
+
+    const withTaxText = discountRate === 0 ?
+      <span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span> :
+      <><span className={styles.productPriceWithTaxStrikeout}>¥{regularTaxIncludedPrice.toLocaleString('en-US')}（税込）</span><span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span></>;
+
 
     const quantityNode = (
       <>
@@ -338,8 +351,8 @@ function Product() {
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>
             <span className={styles.productDescription}>{currentProduct?.title}</span>
-            <span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span>
-            <span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>
+            {noTaxText/*<span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span>*/}
+            {withTaxText/*<span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span>*/}
             数量{quantityNode}
             {actionButton}
             <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.description || '' }} />

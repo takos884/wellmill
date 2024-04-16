@@ -10,6 +10,7 @@ import Footer from "./Footer";
 
 import styles from "./postpurchase.module.css"
 import { StripeElementsOptions, loadStripe } from "@stripe/stripe-js";
+import { Link } from "react-router-dom";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -68,7 +69,7 @@ function PostPurchaseContent() {
 
   const header = (redirectStatus === "succeeded") ? <span className={styles.received}>ご注文を承りました</span> : <span>There was an error</span>
   const paymentInProgress = <span className={styles.wait}>お支払い処理中です、少々お待ちください</span>
-  const PaymentSuccess = <span className={styles.success}>ご注文が完了しました</span>
+  const PaymentSuccess = <><span className={styles.success}>ご注文が完了しました</span><Link to="/order-list"><span className={styles.orderListLink}>購入履歴確認</span></Link></>
   const serverReply = <span className={styles.message}>サーバーからのメッセージ: {paymentStatus}</span>
 
   

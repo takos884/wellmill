@@ -52,7 +52,8 @@ const MyPage = () => {
     </>
   );
 
-  const logoutText = guest ? "買い物データ削除" : "ログアウト"
+  const logoutText = user.guest ? "買い物データ削除" : "ログアウト";
+  const registerText = "登録する";
 
   const suggestRegister = (localStorage.getItem('sampleID'));
   const suggestRegisterMessage = (<span className={styles.suggestSpan}>サンプルを登録できます</span>);
@@ -66,17 +67,18 @@ const MyPage = () => {
       <Header breadcrumbs={breadcrumbs} />
       <span className="topHeader">マイページ</span>
       <div className={styles.content}>
-        <span className={styles.header}>{user.lastName} {user.firstName}様のマイページ</span>
+        <span className={styles.header}>{user?.guest === false ? `${user.lastName} ${user.firstName} 様のマイページ` : "購入履歴確認"} </span>
         <div className={styles.linksGrid}>
-          <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span>{suggestRegister ? suggestRegisterMessage : null}</Link>
+          {user?.guest === false ? <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span>{suggestRegister ? suggestRegisterMessage : null}</Link> : null}
           {false && (<Link to="/result-list"><span className={styles.link}>検査結果の一覧</span></Link>)}
-          <Link to="/how_to"><span className={styles.link}>採血の方法</span></Link>
+          {user?.guest === false ? <Link to="/how_to"><span className={styles.link}>採血の方法</span></Link> : null}
           <Link to="/order-list"><span className={styles.link}>購入履歴</span></Link>
-          <Link to="/address"><span className={styles.link}>お届け先住所</span>{suggestAddress ? suggestAddressMessage : null }</Link>
-          <Link to="/profile"><span className={styles.link}>アカウント情報</span></Link>
+          {user?.guest === false ? <Link to="/address"><span className={styles.link}>お届け先住所</span>{suggestAddress ? suggestAddressMessage : null }</Link> : null}
+          {user?.guest === false ? <Link to="/profile"><span className={styles.link}>アカウント情報</span></Link> : null}
         </div>
         {guest && makeAccountAdvice}
-        <button onClick={handleLogout}>{logoutText}</button>
+        {user?.guest === false ? <button onClick={handleLogout}>{logoutText}</button> : null}
+        {user?.guest === true ? <Link to="/sign-up"><button>{registerText}</button></Link> : null}
       </div>
       <Footer />
     </>

@@ -89,11 +89,25 @@ span.productPriceWithoutTax {
     font-weight: bold;
 }
 
+span.productPriceWithoutTaxStrikeout {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: line-through;
+}
+
 span.productPriceWithTax {
     font-size: 1.2rem;
     font-weight: bold;
     margin-bottom: 2rem;
     color: #444;
+}
+
+span.productPriceWithTaxStrikeout {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    color: #444;
+    text-decoration: line-through;
 }
 
 div.quantityComponent {

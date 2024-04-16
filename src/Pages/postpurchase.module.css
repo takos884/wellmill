@@ -16,3 +16,8 @@ span.success {
 span.message {
   font-size: 0.8rem;
 }
+
+span.orderListLink {
+  text-decoration: underline;
+  color: #369;
+}
