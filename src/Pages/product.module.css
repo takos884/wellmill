@@ -93,6 +93,7 @@ span.productPriceWithoutTaxStrikeout {
     font-size: 1.5rem;
     font-weight: bold;
     text-decoration: line-through;
+    margin-right: 1rem;
 }
 
 span.productPriceWithTax {
@@ -108,6 +109,7 @@ span.productPriceWithTaxStrikeout {
     margin-bottom: 2rem;
     color: #444;
     text-decoration: line-through;
+    margin-right: 1rem;
 }
 
 div.quantityComponent {

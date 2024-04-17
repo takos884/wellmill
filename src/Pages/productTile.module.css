@@ -30,6 +30,7 @@ span.productPriceNoTaxStrikeout {
     font-size: 1.3rem;
     font-weight: bold;
     text-decoration: line-through;
+    margin-right: 1rem;
 }
 
 span.productPriceWithTax {
@@ -43,4 +44,5 @@ span.productPriceWithTaxStrikeout {
     font-size: 1rem;
     font-weight: bold;
     text-decoration: line-through;
+    margin-right: 1rem;
 }

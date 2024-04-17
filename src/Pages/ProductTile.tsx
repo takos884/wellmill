@@ -23,11 +23,11 @@ function ProductTile({ Product: product }: ProductTileProps) {
 
     const noTaxText = discountRate === 0 ?
         <span className={styles.productPriceNoTax}>{priceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span> :
-        <><span className={styles.productPriceNoTaxStrikeout}>{regularPriceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span><span className={styles.productPriceNoTax}>{priceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span></>;
+        <div><span className={styles.productPriceNoTaxStrikeout}>{regularPriceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span><span className={styles.productPriceNoTax}>{priceWithoutTax.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税抜)</span></div>;
 
     const withTaxText = discountRate === 0 ?
         <span className={styles.productPriceWithTax}>{taxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span> : 
-        <><span className={styles.productPriceWithTaxStrikeout}>{regularTaxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span><span className={styles.productPriceWithTax}>{taxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span></>;
+        <div><span className={styles.productPriceWithTaxStrikeout}>{regularTaxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })}</span><span className={styles.productPriceWithTax}>{taxIncludedPrice.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} (税込)</span></div>;
 
     return(
         <Link to={`/shop/${product.productKey}`}>

@@ -34,6 +34,8 @@ function Product() {
     const regularPriceWithoutTax = Math.round(priceWithoutTax / (1 - discountRate));
     const regularTaxIncludedPrice = Math.round(taxIncludedPrice / (1 - discountRate));
 
+    console.log("discountRate");
+    console.log(discountRate)
 
     // pre-loads spinner so it shows right away
     useEffect(() => {
@@ -133,11 +135,11 @@ function Product() {
 
     const noTaxText = discountRate === 0 ?
       <span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span> :
-      <><span className={styles.productPriceWithoutTaxStrikeout}>¥{regularPriceWithoutTax.toLocaleString('en-US')}（税抜）</span><span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span></>;
+      <div><span className={styles.productPriceWithoutTaxStrikeout}>¥{regularPriceWithoutTax.toLocaleString('en-US')}</span><span className={styles.productPriceWithoutTax}>¥{priceWithoutTax.toLocaleString('en-US')}（税抜）</span></div>;
 
     const withTaxText = discountRate === 0 ?
       <span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span> :
-      <><span className={styles.productPriceWithTaxStrikeout}>¥{regularTaxIncludedPrice.toLocaleString('en-US')}（税込）</span><span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span></>;
+      <div style={{marginBottom: "2rem"}}><span className={styles.productPriceWithTaxStrikeout}>¥{regularTaxIncludedPrice.toLocaleString('en-US')}</span><span className={styles.productPriceWithTax}>¥{taxIncludedPrice.toLocaleString('en-US')}（税込）</span></div>;
 
 
     const quantityNode = (

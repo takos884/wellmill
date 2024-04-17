@@ -139,6 +139,8 @@ async function fetchProducts() {
           stock: row.stock,
           price: row.price,
           taxRate: row.taxRate,
+          discountRate: row.discountRate,
+          discountValue: row.discountValue,
           type: row.type,
           images: []
         };
