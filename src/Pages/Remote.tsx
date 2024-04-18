@@ -8,14 +8,14 @@ import Footer from "./Footer";
 function Remote() {
   const breadcrumbs = [
     { text: "ホーム", url: "/" },
-    { text: "モニタリング検査とは？", url: "/remote-examination" },
+    { text: "リモート検査とは？", url: "/remote-examination" },
   ];
 
   return(
     <>
       <div className="topDots" />
       <Header breadcrumbs={breadcrumbs}/>
-      <span className="topHeader" style={{whiteSpace: "nowrap"}}>モニタリング検査<span className={styles.blackHeader}>とは？</span></span>
+      <span className="topHeader" style={{whiteSpace: "nowrap"}}>リモート検査<span className={styles.blackHeader}>とは？</span></span>
       <div className={styles.content}>
         <div className={styles.colorImgGrid}>
           <img className={styles.colorImgMobile} src="remote-01-mobile.png"/>
