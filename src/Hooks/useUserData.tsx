@@ -503,10 +503,13 @@ export const useUserData = (): UseUserDataReturnType => {
     setCartLoading(true);
     return paymentIntent;
 
-    let APIResponse;
-    let purchaseKey: number;
+    // let APIResponse;
+    // let purchaseKey: number;
 
     async function createPaymentIntentFunction(cartLines: CartLine[], addressesState: LineItemAddressesArray) {
+      let APIResponse;
+      let purchaseKey: number;
+
       if(!user?.customerKey) {
         if(!user)            return { data: null, error: "No user data available when creating payment intent locally" };
         if(!user.cart)       return { data: null, error: "No cart data available when creating payment intent locally" };
@@ -527,6 +530,9 @@ export const useUserData = (): UseUserDataReturnType => {
         if(!user?.customerKey) return { data: null, error: "No customer key available when creating payment intent" };
         if(!user?.token)       return { data: null, error: "No token available when creating payment intent" };
         const requestBody = {customerKey: user.customerKey, token: user.token, cartLines: cartLines, addressesState: addressesState, guest: guest };
+        //console.log("requestBody in createPaymentIntent in useUserData:");
+        //console.log(requestBody);
+
         APIResponse = await CallAPI(requestBody, "createPaymentIntent");
   
         if(APIResponse.error) {

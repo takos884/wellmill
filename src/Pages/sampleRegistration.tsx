@@ -25,7 +25,6 @@ function SampleRegistration() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-
   const now = new Date();
   now.setTime(now.getTime() + 9*60*60*1000); // Japan timezone = +9h
   const [kentaiSaishubi, setKentaiSaishubi] = useState(now.toISOString().split('T')[0]);
@@ -119,14 +118,14 @@ function SampleRegistration() {
   //const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
   const forceSigninMessage = (
     <>
-      テストを登録するには<br/>
-      サインインする必要があります
+      検体ID登録の前にマイページの<br/>
+      新規作成をお願いいたします
     </>);
 
   const forceAddress = (!userLoading && user?.addresses.length === 0 && kentaiIdLock && false);
   const forceAddressMessage = (
     <>
-      テストを登録するには<br/>
+      検体ID登録の前に<br/>
       住所を登録する必要があります
     </>);
 
@@ -136,7 +135,8 @@ function SampleRegistration() {
         <img className={styles.modalImg} src="Pencil.png" alt="Pencil" />
         <span className={styles.modalSpan}>{forceSignin ? forceSigninMessage : forceAddress ? forceAddressMessage : null}</span>
         <div className={styles.modalLinks}>
-          <Link to="/sample-registration" onClick={() => {localStorage.removeItem('sampleID'); setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>
+          {/*<Link to="/sample-registration" onClick={() => {localStorage.removeItem('sampleID'); setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>*/}
+          <a><span className={styles.modalLinkSecondary} onClick={() => {navigate(-1)}}>キャンセル</span></a>
           {
             forceSignin ? <Link to="/login"><span className={styles.modalLinkPrimary}>サインイン</span></Link> :
             forceAddress ? <Link to="/address"><span className={styles.modalLinkPrimary}>住所を登録</span></Link> : null
