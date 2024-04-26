@@ -2426,11 +2426,20 @@ app.post("/createPaymentIntent", async (req, res) => {
 
   const addressesState = req.body.data.addressesState;
 
+  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
+  const itemsMetadata = cartLines.map(cartLine => {
+    const product = productsData.find(p => p.productKey === cartLine.productKey);
+    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
+  }).join(' | ');
+
   // Create a PaymentIntent with the order amount and currency
   // Make a purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
   const paymentIntent = await stripeProduction.paymentIntents.create({
     amount: purchaseTotal,
     currency: "jpy",
+    metadata: {
+      items: itemsMetadata,
+    }
   });
 
 
@@ -2605,6 +2614,12 @@ app.post("/updatePaymentIntent", async (req, res) => {
   // A 0 yen payment is a free purchase, so it's allowed, we won't use Stripe for it
   if(purchaseTotal > 0 && purchaseTotal < 50) { return res.status(400).send('Coupon cannot cause final price to be from 1 to 49 yen.'); }
 
+  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
+  const itemsMetadata = cartLines.map(cartLine => {
+    const product = productsData.find(p => p.productKey === cartLine.productKey);
+    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
+  }).join(' | ');
+
   query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
   values = [couponDiscount, paymentIntentId];
   try {
@@ -2618,6 +2633,10 @@ app.post("/updatePaymentIntent", async (req, res) => {
       // payment intent at Stripe is not updated if the purchase total is 0 (sending a free order)
       const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripeProduction.paymentIntents.update(paymentIntentId, {
           amount: purchaseTotal,
+          metadata: {
+            items: itemsMetadata,
+            couponCode: couponCode,
+          }
       });
 
       res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
@@ -2934,7 +2953,7 @@ app.post("/finalizePurchase", async (req, res) => {
           "zei_ritsu2": 0,
           "zei3": 0,
           "zei_ritsu3": 0,
-          "konyu_mail_address": (customer.email || orderAddress.email || ""),
+          "konyu_mail_address": (email || customer.email || orderAddress.email || ""),
           "touroku_kbn": 0,
           "chumon_meisai": orderDetails,
           "haiso": delivery,

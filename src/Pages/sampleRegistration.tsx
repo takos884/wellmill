@@ -115,7 +115,6 @@ function SampleRegistration() {
   //console.dir(sampleBackupData);
 
   const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
-  //const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
   const forceSigninMessage = (
     <>
       検体ID登録の前にマイページの<br/>
@@ -136,7 +135,7 @@ function SampleRegistration() {
         <span className={styles.modalSpan}>{forceSignin ? forceSigninMessage : forceAddress ? forceAddressMessage : null}</span>
         <div className={styles.modalLinks}>
           {/*<Link to="/sample-registration" onClick={() => {localStorage.removeItem('sampleID'); setKentaiId(""); setKentaiIdLock(false);}}><span className={styles.modalLinkSecondary}>キャンセル</span></Link>*/}
-          <a><span className={styles.modalLinkSecondary} onClick={() => {navigate(-1)}}>キャンセル</span></a>
+          {/*<a><span className={styles.modalLinkSecondary} onClick={() => {navigate(-1)}}>キャンセル</span></a>*/}
           {
             forceSignin ? <Link to="/login"><span className={styles.modalLinkPrimary}>サインイン</span></Link> :
             forceAddress ? <Link to="/address"><span className={styles.modalLinkPrimary}>住所を登録</span></Link> : null
@@ -160,7 +159,7 @@ function SampleRegistration() {
         <span className={styles.subHeader2}>（IDが一致しているか念の為ご確認ください）</span>
         <img src="registerQR.jpg" alt="Sample QR code"/>
         <span className={styles.inputHeader}>検体ID<span className={styles.required}>必須</span></span>
-        <div className={styles.inputWrapper}><input type="text" style={{width: "100%", marginLeft: 0, marginRight: 0}} value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />{kentaiIdLock ? clearButton : null}</div>
+        <div className={styles.inputWrapper}><input type="text" style={{width: "100%", marginLeft: 0, marginRight: 0, backgroundColor: kentaiIdLock ? "#d3d3d3" : ""}} value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />{kentaiIdLock ? /*null*/ clearButton : null}</div>
         {unknownId}
         <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
         <input type="date" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange}></input>

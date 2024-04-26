@@ -500,7 +500,7 @@ export const useUserData = (): UseUserDataReturnType => {
     const paymentIntent = await createPaymentIntentFunction(cartLines, addressesState);
     localStorage.setItem('paymentIntentId', paymentIntent.data.paymentIntentId);
 
-    setCartLoading(true);
+    setCartLoading(false);
     return paymentIntent;
 
     // let APIResponse;
