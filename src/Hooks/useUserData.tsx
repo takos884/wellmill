@@ -815,12 +815,14 @@ export const useUserData = (): UseUserDataReturnType => {
       "zei_ritsu3": 0,
       "konyu_mail_address": email || "",
       "touroku_kbn": 0,
+      "coupon_use_flg": purchase.couponDiscount > 0 ? 1 : 0,
       "chumon_meisai": orderDetails,
       "haiso": delivery
     }
 
     console.log("backupData (for order)");
     console.log(backupData);
+    console.log("XXXXX");
 
     const backupResults = await CallAPI({endpoint: "chumon_renkei_api", paymentIntentId: paymentIntentId, inputData: backupData}, "storeBackupData");
     console.log("backupResults");

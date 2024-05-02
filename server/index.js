@@ -2955,6 +2955,7 @@ app.post("/finalizePurchase", async (req, res) => {
           "zei_ritsu3": 0,
           "konyu_mail_address": (email || customer.email || orderAddress.email || ""),
           "touroku_kbn": 0,
+          "coupon_use_flg": purchase.couponDiscount > 0 ? 1 : 0,
           "chumon_meisai": orderDetails,
           "haiso": delivery,
         }
