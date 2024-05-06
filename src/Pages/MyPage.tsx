@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { useContext } from "react";
 import { emptyCustomer } from "../types";
+import { useUserData } from "../Hooks/useUserData";
 
 const breadcrumbs = [
   { text: "ホーム", url: "/" },
@@ -14,28 +15,38 @@ const breadcrumbs = [
 ];
 
 const MyPage = () => {
-  const { user, setUser, userLoading, guest, setGuest } = useContext(UserContext);
+  const { user, userLoading, guest, setGuest } = useContext(UserContext);
+  const { logoutUser } = useUserData();
   const navigate = useNavigate();
 
   function handleLogout() {
-    if(!guest) {
-      Cookies.remove('WellMillToken');
-      setGuest(true);
-      setUser(emptyCustomer);
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);  
-      navigate('/login');
-    }
+    logoutUser();
+    setGuest(true);
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);  
+    navigate('/login');
 
-    if(!user?.customerKey) {
-      const confirmationMessage = "アカウントデータの削除を確認しますか？カート内の商品、保存された住所、ローカルに保存されたテスト結果が削除されます。これはローカルデータのみに影響します。";
-      if(window.confirm(confirmationMessage)) {
-        localStorage.removeItem('userLocal');
-        setUser(null);
-        navigate('/login');
-      }
-    }
+//    if(!guest) {
+//      const subdomain = window.location.hostname.split('.')[0];
+//      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+//      Cookies.remove(cookieName);
+//      setGuest(true);
+//      setUser(emptyCustomer);
+//      setTimeout(() => {
+//        window.location.reload();
+//      }, 500);  
+//      navigate('/login');
+//    }
+//
+//    if(!user?.customerKey) {
+//      const confirmationMessage = "アカウントデータの削除を確認しますか？カート内の商品、保存された住所、ローカルに保存されたテスト結果が削除されます。これはローカルデータのみに影響します。";
+//      if(window.confirm(confirmationMessage)) {
+//        localStorage.removeItem('userLocal');
+//        setUser(null);
+//        navigate('/login');
+//      }
+//    }
   }
 
   if(userLoading) return <span>Loading...</span>
@@ -55,10 +66,13 @@ const MyPage = () => {
   const logoutText = user.guest ? "買い物データ削除" : "ログアウト";
   const registerText = "登録する";
 
-  const suggestRegister = (localStorage.getItem('sampleID'));
+  const subdomain = window.location.hostname.split('.')[0];
+  const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+
+  const suggestRegister = (localStorage.getItem(keyName));
   const suggestRegisterMessage = (<span className={styles.suggestSpan}>サンプルを登録できます</span>);
 
-  const suggestAddress = (localStorage.getItem('sampleID') && user && user.addresses.length === 0 && false);
+  const suggestAddress = (localStorage.getItem(keyName) && user && user.addresses.length === 0 && false);
   const suggestAddressMessage = (<span className={styles.suggestSpan}>サンプルの登録に必要です</span>);
 
   return (

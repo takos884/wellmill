@@ -80,7 +80,9 @@ function Signup() {
     agreement: false,
   });
 
-  const newUser = Cookies.get('WellMillToken') ? false : true;
+  const subdomain = window.location.hostname.split('.')[0];
+  const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+  const newUser = Cookies.get(cookieName) ? false : true;
   console.log('newUser in HandleRegistrationClick: ', newUser);
 
   function HandleInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -118,10 +120,12 @@ function Signup() {
       }
     }
 
-    const newUser = Cookies.get('WellMillToken') ? false : true;
+    const subdomain = window.location.hostname.split('.')[0];
+    const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+    const newUser = Cookies.get(cookieName) ? false : true;
     console.log('newUser in HandleRegistrationClick: ', newUser);
     if(!newUser){
-      const guestKeyCookie = Cookies.get('WellMillToken');
+      const guestKeyCookie = Cookies.get(cookieName);
       const token = guestKeyCookie ? guestKeyCookie : undefined;
       inputs.token = token ? token : undefined;
     }
@@ -236,7 +240,10 @@ function Signup() {
     if(userData.token) {
       //console.log(`Going to login with token: ${userData.token}`);
       loginUser({token: userData.token});
-      Cookies.set('WellMillToken', userData.token, { expires: 31, sameSite: 'Lax' });
+
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';  
+      Cookies.set(cookieName, userData.token, { expires: 31, sameSite: 'Lax' });
     }
 
     // Azure demands these values
@@ -249,7 +256,10 @@ function Signup() {
 
     // Ideally, I wouldn't need a reload after signing up, but it's so much simpler to just reload the page and force a new token login
     setTimeout(() => {
-      if(localStorage.getItem('sampleID')) {
+      const subdomain = window.location.hostname.split('.')[0];
+      const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+  
+      if(localStorage.getItem(keyName)) {
         navigate('/sample-registration');
         return
       }
@@ -263,8 +273,10 @@ function Signup() {
   }
 
   async function sendWelcomeEmail(recipient: string) {
+    const endpointSubdomain = window.location.hostname.startsWith('stage') ? "stage" : "shop";
+
     try {
-        const response = await fetch('https://shop.well-mill.com/api/sendWelcome', {
+        const response = await fetch(`https://${endpointSubdomain}.well-mill.com/api/sendWelcome`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

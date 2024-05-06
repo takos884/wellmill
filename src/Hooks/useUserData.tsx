@@ -7,7 +7,7 @@ import { useProducts } from "../Contexts/ProductContext";
 
 import CallAPI from '../Utilities/CallAPI';
 
-import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase, Image } from '../types';
+import { Customer, UserCredentials, Cart, CartLine, Address, Product, LineItemAddressesArray, LineItem, Purchase, Image, emptyCustomer } from '../types';
 import ProcessCustomer from '../Utilities/ProcessCustomer';
 import { prefectures } from '../Utilities/addressData';
 
@@ -22,8 +22,9 @@ type UseUserDataReturnType = {
   updateUser: (userData: Customer) => Promise<APIResponse>;
   registerGuest: () => Promise<APIResponse>;
   loginUser: (credentials: UserCredentials) => Promise<APIResponse>;
+  logoutUser: () => boolean;
   addAddress: (address: Address) => Promise<APIResponse>;
-  deleteAddress: (addressKey: number) => Promise<APIResponse>;
+  deleteAddress: (addressKey: number) => Promise<APIResponse>;  
 
   addToCart: (productKey: number, quantity: number, explicitUser? : Customer) => Promise<APIResponse>;
   updateCartQuantity: (lineItemKey: number, quantity: number) => Promise<APIResponse>;
@@ -121,6 +122,22 @@ export const useUserData = (): UseUserDataReturnType => {
     return{ data: APIResponse.data.customerData, error: null };
   };
 
+  function logoutUser() {
+    const subdomain = window.location.hostname.split('.')[0];
+    const variableSuffix = subdomain === 'stage' ? 'Stage' : '';
+
+    const cookieName = 'WellMillToken' + variableSuffix;
+    Cookies.remove(cookieName);
+
+    const localStorageKeys = ["userLocal", "user", "couponDiscount", "coupons", "sampleID", "paymentIntentId"]
+    localStorageKeys.forEach(key => {
+      localStorage.removeItem(key + variableSuffix);
+    });
+
+    setUser(emptyCustomer);
+    return true;
+  }
+
   async function registerGuest() {
     const APIResponse = await CallAPI({}, "registerGuest");    
 
@@ -135,7 +152,9 @@ export const useUserData = (): UseUserDataReturnType => {
     }
 
     if (APIResponse.data?.token) {
-      Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+      Cookies.set(cookieName, APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
     }
 
     setUser((prev) => {
@@ -497,8 +516,11 @@ export const useUserData = (): UseUserDataReturnType => {
 
   const createPaymentIntent = useCallback(async (cartLines: CartLine[], addressesState: LineItemAddressesArray) => {
     setCartLoading(true);
+    const subdomain = window.location.hostname.split('.')[0];
+    const keyName = subdomain === 'stage' ? 'paymentIntentIdStage' : 'paymentIntentId';
+
     const paymentIntent = await createPaymentIntentFunction(cartLines, addressesState);
-    localStorage.setItem('paymentIntentId', paymentIntent.data.paymentIntentId);
+    localStorage.setItem(keyName, paymentIntent.data.paymentIntentId);
 
     setCartLoading(false);
     return paymentIntent;
@@ -635,7 +657,6 @@ export const useUserData = (): UseUserDataReturnType => {
       userClone.purchases.push(newPurchase);
       UpdateUser(userClone);
       localStorage.setItem('userLocal', JSON.stringify(userClone));
-      console.log(JSON.parse(localStorage.getItem('userLocal') || ""));
 
       //UpdateUser(APIResponse.data);
       return APIResponse;
@@ -690,7 +711,9 @@ export const useUserData = (): UseUserDataReturnType => {
 
     const purchase = user.purchases.find(pur => {return pur.paymentIntentId === paymentIntentId})
     if(!purchase) { return { data: null, error: "No purchase" }; }
-    const localCouponDiscount = parseInt(localStorage.getItem('couponDiscount') || "0");
+    const subdomain = window.location.hostname.split('.')[0];
+    const keyName = subdomain === 'stage' ? 'couponDiscountStage' : 'couponDiscount';
+    const localCouponDiscount = parseInt(localStorage.getItem(keyName) || "0");
     purchase.couponDiscount = localCouponDiscount;
 
     const purchaseLineItems = purchase.lineItems;
@@ -868,7 +891,6 @@ export const useUserData = (): UseUserDataReturnType => {
     userClone.cart.lines = [];
     UpdateUser(userClone);
     localStorage.setItem('userLocal', JSON.stringify(userClone));
-    console.log(JSON.parse(localStorage.getItem('userLocal') || ""))
 
     return { data: userClone, error: null };
   }, [user, products]);
@@ -979,7 +1001,7 @@ export const useUserData = (): UseUserDataReturnType => {
 
 
   return {
-    createUser, loginUser, updateUser, // Not available for non-registered customers
+    createUser, loginUser, logoutUser, updateUser, // Not available for non-registered customers
     registerGuest,
     addToCart, updateCartQuantity, deleteFromCart, 
     createPaymentIntent, finalizePurchase, cancelPurchase, printReceipt,

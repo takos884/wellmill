@@ -20,7 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { user, setUser, guest, setGuest, userMeaningful } = useContext(UserContext);
-  const { loginUser} = useUserData();
+  const { loginUser, logoutUser } = useUserData();
 
   const navigate = useNavigate();
 
@@ -36,12 +36,15 @@ const Login = () => {
     const data = response.data;
 
     if (data && data.token) {
-      Cookies.set('WellMillToken', data.token, { expires: 31, sameSite: 'Lax' });
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+      const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+      Cookies.set(cookieName, data.token, { expires: 31, sameSite: 'Lax' });
       setGuest(false);
       localStorage.removeItem('userLocal');
-
+    
       setTimeout(() => {
-        if(localStorage.getItem('sampleID')) {
+        if(localStorage.getItem(keyName)) {
           navigate('/sample-registration');
           return
         }
@@ -51,9 +54,11 @@ const Login = () => {
   };
 
   const handleLogout = async () => {
-    Cookies.remove('WellMillToken');
-    setUser(null);
+    logoutUser();
     setGuest(true);
+    setUser(emptyCustomer); setTimeout(() => {
+      window.location.reload();
+    }, 500);
   }
 
   function handleNewGuest() {
@@ -70,8 +75,11 @@ const Login = () => {
   }
 
   function handleWipeGuest() {
-    localStorage.removeItem('userLocal');
-    Cookies.remove('WellMillToken');
+    logoutUser();
+//    localStorage.removeItem('userLocal');
+//    const subdomain = window.location.hostname.split('.')[0];
+//    const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+//    Cookies.remove(cookieName);
     setUser(emptyCustomer); setTimeout(() => {
       window.location.reload();
     }, 500);

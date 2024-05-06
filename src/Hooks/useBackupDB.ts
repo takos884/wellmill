@@ -1,8 +1,8 @@
 import { useContext, useState } from 'react';
 import { UserContext } from '../Contexts/UserContext';
 
-//const localEndpoint = 'https://shop.well-mill.com/api/storeBackupData';
-const localEndpoint = window.location.hostname.startsWith('stage') ? "https://stage.well-mill.com/api/storeBackupData" : "https://shop.well-mill.com/api/storeBackupData"
+const endpointSubdomain = window.location.hostname.startsWith('stage') ? "stage" : "shop";
+const fetchEndpoint = `https://${endpointSubdomain}.well-mill.com/api/storeBackupData`;
 
 export const useBackupDB = <T extends unknown>() => {
   const [data, setData] = useState<T | null>(null);
@@ -21,7 +21,7 @@ export const useBackupDB = <T extends unknown>() => {
     //console.log(requestContent);
 
     try {
-      const response = await fetch(localEndpoint, requestContent);
+      const response = await fetch(fetchEndpoint, requestContent);
 
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);

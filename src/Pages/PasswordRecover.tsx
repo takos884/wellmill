@@ -25,8 +25,14 @@ export default function PasswordRecover() {
   }
 
   async function sendPasswordEmail(recipient: string) {
+    const subdomain = window.location.hostname.split('.')[0];
+    const fetchSubdomain =
+    subdomain === 'stage' ? 'stage' :
+    //subdomain === 'dev' ? 'dev' :
+    'shop';
+
     try {
-        const response = await fetch('https://shop.well-mill.com/api/sendPassword', {
+        const response = await fetch(`https://${fetchSubdomain}.well-mill.com/api/sendPassword`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -22,7 +22,7 @@ const breadcrumbs = [
 //const stripePromise = loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6");
 
 // This is our *publishable* production API key.
-const stripePromise = loadStripe("pk_live_51OZRPgKbzugMLft3UUXVWuMLrYnM0IkDU7Y8c5FqTOsRycYXzVx9fZcLn0nLViTsqG6vfUkAOX3UitSRwvrbsesw00FljV7keZ");
+//const stripePromise = loadStripe("pk_live_51OZRPgKbzugMLft3UUXVWuMLrYnM0IkDU7Y8c5FqTOsRycYXzVx9fZcLn0nLViTsqG6vfUkAOX3UitSRwvrbsesw00FljV7keZ");
 
 
 
@@ -30,6 +30,9 @@ export default function PostPurchase() {
   const parsedUrl = new URL(window.location.href);
   const params = new URLSearchParams(parsedUrl.search);
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
+
+  const subdomain = window.location.hostname.split('.')[0];
+  const stripePromise = subdomain === 'stage' ? loadStripe("pk_test_51OCbHTKyM0YoxbQ6sRQnZdL8bJ5MCtdXPgiCv9uBngab4fOvROINeb3EV8nqXf5pyOT9ZTF8mKTzOcCgNK2rODhI00MmDWIyQ6") : loadStripe("pk_live_51OZRPgKbzugMLft3UUXVWuMLrYnM0IkDU7Y8c5FqTOsRycYXzVx9fZcLn0nLViTsqG6vfUkAOX3UitSRwvrbsesw00FljV7keZ");
 
   const options: StripeElementsOptions = {
     clientSecret: paymentIntentClientSecret || undefined,
@@ -58,7 +61,11 @@ function PostPurchaseContent() {
   const params = new URLSearchParams(parsedUrl.search);
 
   const passStripe = params.get("pass") === "true" ? true : false;
-  const paymentIntentId = params.get("payment_intent") || localStorage.getItem('paymentIntentId');
+
+  const subdomain = window.location.hostname.split('.')[0];
+  const paymentIntentIdKeyName = subdomain === 'stage' ? 'paymentIntentIdStage' : 'paymentIntentId';
+
+  const paymentIntentId = params.get("payment_intent") || localStorage.getItem(paymentIntentIdKeyName);
   const paymentIntentClientSecret = params.get("payment_intent_client_secret");
   const redirectStatus = passStripe ? "succeeded" : params.get("redirect_status");
   const billingAddressKey = parseInt(params.get("ak") || "");
@@ -121,7 +128,11 @@ function PostPurchaseContent() {
         console.log(finalizeReply);
         return;
       }
-      localStorage.setItem('paymentIntentId', "");
+
+      const subdomain = window.location.hostname.split('.')[0];
+      const paymentIntentIdKeyName = subdomain === 'stage' ? 'paymentIntentIdStage' : 'paymentIntentId';
+    
+      localStorage.setItem(paymentIntentIdKeyName, "");
       //console.log(finalizeReply);
     }
 

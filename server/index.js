@@ -10,7 +10,6 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 
-// STAGETODO - Find all stripeProduction, add a check
 const stripeStage = require('stripe')(process.env.STRIPE_TEST_SECRET_API_KEY);
 const stripeProduction = require('stripe')(process.env.STRIPE_PRODUCTION_SECRET_API_KEY);
 
@@ -31,8 +30,8 @@ app.use(bodyParser.json());
 const poolStage = mysql.createPool({
   connectionLimit: 10,
   host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
+  user: process.env.DB_USER_STAGE,
+  password: process.env.DB_PASS_STAGE,
   database: process.env.DB_NAME_STAGE,
 });
 
@@ -41,20 +40,28 @@ const poolProduction = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME_PRODUCTION,
+  database: process.env.DB_NAME,
 });
 
 
 
 const PRODUCTS_FILE_PATH = path.join('/var/www/wellmill/products.json');
+const PRODUCTS_FILE_PATH_STAGE = path.join('/var/www/wellmill/productsStage.json');
 const COUPONS_FILE_PATH = path.join('/var/www/wellmill/coupons.json');
+const COUPONS_FILE_PATH_STAGE = path.join('/var/www/wellmill/couponsStage.json');
 const ORDER_BACKUP_FILE_PATH = path.join('/var/www/wellmill/order-WindsorAction.json');
+const ORDER_BACKUP_FILE_PATH_STAGE = path.join('/var/www/wellmill/order-WindsorActionStage.json');
 
 // used for both creating a file, and calculating cart totals
 let products = {};
 
 // used as a pair to run MySQL queries
 let query, values;
+
+const environmentValues = [
+  {name: "production", pool: poolProduction,      products: products, productsFilePath: PRODUCTS_FILE_PATH,       couponsFilePath: COUPONS_FILE_PATH},
+  {name: "stage",      pool: poolStage, products: products, productsFilePath: PRODUCTS_FILE_PATH_STAGE, couponsFilePath: COUPONS_FILE_PATH_STAGE },
+]
 
 const prefectureNames = [
   {code: 1 , name:"北海道"},
@@ -113,75 +120,74 @@ async function fetchProducts() {
     SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
     FROM product p
     LEFT JOIN image i ON p.productKey = i.productKey`;
-  //console.log("Query: " + query);
 
-  try{
-    const [results] = (await poolProduction.query(query));
+  for(const environmentValue of environmentValues) {
+    try{
+      const [results] = (await environmentValue.pool.query(query));
 
-    if (!results) {
-      console.log("Products not found");
-      return Promise.reject("Products not found");
+      if (!results) {
+        console.log("Products not found");
+        return Promise.reject("Products not found");
+      }
+
+      // holds products and their images
+      products = {};
+
+
+      results.forEach(row => {
+        // If the product is not already in the products object, add it
+        if (!products[row.productKey]) {
+          products[row.productKey] = {
+            productKey: row.productKey,
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            available: row.available,
+            stock: row.stock,
+            price: row.price,
+            taxRate: row.taxRate,
+            discountRate: row.discountRate,
+            discountValue: row.discountValue,
+            type: row.type,
+            images: []
+          };
+        }
+
+        // Add the image to the product's images array, if image data exists
+        if (row.imageKey) {
+          products[row.productKey].images.push({
+            imageKey: row.imageKey,
+            url: row.url,
+            displayOrder: row.displayOrder,
+            altText: row.altText
+          });
+        }
+      });
+    } catch(error) {
+      console.error(`[${CurrentTime()}] Error fetching ${environmentValue.name} products:`, error);
+      return Promise.reject(error);
     }
 
-    // holds products and their images
-    products = {};
+    // Write the products to a file
+    fs.writeFileSync(environmentValue.productsFilePath, JSON.stringify(Object.values(products), null, 2));
+    console.log(`[${CurrentTime()}] Updated modern ${environmentValue.name} products.json`);
 
+    query = `SELECT * FROM coupon`;
 
-    results.forEach(row => {
-      // If the product is not already in the products object, add it
-      if (!products[row.productKey]) {
-        products[row.productKey] = {
-          productKey: row.productKey,
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          available: row.available,
-          stock: row.stock,
-          price: row.price,
-          taxRate: row.taxRate,
-          discountRate: row.discountRate,
-          discountValue: row.discountValue,
-          type: row.type,
-          images: []
-        };
-      }
+    try{
+      const [coupons] = (await environmentValue.pool.query(query));
 
-      // Add the image to the product's images array, if image data exists
-      if (row.imageKey) {
-        products[row.productKey].images.push({
-          imageKey: row.imageKey,
-          url: row.url,
-          displayOrder: row.displayOrder,
-          altText: row.altText
-        });
-      }
-    });
-  } catch(error) {
-    console.error(`[${CurrentTime()}] Error fetching products:`, error);
-    return Promise.reject(error);
+      coupons.forEach(coupon => {
+        delete coupon.code;
+      });
+
+      fs.writeFileSync(environmentValue.couponsFilePath, JSON.stringify(Object.values(coupons), null, 2));
+      console.log(`[${CurrentTime()}] Updated ${environmentValue.name} coupons.json`);
+    } catch(error) {
+      console.error(`[${CurrentTime()}] Error fetching ${environmentValue.name} coupons:`, error);
+      return Promise.reject(error);
+    }
   }
-
-  // Write the products to a file
-  fs.writeFileSync(PRODUCTS_FILE_PATH, JSON.stringify(Object.values(products), null, 2));
-  console.log(`[${CurrentTime()}] Updated modern products.json`);
-
-
-  query = `SELECT * FROM coupon`;
-
-  try{
-    const [coupons] = (await poolProduction.query(query));
-
-    coupons.forEach(coupon => {
-      delete coupon.code;
-    });
-
-    fs.writeFileSync(COUPONS_FILE_PATH, JSON.stringify(Object.values(coupons), null, 2));
-    console.log(`[${CurrentTime()}] Updated coupons.json`);
-  } catch(error) {
-    console.error(`[${CurrentTime()}] Error fetching coupons:`, error);
-    return Promise.reject(error);
-  }
-
   return Promise.resolve(true);
 }
 
@@ -191,11 +197,12 @@ fetchProducts();
 app.post('/createUser', async (req, res) => {
     console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
     console.log(req.body);
-    const userData = req.body.data;
     const subdomains = req.subdomains;
     const subdomain = subdomains.length > 0 ? subdomains[0] : null;
     const stageSubdomain = subdomain === "stage" ? true : false;
+    const pool = stageSubdomain ? poolStage : poolProduction;
 
+    const userData = req.body.data;
     const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
     const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -222,7 +229,7 @@ app.post('/createUser', async (req, res) => {
 
     query = "SELECT COUNT(*) FROM customer WHERE email = ?";
     try {
-      const [existingCustomerCount] = await poolProduction.query(query, [email]);
+      const [existingCustomerCount] = await pool.query(query, [email]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
         //return res.status(400).send("すでに登録されたメール"); // Email already registered
         return res.status(400).json({data: null, error: "すでに登録されたメール"}); // Email already registered
@@ -238,7 +245,7 @@ app.post('/createUser', async (req, res) => {
     values = [firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, hashedPassword, token];
 
   try {
-    const [results] = await poolProduction.query(query, values);
+    const [results] = await pool.query(query, values);
     //console.log("Results after adding new customer:");
     //console.log(results);
 
@@ -256,7 +263,7 @@ app.post('/createUser', async (req, res) => {
       }
       query = "SELECT customerKey FROM customer WHERE token = ?";
       values = [token];
-      const [customerKeyResults] = await poolProduction.query(query, values);
+      const [customerKeyResults] = await pool.query(query, values);
       if(customerKeyResults.affectedRows === 0) {
         console.error('No user found with token: ', token);
         return res.status(404).send('No user found with the given token'); // It's more semantically appropriate to return a 404 status here
@@ -277,8 +284,13 @@ app.post('/updateUser', async (req, res) => {
   console.log("░▒▓█ Hit updateUser. Time: " + CurrentTime());
   console.log(req.body);
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   //#region Validate input
-  const validation = await ValidatePayload(req.body.data);
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in updateUser: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -286,7 +298,6 @@ app.post('/updateUser', async (req, res) => {
   const customerKey = validation.customerKey;
 
   const userData = req.body.data;
-
   const firstName = userData.firstName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
   const lastName = userData.lastName?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
   const firstNameKana = userData.firstNameKana?.replace(/[^\p{L}\p{N}\p{Z}]/gu, '');
@@ -322,7 +333,7 @@ app.post('/updateUser', async (req, res) => {
   if(email) {
     query = "SELECT COUNT(*) FROM customer WHERE email = ? AND customerKey != ?";
     try {
-      const [existingCustomerCount] = await poolProduction.query(query, [email, customerKey]);
+      const [existingCustomerCount] = await pool.query(query, [email, customerKey]);
       if(existingCustomerCount[0]['COUNT(*)'] > 0) {
         return res.status(400).json({data: null, error: "※すでにこのメールアドレスのユーザーが存在しています。"}); // Email already registered
       }
@@ -335,7 +346,7 @@ app.post('/updateUser', async (req, res) => {
   //#region Query to get customer info by customerKey and verify current password, if given
   try {
     query = `SELECT passwordHash FROM customer WHERE customerKey = ?`;
-    const [results] = await poolProduction.query(query, [customerKey]);
+    const [results] = await pool.query(query, [customerKey]);
 
     // If no results, customer not found
     if (results.length === 0) {
@@ -383,7 +394,7 @@ app.post('/updateUser', async (req, res) => {
   console.log(values)
 
   try {
-    const [results] = await poolProduction.query(query, values);
+    const [results] = await pool.query(query, values);
     console.log("Results after updating customer:");
     console.log(results);
 
@@ -414,6 +425,12 @@ function ValidateBirthday(birthdayInput) {
 app.post('/registerGuest', async (req, res) => {
   console.log("░▒▓█ Hit registerGuest. Time: " + CurrentTime());
   console.log(req.body);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   const requestData = req.body.data;
 
   // random number between 1000000000 and 2000000000 (cut off first and last 2 numbers, potential edge cases)
@@ -428,7 +445,7 @@ app.post('/registerGuest', async (req, res) => {
 
 
   try {
-    const [results] = await poolProduction.query(query, values);
+    const [results] = await pool.query(query, values);
   
     const customerKey = results.insertId;
     const code = "NV" + customerKey;
@@ -444,7 +461,13 @@ app.post('/registerGuest', async (req, res) => {
 app.post('/addAddress', async (req, res) => {
   console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
   console.log(req.body);
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in addAddress: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -484,7 +507,7 @@ app.post('/addAddress', async (req, res) => {
   // When addressKey is null, the ? IS NULL condition becomes true, so the addressKey <> ? part is effectively ignored.
   query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ? AND (? IS NULL OR addressKey <> ?)";
   try {
-    const [defaultsCount] = await poolProduction.query(query, [customerKey, addressKey, addressKey]);
+    const [defaultsCount] = await pool.query(query, [customerKey, addressKey, addressKey]);
     if(defaultsCount[0]['COUNT(*)'] === 0) { defaultAddress = "1"; }
   } catch(error) {
     console.error('Error counting address defaults:', error);
@@ -496,7 +519,7 @@ app.post('/addAddress', async (req, res) => {
   if(defaultAddress === "1") {
     query = "UPDATE address SET defaultAddress = 0 WHERE customerKey = ?;"
     try {
-      await poolProduction.query(query, [customerKey]);
+      await pool.query(query, [customerKey]);
     } catch(error) {
       console.error('Error updating old address defaults:', error);
       return res.status(500).send('Error updating old address defaults: ' + error);  
@@ -522,7 +545,7 @@ app.post('/addAddress', async (req, res) => {
 
   // Make the change in the database
   try {
-    await poolProduction.query(query, values);
+    await pool.query(query, values);
     //const addressKey = results[0].insertId;
     //console.log('Generated Address Key:', addressKey);
   } catch (error) {
@@ -530,14 +553,20 @@ app.post('/addAddress', async (req, res) => {
     return res.status(500).send(`Error ${newAddress ? "adding" : "updating"} address: ${error}`);
   }
 
-  const freshAddresses = await PullFreshAddresses(customerKey)
+  const freshAddresses = await PullFreshAddresses(customerKey, stageSubdomain)
   return res.json({ addresses: freshAddresses });
 });
 
 app.post('/deleteAddress', async (req, res) => {
   console.log("░▒▓█ Hit deleteAddress. Time: " + CurrentTime());
   console.log(req.body);
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in deleteAddress: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -560,7 +589,7 @@ app.post('/deleteAddress', async (req, res) => {
 
   query = `DELETE FROM address WHERE addressKey = ? AND customerKey = ?`;
   try {
-    await poolProduction.query(query, [addressKey, customerKey]);
+    await pool.query(query, [addressKey, customerKey]);
   } catch(error) {
     const errorMessage = `Error deleting address, addressKey: ${addressKey}, customerKey: ${customerKey}`;
     console.error(errorMessage);
@@ -570,7 +599,7 @@ app.post('/deleteAddress', async (req, res) => {
   let forceNewDefault = false;
   query = "SELECT COUNT(*) FROM address WHERE defaultAddress = 1 AND customerKey = ?";
   try {
-    const [defaultsCount] = await poolProduction.query(query, [customerKey]);
+    const [defaultsCount] = await pool.query(query, [customerKey]);
     if(defaultsCount[0]['COUNT(*)'] === 0) { forceNewDefault = true; }
   } catch(error) {
     console.error('Error counting address defaults after delete:', error);
@@ -579,18 +608,19 @@ app.post('/deleteAddress', async (req, res) => {
 
   if(forceNewDefault) {
     query = `UPDATE address SET defaultAddress = ? WHERE customerKey = ? LIMIT 1`;
-    await poolProduction.query(query, [true, customerKey]);
+    await pool.query(query, [true, customerKey]);
   }
 
-  const freshAddresses = await PullFreshAddresses(customerKey)
+  const freshAddresses = await PullFreshAddresses(customerKey, stageSubdomain)
   return res.json({ addresses: freshAddresses });
 });
 
-async function PullFreshAddresses(customerKey) {
+async function PullFreshAddresses(customerKey, stageSubdomain) {
   // Pull fresh copy of all addresses to send back
+  const pool = stageSubdomain ? poolStage : poolProduction;
   query = "SELECT * FROM address WHERE customerKey = ?";
   try {
-    const [addresses] = await poolProduction.query(query, [customerKey]);
+    const [addresses] = await pool.query(query, [customerKey]);
 
     // MySQL uses 1 and 0 for true and false, but I want real bools
     addresses.forEach(address => {address.defaultAddress = (address.defaultAddress === 1) ? true : false});
@@ -634,6 +664,10 @@ app.post('/sendWelcome', async (req, res) => {
   console.log("░▒▓█ Hit sendWelcome. Time: " + CurrentTime());
   console.log(req.body);
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const emailSubdomain = subdomain === "stage" ? "stage" : "shop";
+
   const recipient = req.body.recipient;
   console.log("recipient: " + recipient);
 
@@ -658,7 +692,7 @@ app.post('/sendWelcome', async (req, res) => {
           <img src="cid:logo" alt="Logo">
           <span style="font-size: 1.5rem; display: flex; margin-top: 1rem;">ウェルミル（デストサイト）へようこそ!</span>
           <span style="color: #444; display: flex; margin: 1rem 0;">会員登録いただきありがとうございます。引き続きお買い物をお楽しみください。</span>
-          <a href="https://shop.well-mill.com/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
+          <a href="https://${emailSubdomain}.well-mill.com/shop" style="width: 10rem; text-align: center; background-color: #FFA500; padding: 1rem; border-radius: 0.25rem; color: white; text-decoration: none; justify-self: flex-start">ショッピングアクセスする</a>
           </div>
         </div>
         <hr/>
@@ -737,7 +771,7 @@ app.post('/sendWelcome', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 2rem 1rem;">
-                <a href="https://shop.well-mill.com/shop" class="button" style="color: #FFFFFF">
+                <a href="https://${emailSubdomain}.well-mill.com/shop" class="button" style="color: #FFFFFF">
                   ショップにアクセスする
                 </a>
               </td>
@@ -832,6 +866,10 @@ app.post("/sendOrderEmail", async (req, res) => {
   console.log("░▒▓█ Hit sendOrderEmail (API). Time: " + CurrentTime());
   console.log(req.body);
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const emailSubdomain = subdomain === "stage" ? "stage" : "shop";
+
   const images = req.body.data.products.flatMap(product => {
     const images = product.images;
     images.forEach(image => { image.productKey = product.productKey; });
@@ -847,12 +885,12 @@ app.post("/sendOrderEmail", async (req, res) => {
 
   req.body.data.products.forEach(product => { delete product.images; });
 
-  sendOrderEmail(req.body.data.email, req.body.data.purchase, req.body.data.addresses, req.body.data.lineItems, req.body.data.products, images);
+  sendOrderEmail(req.body.data.email, req.body.data.purchase, req.body.data.addresses, req.body.data.lineItems, req.body.data.products, images, emailSubdomain);
 
   return res.json({ message: 'Email sent successfully' });
 });
 
-async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images) {
+async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images, emailSubdomain) {
   console.log("░▒▓█ Hit sendOrderEmail (function). Time: " + CurrentTime());
   console.dir({recipient, purchase, addresses, lineItems, products, images}, { depth: null, colors: true });
 
@@ -1089,7 +1127,7 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                 </tr>
                 <tr>
                   <td colspan="2" align="left" style="font-size: 1.25rem; color: #444; padding: 0;">
-                    <a href="https://shop.well-mill.com/order-list">
+                    <a href="https://${emailSubdomain}.well-mill.com/order-list">
                       購入履歴確認
                     </a>
                   </td>
@@ -1098,12 +1136,12 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
                     <!-- Button -->
                     <tr style="font-size: 1.25rem;">
                       <td align="left" style="width: 200px; padding: 2rem 1rem;">
-                        <a href="https://shop.well-mill.com/account" class="button" style="color: #FFFFFF;">
+                        <a href="https://${emailSubdomain}.well-mill.com/account" class="button" style="color: #FFFFFF;">
                           注文を表示する
                         </a>
                       </td>
                       <td style="width: 400px;">
-                        または<a href="https://shop.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
+                        または<a href="https://${emailSubdomain}.well-mill.com/shop" style="color: #FFA500;">ショップにアクセスする</a>
                       </td>
                     </tr>
                 */ true ? "" : ""}
@@ -1246,14 +1284,23 @@ app.post('/generateReceipt', async (req, res) => {
   console.log("░▒▓█ Hit generateReceipt. Time: " + CurrentTime());
   console.log(req.body);
 
-  const validation = await ValidatePayload(req.body.data);
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in addAddress: ${validation.message}`);
     return res.status(400).send("Validation error");
   }
   const customerKey = validation.customerKey;
 
-  const { purchaseKey } = req.body.data;
+  const purchaseKey = Number(req.body.data.purchaseKey);
+  if (isNaN(purchaseKey)) {
+    console.error('Malformed purchaseKey:', purchaseKey);
+    return res.status(400).send('Malformed purchaseKey');
+  }
 
   let query = `
     SELECT * 
@@ -1265,7 +1312,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let purchase;
   try {
-    const [purchaseResults] = await poolProduction.query(query, values);
+    const [purchaseResults] = await pool.query(query, values);
     if (purchaseResults.length === 0) {
       console.error('No purchase found for purchaseKey:', purchaseKey, ", customerKey:", customerKey);
       return res.status(400).send('No purchase found');
@@ -1288,7 +1335,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let lineItems;
   try {
-    const [lineItemResults] = await poolProduction.query(query, values);
+    const [lineItemResults] = await pool.query(query, values);
     if (lineItemResults.length === 0) {
       console.error('No line items found for purchaseKey:', purchaseKey);
       return res.status(400).send('No line items found');
@@ -1309,7 +1356,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let address;
   try {
-    const [addressResults] = await poolProduction.query(query, values);
+    const [addressResults] = await pool.query(query, values);
     if (addressResults.length > 0) {
       address = addressResults[0];
     }
@@ -1327,7 +1374,7 @@ app.post('/generateReceipt', async (req, res) => {
 
   let products;
   try {
-    const [productResults] = await poolProduction.query(query, values);
+    const [productResults] = await pool.query(query, values);
     if (productResults.length > 0) {
       products = productResults;
     }
@@ -1452,6 +1499,12 @@ app.post('/sendPassword', async (req, res) => {
   console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
   console.log(req.body);
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const emailSubdomain = stageSubdomain ? "stage" : "shop";
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   const recipient = req.body.recipient;
   console.log("recipient: " + recipient);
 
@@ -1462,9 +1515,9 @@ app.post('/sendPassword', async (req, res) => {
 
   const newPassword = crypto.randomBytes(4).toString('hex');
   const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 salt rounds
-  
+
   query = `UPDATE customer SET passwordHash = ? WHERE email = ?`;
-  await poolProduction.query(query, [hashedPassword, recipient]);
+  await pool.query(query, [hashedPassword, recipient]);
 
 
   let transporter = nodemailer.createTransport({
@@ -1548,7 +1601,7 @@ app.post('/sendPassword', async (req, res) => {
             <!-- Button -->
             <tr>
               <td align="left" style="padding: 1rem 0;">
-                <a href="https://shop.well-mill.com/login" class="button" style="color: #FFFFFF">
+                <a href="https://${emailSubdomain}.well-mill.com/login" class="button" style="color: #FFFFFF">
                   今すぐサインイン
                 </a>
               </td>
@@ -1618,9 +1671,15 @@ app.post('/sendPassword', async (req, res) => {
   }
 });
 
+
 app.post('/login', async (req, res) => {
   console.log("░▒▓█ Hit login. Time:" + CurrentTime());
   console.log(req.body);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
 
   const userCredentials = req.body.data;
   const email = userCredentials.email;
@@ -1631,13 +1690,13 @@ app.post('/login', async (req, res) => {
 
   if(email && password) {
     console.log("Email/password login");
-    customerData = await GetCustomerDataFromCredentials(email, password);
+    customerData = await GetCustomerDataFromCredentials(email, password, stageSubdomain);
     if(customerData.error) {
       return res.status(401).json({ error: customerData.error });
     }
   } else if(token) {
     console.log("token login");
-    customerData = await GetCustomerDataFromToken(token);
+    customerData = await GetCustomerDataFromToken(token, stageSubdomain);
     if(customerData.error) {
       return res.status(401).json({ error: customerData.error });
     }
@@ -1653,7 +1712,13 @@ app.post('/login', async (req, res) => {
 app.post('/addToCart', async (req, res) => {
   console.log("░▒▓█ Hit addToCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in addToCart: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -1688,21 +1753,21 @@ app.post('/addToCart', async (req, res) => {
       AND lineItem.unitPrice = ?
       AND lineItem.taxRate = ?
       AND (lineItem.purchaseKey IS NULL OR purchase.status = 'created');`;
-    const [existingItem] = (await poolProduction.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
+    const [existingItem] = (await pool.query(checkQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate]));
   
     if (existingItem.length > 0) {
       // Item exists, update the quantity
       const newQuantity = existingItem[0].quantity + quantity;
       const updateQuery = "UPDATE lineItem SET quantity = ? WHERE productKey = ? AND customerKey = ? AND unitPrice = ? AND taxRate = ?";
-      await poolProduction.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
+      await pool.query(updateQuery, [newQuantity, productKey, customerKey, roundedUnitPrice, roundedTaxRate]);
     } else {
       // Insert data into the database
       const insertQuery = "INSERT INTO lineItem (productKey, customerKey, unitPrice, taxRate, quantity) VALUES (?, ?, ?, ?, ?)";
-      await poolProduction.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity]);
+      await pool.query(insertQuery, [productKey, customerKey, roundedUnitPrice, roundedTaxRate, quantity]);
     }
   
     // Get updated cart data
-    const updatedCart = await GetCartFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey, stageSubdomain);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in addToCart:', error);
@@ -1714,7 +1779,13 @@ app.post('/addToCart', async (req, res) => {
 app.post('/updateCartQuantity', async (req, res) => {
   console.log("░▒▓█ Hit updateCartQuantity. Time: " + CurrentTime());
   console.log(req.body);
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in updateCartQuantity: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -1733,10 +1804,10 @@ app.post('/updateCartQuantity', async (req, res) => {
   try {
     // Update line quantity in the database
     const updateQuery = "UPDATE lineItem SET quantity = ? WHERE customerKey = ? AND lineItemKey = ?";
-    await poolProduction.query(updateQuery, [quantity, customerKey, lineItemKey]);
+    await pool.query(updateQuery, [quantity, customerKey, lineItemKey]);
   
     // Get updated cart data
-    const updatedCart = await GetCartFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey, stageSubdomain);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in updateCartQuantity:', error);
@@ -1747,7 +1818,13 @@ app.post('/updateCartQuantity', async (req, res) => {
 app.post('/deleteFromCart', async (req, res) => {
   console.log("░▒▓█ Hit deleteFromCart. Time: " + CurrentTime());
   console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in deleteFromCart: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -1765,10 +1842,10 @@ app.post('/deleteFromCart', async (req, res) => {
   try {
     // Delete line from the database
     const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
-    await poolProduction.query(deleteQuery, [customerKey, lineItemKey]);
-  
+    await pool.query(deleteQuery, [customerKey, lineItemKey]);
+
     // Get updated cart data
-    const updatedCart = await GetCartFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey, stageSubdomain);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in deleteFromCart:', error);
@@ -1779,7 +1856,14 @@ app.post('/deleteFromCart', async (req, res) => {
 app.post('/cancelPurchase', async (req, res) => {
   console.log("░▒▓█ Hit cancelPurchase. Time: " + CurrentTime());
   console.log(req.body); // { data: { customerKey: 1, token: "abc", purchaseKey: 193 } }
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  const stripe = stageSubdomain ? stripeStage : stripeProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in deleteFromCart: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -1787,15 +1871,13 @@ app.post('/cancelPurchase', async (req, res) => {
   const customerKey = validation.customerKey;
 
   const purchaseKey = req.body.data.purchaseKey;
-  const subdomains = req.subdomains;
-  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
 
   // Sanitize input
   if (!Number.isInteger(purchaseKey) || purchaseKey.toString().length > 50) {
       return res.status(400).send('Invalid input');
   }
 
-  const connection = await poolProduction.getConnection();
+  const connection = await pool.getConnection();
   try {
     // Delete query for lineItem table
     //const deleteLineItemQuery = "DELETE FROM lineItem WHERE customerKey = ? AND purchaseKey = ?";
@@ -1805,7 +1887,6 @@ app.post('/cancelPurchase', async (req, res) => {
     const updateLineItemQuery = "UPDATE lineItem SET shippingStatus = 'canceled' WHERE customerKey = ? AND purchaseKey = ?";
     await connection.query(updateLineItemQuery, [customerKey, purchaseKey]);
     console.log(`Query: ${updateLineItemQuery}, customerKey: ${customerKey}, purchaseKey: ${purchaseKey}`);
-
 
     // Delete query for purchase table
     //const deletePurchaseQuery = "DELETE FROM purchase WHERE customerKey = ? AND purchaseKey = ?";
@@ -1839,7 +1920,7 @@ app.post('/cancelPurchase', async (req, res) => {
   console.log(query);
 
   try {
-    const [results] = await poolProduction.query(query, [purchaseKey]);
+    const [results] = await pool.query(query, [purchaseKey]);
     if (results.length > 0) {
       console.log("results");
       console.dir(results, { depth: null, colors: true });
@@ -1847,7 +1928,7 @@ app.post('/cancelPurchase', async (req, res) => {
       originalPurchaseJson.touroku_kbn = 9; // 9 is for delete
       console.log("originalPurchaseJson");
       console.dir(originalPurchaseJson, { depth: null, colors: true });
-      const responseData = await StoreBackupData("chumon_renkei_api", originalPurchaseJson, subdomain);
+      const responseData = await StoreBackupData("chumon_renkei_api", originalPurchaseJson, stageSubdomain);
       console.log("responseData");
       console.log(responseData);
     } else {
@@ -1862,7 +1943,7 @@ app.post('/cancelPurchase', async (req, res) => {
 
   try {
     query = `SELECT paymentIntentId, amount, couponDiscount FROM purchase WHERE purchaseKey = ?`;
-    const [paymentIntents] = (await poolProduction.query(query, [purchaseKey]));
+    const [paymentIntents] = (await pool.query(query, [purchaseKey]));
 
     if (paymentIntents.length > 0) {
       const paymentIntentId = paymentIntents[0].paymentIntentId;
@@ -1872,7 +1953,7 @@ app.post('/cancelPurchase', async (req, res) => {
       if(paymentIntentAmountAfterDiscount > 0) {
         // Non-zero payment exists, use the paymentIntentId to cancel the payment
         try {
-          const refund = await stripeProduction.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' });
+          const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' });
           console.log("refund done");
           console.log(refund);  
         } catch (error) {
@@ -1897,14 +1978,20 @@ app.post('/cancelPurchase', async (req, res) => {
 
 
   // Get updated customer data
-  const customerData = await GetCustomerDataFromCustomerKey(customerKey);
+  const customerData = await GetCustomerDataFromCustomerKey(customerKey, stageSubdomain);
   return res.json(customerData);
 });
 
 app.post('/deleteLineItem', async (req, res) => {
   console.log("░▒▓█ Hit deleteLineItem. Time: " + CurrentTime());
   console.log(req.body);
-  const validation = await ValidatePayload(req.body.data);
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
   if(validation.valid === false) {
     console.log(`Validation error in deleteFromCart: ${validation.message}`);
     return res.status(400).send("Validation error");
@@ -1926,13 +2013,13 @@ app.post('/deleteLineItem', async (req, res) => {
   `;
 
   try {
-    const results = await poolProduction.query(query, [lineItemKey]);
+    const results = await pool.query(query, [lineItemKey]);
     if (results.length > 0) {
         const originalPurchaseJson = JSON.parse(results[0].newPurchaseJson);
         console.log("originalPurchaseJson");
         console.dir(originalPurchaseJson, { depth: null, colors: true });
     } else {
-      console.log("results.length > 0 failed when selecting newPurchaseJson using lineItemKey: " + lineItemKey);
+      console.log("results.length = 0 failed when selecting newPurchaseJson using lineItemKey: " + lineItemKey);
       return res.status(400).send('Purchase not found');
     }
   } catch (error) {
@@ -1945,10 +2032,10 @@ app.post('/deleteLineItem', async (req, res) => {
   try {
     // Delete line from the database
     const deleteQuery = "DELETE FROM lineItem WHERE customerKey = ? AND lineItemKey = ?";
-    await poolProduction.query(deleteQuery, [customerKey, lineItemKey]);
+    await pool.query(deleteQuery, [customerKey, lineItemKey]);
   
     // Get updated cart data
-    const updatedCart = await GetCartFromCustomerKey(customerKey);
+    const updatedCart = await GetCartFromCustomerKey(customerKey, stageSubdomain);
     return res.json(updatedCart);
   } catch (error) {
     console.error('Error in deleteFromCart:', error);
@@ -2014,6 +2101,12 @@ app.post('/storeBackupData', async (req, res) => {
   console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
   console.dir(req.body, { depth: null, colors: true });
 
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  const stripe = stageSubdomain ? stripeStage : stripeProduction;
+
 //  // Validation happens against paymentIntentId
 //  const validation = await ValidatePayload(req.body.data);
 //  if(validation.valid === false) {
@@ -2023,9 +2116,6 @@ app.post('/storeBackupData', async (req, res) => {
 //  const customerKey = validation.customerKey;
 
   const { endpoint, paymentIntentId, inputData } = req.body.data;
-
-  const subdomains = req.subdomains;
-  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
 
   if(endpoint === "kentai_id_check_api") {
     if(inputData.kentai_saishubi) {
@@ -2037,14 +2127,14 @@ app.post('/storeBackupData', async (req, res) => {
   }
 
   if(paymentIntentId) {
-    const paymentIntent = await stripeProduction.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
 
     const paymentStatus = paymentIntent.status;
     console.log(`paymentStatus: ${paymentStatus}`);
 
     if(paymentStatus === 'succeeded') {
-      const result = await StoreBackupData(endpoint, inputData, subdomain);
+      const result = await StoreBackupData(endpoint, inputData, stageSubdomain);
 
       if (result.error) {
         return res.status(result.status).json({ message: result.message });
@@ -2055,7 +2145,7 @@ app.post('/storeBackupData', async (req, res) => {
 
     return res.status(400).json({ message: "Payment not succeeded" });  
   } else {
-    const result = await StoreBackupData(endpoint, inputData, subdomain);
+    const result = await StoreBackupData(endpoint, inputData, stageSubdomain);
 
     if (result.error) {
       return res.status(result.status).json({ message: result.message });
@@ -2066,27 +2156,25 @@ app.post('/storeBackupData', async (req, res) => {
 
 });
 
-async function StoreBackupData(endpoint, inputData, subdomain) {
+async function StoreBackupData(endpoint, inputData, stageSubdomain) {
   console.log("░▒▓█ Hit storeBackupData function. Time: " + CurrentTime());
   console.dir({endpoint, inputData}, { depth: null, colors: true });
 
-  const stageSubdomain = subdomain === "stage" ? true : false;
   const fullEndpoint = `${stageSubdomain ? BASE_URL_STAGE : BASE_URL}${endpoint}`;
   const subscriptionKey = stageSubdomain ? process.env.AZURE_TEST_API_KEY : process.env.AZURE_API_KEY;
+  const backupFileLocation = stageSubdomain ? ORDER_BACKUP_FILE_PATH_STAGE : ORDER_BACKUP_FILE_PATH;
   try {
     const fullFetchContent = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        //'Ocp-Apim-Subscription-Key': process.env.AZURE_TEST_API_KEY,
-        //'Ocp-Apim-Subscription-Key': process.env.AZURE_API_KEY,
         'Ocp-Apim-Subscription-Key': subscriptionKey,
       },
       body: JSON.stringify(inputData),
     };
 
     if(endpoint === "chumon_renkei_api") {
-      fs.writeFileSync(ORDER_BACKUP_FILE_PATH, JSON.stringify(inputData, null, 2));
+      fs.writeFileSync(backupFileLocation, JSON.stringify(inputData, null, 2));
     }
 
     // Make the POST request to the backup server
@@ -2108,13 +2196,15 @@ async function StoreBackupData(endpoint, inputData, subdomain) {
 //#endregion Azure backup
 
 
-async function GetCustomerDataFromCredentials(email, password) {
+async function GetCustomerDataFromCredentials(email, password, stageSubdomain) {
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   try {
     // Prepare the SQL query to find the user by email
     query = `SELECT * FROM customer WHERE email = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await poolProduction.query(query, [email]);
+    const [results] = await pool.query(query, [email]);
 
     // If no results, the email is not registered
     if (results.length === 0) {
@@ -2139,9 +2229,8 @@ async function GetCustomerDataFromCredentials(email, password) {
     // Passwords match, now fetch the customer's cart
     console.log("Correct password, customer key: " + customerResults.customerKey);
 
-    const customer = GetCustomerDataFromCustomerKey(customerResults.customerKey);
+    const customer = GetCustomerDataFromCustomerKey(customerResults.customerKey, stageSubdomain);
     //console.dir(customer, { depth: null, colors: true });
-
 
     return customer;
   } catch (error) {
@@ -2150,13 +2239,15 @@ async function GetCustomerDataFromCredentials(email, password) {
   }
 }
 
-async function GetCustomerDataFromToken(token) {
+async function GetCustomerDataFromToken(token, stageSubdomain) {
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   try {
     // Prepare the SQL query to find the user by token
     query = `SELECT * FROM customer WHERE token = ?`;
 
     // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await poolProduction.query(query, [token]);
+    const [results] = await pool.query(query, [token]);
 
     // If no results, the token does not exist
     if (results.length === 0) {
@@ -2167,7 +2258,7 @@ async function GetCustomerDataFromToken(token) {
     // Token exists, the user is authenticated, get their customerKey
     const customerKey = results[0].customerKey;
 
-    const customer = GetCustomerDataFromCustomerKey(customerKey);
+    const customer = GetCustomerDataFromCustomerKey(customerKey, stageSubdomain);
 
     return customer;
   } catch (error) {
@@ -2176,54 +2267,58 @@ async function GetCustomerDataFromToken(token) {
   }
 }
 
-async function GetCustomerDataFromCustomerKey(customerKey) {
-    query = `SELECT * FROM customer WHERE customerKey = ?`;
+async function GetCustomerDataFromCustomerKey(customerKey, stageSubdomain) {
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  query = `SELECT * FROM customer WHERE customerKey = ?`;
 
-    // Execute the query using the promisified pool.query and wait for the promise to resolve
-    const [results] = await poolProduction.query(query, [customerKey]);
+  // Execute the query using the promisified pool.query and wait for the promise to resolve
+  const [results] = await pool.query(query, [customerKey]);
 
-    // If no results, the customer does not exist
-    if (results.length === 0) {
-      console.log("Customer not found with customerKey");
-      return {error: "Customer not found with customerKey"};
-    }
+  // If no results, the customer does not exist
+  if (results.length === 0) {
+    console.log("Customer not found with customerKey");
+    return {error: "Customer not found with customerKey"};
+  }
 
-    // A customer exists
-    const customer = results[0];
-    customer.guest = (customer.guest === 1 || customer.guest === "1");
+  // A customer exists
+  const customer = results[0];
+  customer.guest = (customer.guest === 1 || customer.guest === "1");
 
-    // Pull customer's cart
-    const cartData = await GetCartFromCustomerKey(customer.customerKey);
-    customer.cart = cartData;
+  // Pull customer's cart
+  const cartData = await GetCartFromCustomerKey(customer.customerKey, stageSubdomain);
+  customer.cart = cartData;
 
-    // Pull customer's purchases
-    const purchases = await GetPurchasesFromCustomerKey(customer.customerKey);
-    customer.purchases = purchases;
+  // Pull customer's purchases
+  const purchases = await GetPurchasesFromCustomerKey(customer.customerKey, stageSubdomain);
+  customer.purchases = purchases;
 
-    // Pull customer's addresses
-    const addresses = await GetAddressesFromCustomerKey(customer.customerKey);
-    customer.addresses = addresses;
+  // Pull customer's addresses
+  const addresses = await GetAddressesFromCustomerKey(customer.customerKey, stageSubdomain);
+  customer.addresses = addresses;
 
-    // Pull all coupons (codes are hashed)
-    const coupons = await GetCoupons();
-    customer.coupons = coupons;
-    console.log("coupons2");
-    console.dir(coupons, { depth: null, colors: true });
+  // Pull all coupons (codes are hashed)
+  const coupons = await GetCoupons(stageSubdomain);
+  customer.coupons = coupons;
+  //console.log("coupons2");
+  //console.dir(coupons, { depth: null, colors: true });
 
-    // Adjust date for timezone, adding 12h should make anything from -12h to +11h work, which is most of the world
-    // It's kinda a hack, but this site will likely only ever run in Japan
-    if(customer.birthday) {
-      customer.birthday = new Date(customer.birthday.getTime() + (12*60*60*1000))
-    }
+  // Adjust date for timezone, adding 12h should make anything from -12h to +11h work, which is most of the world
+  // It's kinda a hack, but this site will likely only ever run in Japan, sorry Kiribati
+  if(customer.birthday) {
+    customer.birthday = new Date(customer.birthday.getTime() + (12*60*60*1000))
+  }
 
-    // Remove sensitive data before sending the customer object
-    delete customer.passwordHash;
-    customer.type = "customer";
+  // Remove sensitive data before sending the customer object
+  delete customer.passwordHash;
+  customer.type = "customer";
 
-    return customer;
+  return customer;
 }
 
-async function GetCartFromCustomerKey(customerKey) {
+async function GetCartFromCustomerKey(customerKey, stageSubdomain) {
+  if(stageSubdomain === undefined) {stageSubdomain = false; console.log("XXXXX stageSubdomain is undefined in GetCartFromCustomerKey");}
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
   // Prepare the SQL query to get a customer's line items that haven't been purchased
   const selectQuery = `
     SELECT lineItem.*, purchase.status
@@ -2234,7 +2329,7 @@ async function GetCartFromCustomerKey(customerKey) {
 
   // Execute the query then calculate metadata
   try {
-    const [linesResults] = (await poolProduction.query(selectQuery, [customerKey]));
+    const [linesResults] = (await pool.query(selectQuery, [customerKey]));
 
     linesResults.forEach(line => {line.type = "lineItem"});
     const cartQuantity = Math.round(linesResults.reduce((sum, lineItem) => sum + lineItem.quantity, 0));
@@ -2250,7 +2345,9 @@ async function GetCartFromCustomerKey(customerKey) {
   }
 }
 
-async function GetPurchasesFromCustomerKey(customerKey) {
+async function GetPurchasesFromCustomerKey(customerKey, stageSubdomain) {
+  if(stageSubdomain === undefined) {stageSubdomain = false; console.log("XXXXX stageSubdomain is undefined in GetPurchasesFromCustomerKey");}
+  const pool = stageSubdomain ? poolStage : poolProduction;
   try {
     query = `
     SELECT *
@@ -2258,7 +2355,7 @@ async function GetPurchasesFromCustomerKey(customerKey) {
     WHERE customerKey = ?
     AND purchase.status != 'created';`;
 
-    const [purchases] = await poolProduction.query(query, [customerKey]);
+    const [purchases] = await pool.query(query, [customerKey]);
     const purchaseKeys = purchases.map(pur => { return pur.purchaseKey; })
     const fallbackPurchaseKeys = purchaseKeys.length > 0 ? purchaseKeys : [-1];
 
@@ -2267,7 +2364,7 @@ async function GetPurchasesFromCustomerKey(customerKey) {
       FROM lineItem
       WHERE purchaseKey IN (?);`
 
-    const [lineItems] = await poolProduction.query(query, [fallbackPurchaseKeys]);
+    const [lineItems] = await pool.query(query, [fallbackPurchaseKeys]);
 
     purchases.forEach((purchase) => {
       const purchaseKey = purchase.purchaseKey;
@@ -2275,7 +2372,7 @@ async function GetPurchasesFromCustomerKey(customerKey) {
       purchase.lineItems = purchaseLines;
     });
 
-    // All values in purchases come from MySQL as strings, but I want the numbers to be real numbers
+    // Values in purchases come from MySQL maybe as strings, but I want the numbers to be real numbers
     for (const purchase of purchases) {
       for (const lineItem of purchase.lineItems) {
         // Convert from string to integer
@@ -2284,9 +2381,6 @@ async function GetPurchasesFromCustomerKey(customerKey) {
       }
     }
 
-    //console.log("purchases");
-    //console.dir(purchases, { depth: null, colors: true });
-
     return purchases;
   } catch (error) {
     console.error('Error in GetPurchasesFromCustomerKey: ', error);
@@ -2294,13 +2388,15 @@ async function GetPurchasesFromCustomerKey(customerKey) {
   }
 }
 
-async function GetAddressesFromCustomerKey(customerKey) {
+async function GetAddressesFromCustomerKey(customerKey, stageSubdomain) {
+  if(stageSubdomain === undefined) {stageSubdomain = false; console.log("XXXXX stageSubdomain is undefined in GetAddressesFromCustomerKey");}
+  const pool = stageSubdomain ? poolStage : poolProduction;
   const selectQuery = `
     SELECT * FROM address
     WHERE customerKey = ?`;
 
   try {
-    const [addresses] = (await poolProduction.query(selectQuery, [customerKey]));
+    const [addresses] = (await pool.query(selectQuery, [customerKey]));
     return ProcessAddresses(addresses);
   } catch (error) {
     console.error('Error in GetAddressesFromCustomerKey: ', error);
@@ -2308,14 +2404,16 @@ async function GetAddressesFromCustomerKey(customerKey) {
   }
 }
 
-async function GetCoupons() {
+async function GetCoupons(stageSubdomain) {
+  if(stageSubdomain === undefined) {stageSubdomain = false; console.log("XXXXX stageSubdomain is undefined in GetCoupons");}
+  const pool = stageSubdomain ? poolStage : poolProduction;
   const selectQuery = `SELECT * FROM coupon`;
 
   try {
-    const [coupons] = await poolProduction.query(selectQuery, []);
+    const [coupons] = await pool.query(selectQuery, []);
     const noCodeCoupons = ProcessCoupons(coupons);
-    console.log("noCodeCoupons");
-    console.dir(noCodeCoupons, { depth: null, colors: true });
+    //console.log("noCodeCoupons");
+    //console.dir(noCodeCoupons, { depth: null, colors: true });
     return noCodeCoupons;
   } catch (error) {
     console.error('Error in GetAddressesFromCustomerKey: ', error);
@@ -2353,23 +2451,270 @@ async function sha1(str) {
 
 
 
+
+
 //#region Stripe
-async function calculateOrderAmount(cartLines, couponCode = undefined) {
+app.post("/createPaymentIntent", async (req, res) => {
+  console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
+  console.dir(req.body, { depth: null, colors: true });
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  const stripe = stageSubdomain ? stripeStage : stripeProduction;
+
+  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
+
+  const cartLines = req.body.data.cartLines;
+  const purchaseTotal = await calculateOrderAmount(cartLines, stageSubdomain);
+  if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
+
+  const addressesState = req.body.data.addressesState;
+
+  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
+  const itemsMetadata = cartLines.map(cartLine => {
+    const product = productsData.find(p => p.productKey === cartLine.productKey);
+    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
+  }).join(' | ');
+
+  // Create a PaymentIntent with the order amount and currency
+  // Make a purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: purchaseTotal,
+    currency: "jpy",
+    metadata: {
+      items: itemsMetadata,
+    }
+  });
+
+
+  if(req.body.data.guest === true) {
+    // Save the purchase intention for guest (no customer key)
+    query = `
+      INSERT INTO purchase (paymentIntentId, amount)
+      VALUES (?, ?)`;
+    values = [paymentIntent.id, paymentIntent.amount];
+
+    let purchaseKey;
+    try {
+      const [results] = await pool.query(query, values);
+      purchaseKey = results.insertId;
+    } catch (error) {
+      console.error('Error creating purchase intention: ', error);
+      return res.status(500).send('Error creating purchase intention: ' + error);
+    }
+
+    console.log("Created paymentIntent for guest and saved in database");
+    return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, purchaseKey: purchaseKey});
+  }
+
+  console.log("Created paymentIntent (not a guest)");
+  //console.log(paymentIntent);
+
+
+  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate their customer key
+  const validation = await ValidatePayload(req.body.data, stageSubdomain);
+  if(validation.valid === false) {
+    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
+    return res.status(400).send("Validation error");
+  }
+  const customerKey = validation.customerKey;
+
+  // Save the purchase intention
+  query = `
+    INSERT INTO purchase (customerKey, paymentIntentId, amount)
+    VALUES (?, ?, ?)`;
+  values = [customerKey, paymentIntent.id, paymentIntent.amount];
+
+  let purchaseInsertId;
+  try {
+    const [results] = await pool.query(query, values);
+    purchaseInsertId = results.insertId;
+  } catch (error) {
+    console.error('Error creating purchase intention: ', error);
+    return res.status(500).send('Error creating purchase intention: ' + error);
+  }
+
+  // Match lineItem	in the cart to this intention
+  const cartLineKeys = cartLines.map(line => line.lineItemKey);
+  query = `
+    UPDATE lineItem
+    SET purchaseKey = ?
+    WHERE lineItemKey IN (?)`;
+  values = [purchaseInsertId, cartLineKeys];
+
+  try {
+    const [results] = await pool.query(query, values);
+    //console.log("Results after saving purchase in MySQL:");
+    //console.log(results);
+  } catch (error) {
+    console.error('Error updating line items after making payment intent: ', error);
+    return res.status(500).send('Error updating line items after making payment intent: ' + error);
+  }
+
+
+
+  // Make duplicate lineItems for orders sent to multiple addresses
+  for (const addressState of addressesState) {
+    console.log(`addressState`);
+    console.dir(addressState, { depth: null, colors: true });
+
+    // If addresses is null, the address will be set later
+    if (addressState.addresses === null) { continue; }
+
+    const lineItemKeys = [addressState.lineItemKey]
+
+    query = `
+      INSERT INTO lineItem (productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate)
+      SELECT productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate
+      FROM lineItem
+      WHERE lineItemKey = ?`;
+
+    const values = [addressState.lineItemKey];
+
+    // We already have one copy, so start loop counter at 1
+    const copiesNeeded = addressState.addresses.length;
+    console.log(`copiesNeeded: ${copiesNeeded}`);
+    console.log(`query: ${query}`);
+
+    for(let duplicateLoop = 1; duplicateLoop < copiesNeeded; duplicateLoop++) {
+      try {
+        const [results] = await pool.query(query, values);
+        lineItemKeys.push(results.insertId);
+        console.log(`lineItemKeys: ${lineItemKeys}`);
+      } catch (error) {
+        console.error('Error in duplicating line item:', error);
+        throw error;
+      }
+    }
+
+    if(lineItemKeys.length !== copiesNeeded) {
+      console.error(`Error in number of duplicated line items. lineItemKeys.length: ${lineItemKeys.length}, copiesNeeded: ${copiesNeeded}`);
+      return;
+    }
+
+    const addresses = await GetAddressesFromCustomerKey(customerKey);
+
+    for (const [index, lineItemAddress] of addressState.addresses.entries()) {
+      const addressKey = lineItemAddress.addressKey;
+      const quantity = lineItemAddress.quantity;
+      const address = addresses.find(ad => {return ad.addressKey === addressKey});
+
+      query = `
+        UPDATE lineItem
+        SET addressKey = ?, quantity = ?, firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ?
+        WHERE lineItemKey = ?`;
+      const values = [addressKey, quantity, address.firstName, address.lastName, address.postalCode, address.prefCode, address.pref, address.city, address.ward, address.address2, address.phoneNumber, lineItemKeys[index]];
+
+      try {
+        await pool.query(query, values);
+      } catch (error) {
+        console.error('Error populating duplicated line item:', error);
+        throw error;
+      }
+    }
+  }
+
+  return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+});
+
+
+// This is to apply a coupon
+app.post("/updatePaymentIntent", async (req, res) => {
+  console.log("░▒▓█ Hit updatePaymentIntent. Time: " + CurrentTime());
+  console.dir(req.body, { depth: null, colors: true });
+
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  const stripe = stageSubdomain ? stripeStage : stripeProduction;
+
+  // Can't validate like normal. A guest can do this, but won't have a token.
+  // If the sender knows the paymentIntentId, they can apply a coupon
+
+  //const validation = await ValidatePayload(req.body.data);
+  //if(validation.valid === false) {
+  //  console.log(`Validation error in updatePaymentIntent: ${validation.message}`);
+  //  return res.status(400).send("Validation error");
+  //}
+  //const customerKey = validation.customerKey;
+
+  // Blank/undefined is ok, will reset to no discount
+  const couponCode = req.body.data.couponCode;
+  const couponRegex = /^[\p{L}\p{N}\p{Pd}\p{Pc}\s.,]+$/u;
+  if(!couponRegex.test(couponCode)) {
+    console.log(`Malformed coupon code: ${couponCode}`);
+    return res.status(400).send('Malformed coupon code');
+  }
+
+  const cartLines = req.body.data.cartLines;
+  if(!cartLines) { return res.status(400).send('No cart lines provided'); }
+
+  const paymentIntentId = req.body.data.paymentIntentId;
+  if(!paymentIntentId) { return res.status(400).send('No payment intent provided'); }
+
+  const { purchaseTotal, couponDiscount } = await calculateOrderAmount(cartLines, stageSubdomain, couponCode);
+  if(isNaN(purchaseTotal) || purchaseTotal < 0) { return res.status(400).send('Malformed items in cart'); }
+  if(isNaN(couponDiscount) || couponDiscount < 0) { return res.status(400).send('Malformed coupon'); }
+
+  console.log("New purchaseTotal: " + purchaseTotal);
+  console.log("New couponDiscount: " + couponDiscount);
+
+  // Stripe doesn't allow payments of less than 50 yen
+  // A 0 yen payment is a free purchase, so it's allowed, we won't use Stripe for it
+  if(purchaseTotal > 0 && purchaseTotal < 50) { return res.status(400).send('Coupon cannot cause final price to be from 1 to 49 yen.'); }
+
+  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
+  const itemsMetadata = cartLines.map(cartLine => {
+    const product = productsData.find(p => p.productKey === cartLine.productKey);
+    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
+  }).join(' | ');
+
+  query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
+  values = [couponDiscount, paymentIntentId];
+  try {
+    await pool.query(query, values);
+  } catch (error) {
+    console.error('Error updating couponDiscount:', error);
+    return res.status(500).send('Error updating couponDiscount');
+  }
+
+  try {
+      // payment intent at Stripe is not updated if the purchase total is 0 (sending a free order)
+      const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripe.paymentIntents.update(paymentIntentId, {
+          amount: purchaseTotal,
+          metadata: {
+            items: itemsMetadata,
+            couponCode: couponCode,
+          }
+      });
+
+      res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
+  } catch (error) {
+    console.error('Error updating paymentIntent:', error);
+    res.status(400).send("Failed to update intent:" + error);
+  }
+});
+
+async function calculateOrderAmount(cartLines, stageSubdomain, couponCode = undefined) {
   const totalBeforeCoupon = Math.round(cartLines.reduce((total, line) => {
     const lineCost = line.unitPrice * (1 + line.taxRate) * line.quantity;
     return total + lineCost;
   }, 0));
   console.log("totalBeforeCoupon: " + totalBeforeCoupon);
   if(couponCode === undefined) { return totalBeforeCoupon; }
-  const couponDiscount = await calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode);
+  const couponDiscount = await calculateCouponDiscount(cartLines, totalBeforeCoupon, stageSubdomain, couponCode);
   console.log("couponDiscount2: " + couponDiscount);
   const totalAfterCoupon = totalBeforeCoupon - couponDiscount;
   return {purchaseTotal: totalAfterCoupon, couponDiscount: couponDiscount};
 };
 
-async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode) {
+async function calculateCouponDiscount(cartLines, totalBeforeCoupon, stageSubdomain, couponCode) {
+  const pool = stageSubdomain ? poolStage : poolProduction;
   const selectQuery = `SELECT * FROM coupon WHERE code = ?`;
-  const [coupons] = await poolProduction.query(selectQuery, [couponCode]);
+  const [coupons] = await pool.query(selectQuery, [couponCode]);
   console.log("coupons length: " + coupons.length);
   if(coupons.length === 0) { return 0; }
   const coupon = coupons[0];
@@ -2414,255 +2759,17 @@ async function calculateCouponDiscount(cartLines, totalBeforeCoupon, couponCode)
   return 0;
 }
 
-app.post("/createPaymentIntent", async (req, res) => {
-  console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
-  console.dir(req.body, { depth: null, colors: true });
-
-  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate
-
-  const cartLines = req.body.data.cartLines;
-  const purchaseTotal = await calculateOrderAmount(cartLines);
-  if(isNaN(purchaseTotal)) { return res.status(400).send('Malformed items in cart'); }
-
-  const addressesState = req.body.data.addressesState;
-
-  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
-  const itemsMetadata = cartLines.map(cartLine => {
-    const product = productsData.find(p => p.productKey === cartLine.productKey);
-    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
-  }).join(' | ');
-
-  // Create a PaymentIntent with the order amount and currency
-  // Make a purchase intention, even though they are just on the checkout screen. Stripe suggests doing this
-  const paymentIntent = await stripeProduction.paymentIntents.create({
-    amount: purchaseTotal,
-    currency: "jpy",
-    metadata: {
-      items: itemsMetadata,
-    }
-  });
-
-
-  if(req.body.data.guest === true) {
-    // Save the purchase intention for guest (no customer key)
-    query = `
-      INSERT INTO purchase (paymentIntentId, amount)
-      VALUES (?, ?)`;
-    values = [paymentIntent.id, paymentIntent.amount];
-
-    let purchaseKey;
-    try {
-      const [results] = await poolProduction.query(query, values);
-      purchaseKey = results.insertId;
-    } catch (error) {
-      console.error('Error creating purchase intention: ', error);
-      return res.status(500).send('Error creating purchase intention: ' + error);
-    }
-
-    console.log("Created paymentIntent for guest and saved in database");
-    return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, purchaseKey: purchaseKey});
-  }
-
-  console.log("Created paymentIntent (not a guest)");
-  //console.log(paymentIntent);
-
-
-  // Validation happens after intent is made, since unregistered users can make an intent, but can't validate their customer key
-  const validation = await ValidatePayload(req.body.data);
-  if(validation.valid === false) {
-    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
-    return res.status(400).send("Validation error");
-  }
-  const customerKey = validation.customerKey;
-
-  // Save the purchase intention
-  query = `
-    INSERT INTO purchase (customerKey, paymentIntentId, amount)
-    VALUES (?, ?, ?)`;
-  values = [customerKey, paymentIntent.id, paymentIntent.amount];
-
-  let purchaseInsertId;
-  try {
-    const [results] = await poolProduction.query(query, values);
-    purchaseInsertId = results.insertId;
-  } catch (error) {
-    console.error('Error creating purchase intention: ', error);
-    return res.status(500).send('Error creating purchase intention: ' + error);
-  }
-
-  // Match lineItem	in the cart to this intention
-  const cartLineKeys = cartLines.map(line => line.lineItemKey);
-  query = `
-    UPDATE lineItem
-    SET purchaseKey = ?
-    WHERE lineItemKey IN (?)`;
-  values = [purchaseInsertId, cartLineKeys];
-
-  try {
-    const [results] = await poolProduction.query(query, values);
-    //console.log("Results after saving purchase in MySQL:");
-    //console.log(results);
-  } catch (error) {
-    console.error('Error updating line items after making payment intent: ', error);
-    return res.status(500).send('Error updating line items after making payment intent: ' + error);
-  }
-
-
-
-  // Make duplicate lineItems for orders sent to multiple addresses
-  for (const addressState of addressesState) {
-    console.log(`addressState`);
-    console.dir(addressState, { depth: null, colors: true });
-
-    // If addresses is null, the address will be set later
-    if (addressState.addresses === null) { continue; }
-
-    const lineItemKeys = [addressState.lineItemKey]
-
-    query = `
-      INSERT INTO lineItem (productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate)
-      SELECT productKey, customerKey, purchaseKey, addedAt, unitPrice, taxRate
-      FROM lineItem
-      WHERE lineItemKey = ?`;
-
-    const values = [addressState.lineItemKey];
-
-    // We already have one copy, so start loop counter at 1
-    const copiesNeeded = addressState.addresses.length;
-    console.log(`copiesNeeded: ${copiesNeeded}`);
-    console.log(`query: ${query}`);
-
-    for(let duplicateLoop = 1; duplicateLoop < copiesNeeded; duplicateLoop++) {
-      try {
-        const [results] = await poolProduction.query(query, values);
-        lineItemKeys.push(results.insertId);
-        console.log(`lineItemKeys: ${lineItemKeys}`);
-      } catch (error) {
-        console.error('Error in duplicating line item:', error);
-        throw error;
-      }
-    }
-
-    if(lineItemKeys.length !== copiesNeeded) {
-      console.error(`Error in number of duplicated line items. lineItemKeys.length: ${lineItemKeys.length}, copiesNeeded: ${copiesNeeded}`);
-      return;
-    }
-
-    const addresses = await GetAddressesFromCustomerKey(customerKey);
-
-    for (const [index, lineItemAddress] of addressState.addresses.entries()) {
-      const addressKey = lineItemAddress.addressKey;
-      const quantity = lineItemAddress.quantity;
-      const address = addresses.find(ad => {return ad.addressKey === addressKey});
-
-      query = `
-        UPDATE lineItem
-        SET addressKey = ?, quantity = ?, firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ?
-        WHERE lineItemKey = ?`;
-      const values = [addressKey, quantity, address.firstName, address.lastName, address.postalCode, address.prefCode, address.pref, address.city, address.ward, address.address2, address.phoneNumber, lineItemKeys[index]];
-
-      try {
-        await poolProduction.query(query, values);
-      } catch (error) {
-        console.error('Error populating duplicated line item:', error);
-        throw error;
-      }
-    }
-  }
-
-  return res.send({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
-});
-
-
-// This is to apply a coupon
-app.post("/updatePaymentIntent", async (req, res) => {
-  console.log("░▒▓█ Hit updatePaymentIntent. Time: " + CurrentTime());
-  console.dir(req.body, { depth: null, colors: true });
-
-  // Can't validate like normal. A guest can do this, but won't have a token.
-  // If the sender knows the paymentIntentId, they can apply a coupon
-
-  //const validation = await ValidatePayload(req.body.data);
-  //if(validation.valid === false) {
-  //  console.log(`Validation error in updatePaymentIntent: ${validation.message}`);
-  //  return res.status(400).send("Validation error");
-  //}
-  //const customerKey = validation.customerKey;
-
-  // Blank/undefined is ok, will reset to no discount
-  const couponCode = req.body.data.couponCode;
-  const couponRegex = /^[\p{L}\p{N}\p{Pd}\p{Pc}\s.,]+$/u;
-  if(!couponRegex.test(couponCode)) {
-    console.log(`Malformed coupon code: ${couponCode}`);
-    return res.status(400).send('Malformed coupon code');
-  }
-
-  const cartLines = req.body.data.cartLines;
-  if(!cartLines) { return res.status(400).send('No cart lines provided'); }
-
-  const paymentIntentId = req.body.data.paymentIntentId;
-  if(!paymentIntentId) { return res.status(400).send('No payment intent provided'); }
-
-  const { purchaseTotal, couponDiscount } = await calculateOrderAmount(cartLines, couponCode);
-  if(isNaN(purchaseTotal) || purchaseTotal < 0) { return res.status(400).send('Malformed items in cart'); }
-  if(isNaN(couponDiscount) || couponDiscount < 0) { return res.status(400).send('Malformed coupon'); }
-
-  console.log("New purchaseTotal: " + purchaseTotal);
-  console.log("New couponDiscount: " + couponDiscount);
-
-  // Stripe doesn't allow payments of less than 50 yen
-  // A 0 yen payment is a free purchase, so it's allowed, we won't use Stripe for it
-  if(purchaseTotal > 0 && purchaseTotal < 50) { return res.status(400).send('Coupon cannot cause final price to be from 1 to 49 yen.'); }
-
-  const productsData = JSON.parse(fs.readFileSync(PRODUCTS_FILE_PATH, 'utf8'));
-  const itemsMetadata = cartLines.map(cartLine => {
-    const product = productsData.find(p => p.productKey === cartLine.productKey);
-    return `${cartLine.productKey} - ${product ? product.title : "Unknown Product"}`;
-  }).join(' | ');
-
-  query = `UPDATE purchase SET couponDiscount = ? WHERE paymentIntentId = ?`;
-  values = [couponDiscount, paymentIntentId];
-  try {
-    await poolProduction.query(query, values);
-  } catch (error) {
-    console.error('Error updating couponDiscount:', error);
-    return res.status(500).send('Error updating couponDiscount');
-  }
-
-  try {
-      // payment intent at Stripe is not updated if the purchase total is 0 (sending a free order)
-      const updatedPaymentIntent = purchaseTotal === 0 ? null : await stripeProduction.paymentIntents.update(paymentIntentId, {
-          amount: purchaseTotal,
-          metadata: {
-            items: itemsMetadata,
-            couponCode: couponCode,
-          }
-      });
-
-      res.json({ success: true, amount: purchaseTotal, couponDiscount:couponDiscount, paymentIntent: updatedPaymentIntent });
-  } catch (error) {
-    console.error('Error updating paymentIntent:', error);
-    res.status(400).send("Failed to update intent:" + error);
-  }
-});
-
 
 app.post("/finalizePurchase", async (req, res) => {
   console.log("░▒▓█ Hit finalizePurchase. Time: " + CurrentTime());
   console.log(req.body);
-//  if(req.body.data.guest === true) {
-//    return res.json({error: "Guest cannot finalizePurchase on server"});
-//  }
-//
-//  const validation = await ValidatePayload(req.body.data);
-//  if(validation.valid === false) {
-//    console.log(`Validation error in createPaymentIntent: ${validation.message}`);
-//    return res.status(400).send("Validation error");
-//  }
-//  const customerKey = validation.customerKey;
 
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const emailSubdomain = stageSubdomain ? "stage" : "shop";
+  const pool = stageSubdomain ? poolStage : poolProduction;
+  const stripe = stageSubdomain ? stripeStage : stripeProduction;
 
   const keyRegex = /^[1-9]\d*$/;
   const customerKey = req.body.data.customerKey;
@@ -2680,7 +2787,7 @@ app.post("/finalizePurchase", async (req, res) => {
 
   query = `SELECT * FROM purchase WHERE paymentIntentId = ?`;
   values = [paymentIntentId];
-  const [purchaseResults] = await poolProduction.query(query, values);
+  const [purchaseResults] = await pool.query(query, values);
   const purchase = purchaseResults[0];
   const totalAfterCoupon = purchase.amount - purchase.couponDiscount;
 
@@ -2688,7 +2795,7 @@ app.post("/finalizePurchase", async (req, res) => {
   if(totalAfterCoupon === 0) {
     console.log("No charge for this purchase, no payment status available from Stripe. Default to succeeded");
   } else {
-    const paymentIntent = await stripeProduction.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if(!paymentIntent) { return res.status(400).send('Payment intent not found.'); }
 
     paymentStatus = paymentIntent.status;
@@ -2698,7 +2805,7 @@ app.post("/finalizePurchase", async (req, res) => {
 
   query = `SELECT * FROM customer WHERE customerKey = ?`;
   values = [customerKey];
-  const [results] = await poolProduction.query(query, values);
+  const [results] = await pool.query(query, values);
 
   if (results.length === 0) {
     console.error('Error pulling customer data with key before payment verification. Customer Key: ', customerKey);
@@ -2722,7 +2829,7 @@ app.post("/finalizePurchase", async (req, res) => {
     //LIMIT 1`;
   values = [customerKey, billingAddressKey];
 
-  const [addresses] = await poolProduction.query(query, values);
+  const [addresses] = await pool.query(query, values);
 
   // If no results, there are no addresses for this user
   if (addresses.length === 0) {
@@ -2746,7 +2853,7 @@ app.post("/finalizePurchase", async (req, res) => {
     values = [paymentStatus, email, billingAddressKey, paymentIntentId, paymentStatus];
 
     try {
-      const [finalizePurchaseResults] = await poolProduction.query(query, values);
+      const [finalizePurchaseResults] = await pool.query(query, values);
       console.log("finalizePurchase results");
       console.log(finalizePurchaseResults);
 
@@ -2754,7 +2861,7 @@ app.post("/finalizePurchase", async (req, res) => {
       if(paymentStatus === 'succeeded' && finalizePurchaseResults.affectedRows > 0) {
         //await SendOrderToAzure(paymentIntentId);
         query = `SELECT * FROM product`;
-        const [products] = await poolProduction.query(query);
+        const [products] = await pool.query(query);
 
         // If no results, no products found
         if (products.length === 0) {
@@ -2763,14 +2870,14 @@ app.post("/finalizePurchase", async (req, res) => {
         }
 
         query = `SELECT * FROM image`;
-        const [images] = await poolProduction.query(query);
+        const [images] = await pool.query(query);
 
         query = `
           SELECT * FROM purchase 
           WHERE paymentIntentId = ?`;
         values = [paymentIntentId];
 
-        const [purchaseResults] = await poolProduction.query(query, values);
+        const [purchaseResults] = await pool.query(query, values);
 
         // If no results, the purchase isn't found
         if (purchaseResults.length === 0) {
@@ -2785,7 +2892,7 @@ app.post("/finalizePurchase", async (req, res) => {
           WHERE purchaseKey = ?`;
         values = [purchase.purchaseKey];
 
-        const [lineItemResults] = await poolProduction.query(query, values);
+        const [lineItemResults] = await pool.query(query, values);
 
         // If no results, no item in the purchase is found
         if (lineItemResults.length === 0) {
@@ -2809,7 +2916,7 @@ app.post("/finalizePurchase", async (req, res) => {
           values = [defaultAddress.addressKey, defaultAddress.firstName, defaultAddress.lastName, defaultAddress.postalCode, defaultAddress.prefCode, defaultAddress.pref, defaultAddress.city, defaultAddress.ward, defaultAddress.address2, defaultAddress.phoneNumber, lineItem.lineItemKey];
 
           try {
-              await poolProduction.query(query, values);
+              await pool.query(query, values);
               console.log(`Updated line item ${lineItem.lineItemKey} with default address.`);
           } catch (error) {
               console.error(`Error updating line item ${lineItem.lineItemKey}:`, error);
@@ -2822,7 +2929,7 @@ app.post("/finalizePurchase", async (req, res) => {
           WHERE purchaseKey = ?`;
         values = [purchase.purchaseKey];
 
-        const [lineItemUpdatedResults] = await poolProduction.query(query, values);
+        const [lineItemUpdatedResults] = await pool.query(query, values);
 
         console.log("lineItemUpdatedResults");
         console.log(lineItemUpdatedResults);
@@ -2830,7 +2937,7 @@ app.post("/finalizePurchase", async (req, res) => {
         console.log(products);
 
 
-        sendOrderEmail(email, purchase, addresses, lineItemUpdatedResults, products, images);
+        sendOrderEmail(email, purchase, addresses, lineItemUpdatedResults, products, images, emailSubdomain);
 
 
 
@@ -2961,7 +3068,7 @@ app.post("/finalizePurchase", async (req, res) => {
         }
         console.log("backupData (for order)");
         console.dir(backupData, { depth: null, colors: true });
-        const backupResults = await StoreBackupData("chumon_renkei_api", backupData, subdomain);
+        const backupResults = await StoreBackupData("chumon_renkei_api", backupData, stageSubdomain);
         console.log("backupResults");
         console.log(backupResults);
         //#endregion
@@ -2971,7 +3078,7 @@ app.post("/finalizePurchase", async (req, res) => {
         const backupDataJSON = JSON.stringify(backupData);
         query = "UPDATE purchase SET newPurchaseJson = ? WHERE paymentIntentId = ?;";
         try {
-          await poolProduction.query(query, [backupDataJSON, paymentIntentId]);
+          await pool.query(query, [backupDataJSON, paymentIntentId]);
         } catch (error) {
           console.log("Error while updating newPurchaseJson:");
           console.dir(error, { depth: null, colors: true });
@@ -2984,7 +3091,7 @@ app.post("/finalizePurchase", async (req, res) => {
     }
   } // paymentStatus === "created" or "succeeded"
 
-  const customerData = await GetCustomerDataFromCustomerKey(customerKey);
+  const customerData = await GetCustomerDataFromCustomerKey(customerKey, stageSubdomain);
 
   return res.json({customerData: customerData, paymentStatus: paymentStatus});
 });
@@ -3012,10 +3119,13 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   console.dir(req.body, { depth: null, colors: true });
   console.log("req.headers:");
   console.dir(req.headers, { depth: null, colors: true });
-  let query, values; // For MySQL
 
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  let query, values; // For MySQL
 
   //#region Validate inputs
   const purchaseKey = parseInt(req.body.chumon_no.replace(/\D/g, ''));
@@ -3023,6 +3133,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
     return res.status(400).send('Bad Request: Could not parse numeric purchaseKey');
   }
 
+  // This should never fire now, this was for guests who were not given a purchaseKey by the server because they had no account.
   if(purchaseKey > 1000000) {
     const returnPayload = {
       "status": "success",
@@ -3034,11 +3145,10 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
     }
     console.log("returnPayload for guest:");
     console.dir(returnPayload, { depth: null, colors: true });
+    console.log("XXXXX Guest order, large purchaseKey")
   
     return res.status(200).send(returnPayload);  
   }
-
-  let inputCount = 0;
 
   const purchaseDetails = req.body.chumon_meisai;
   if(purchaseDetails === null) {
@@ -3055,6 +3165,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   if(typeof shippingDetails !== "object") {
     return res.status(400).send('Bad Request: non-object haiso_meisai (shippingDetails)');
   }
+
   const shippedLineItemKeys = shippingDetails.map(shippingDetail => {return parseInt(shippingDetail.haiso_meisai_no)});
   const purchasedLineItemKeys = purchaseDetails.map(purchaseDetail => {return parseInt(purchaseDetail.chumon_meisai_no)});
   const allLineItemKeys = [...shippedLineItemKeys, ...purchasedLineItemKeys];
@@ -3064,30 +3175,6 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   //#endregion
 
 
-  /*
-  //#region Count the number of lineItems covered by shipping status update using haiso_meisai_no
-  query = `
-    SELECT * FROM lineItem 
-    WHERE lineItemKey IN (?)`;
-  values = [allLineItemKeys];
-
-  try {
-    const [result] = await pool.query(query, values);
-    if(result.length === 0) {
-      const returnPayload = {
-        "status": "error",
-        "statusCode": 404,
-        "Messages": "注文情報が見つかりませんでした (haiso_meisai_no)"
-      }
-    
-      return res.status(404).send(returnPayload);  
-    }
-  } catch (error) {
-    res.status(500).send('Error finding unshipped line items');
-  }
-  //#endregion
-  */
-
 
   //#region Count the number of lineItems covered by shipping status update using haiso_meisai_no and purchaseKey
   query = `
@@ -3096,7 +3183,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   values = [purchaseKey, shippedLineItemKeys];
 
   try {
-    const [result] = await poolProduction.query(query, values);
+    const [result] = await pool.query(query, values);
     if(result.length === 0) {
       const returnPayload = {
         "status": "error",
@@ -3122,7 +3209,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
   values = ['shipped', purchaseKey, shippedLineItemKeys, 'shipped'];
 
   try{
-    const [result] = await poolProduction.query(query, values);
+    const [result] = await pool.query(query, values);
     console.log("Query:", query);
     console.log("Values:", values);
     console.log("result:");
@@ -3133,7 +3220,7 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
         "statusCode": 422,
         "Messages": "すでに発送した商品です"
       }
-    
+
       return res.status(422).send(returnPayload);  
     }
   } catch (error) {
@@ -3162,7 +3249,9 @@ app.post('/1.1/wf/update_fulfillment', async (req, res) => {
 
 
 // Validates a user with either customerKey+token, or customerKey+email+password
-async function ValidatePayload(payload) {
+async function ValidatePayload(payload, stageSubdomain) {
+  if(stageSubdomain === undefined) {stageSubdomain = false; console.log("XXXXX stageSubdomain is undefined in ValidatePayload");}
+  const pool = stageSubdomain ? poolStage : poolProduction;
 
   // Check for required inputs
   if(!payload) { return {valid: false, message: "No payload"};}
@@ -3178,7 +3267,7 @@ async function ValidatePayload(payload) {
     if(!hexRegex.test(token)) { return {valid: false, message: "Malformed token"};}
 
     query = `SELECT * FROM customer WHERE token = ? AND customerKey = ?`;
-    const [results] = await poolProduction.query(query, [token, customerKey]);
+    const [results] = await pool.query(query, [token, customerKey]);
     if (results.length === 0) { return {valid: false, message: "Token not found"};}
 
     return {valid: true, message: "Valid token", customerKey: customerKey};
@@ -3196,7 +3285,7 @@ async function ValidatePayload(payload) {
     const password = payload.password;
 
     let query = `SELECT * FROM customer WHERE email = ?`;
-    const [results] = await poolProduction.query(query, [email]);
+    const [results] = await pool.query(query, [email]);
     if (results.length === 0) { return {valid: false, message: "Email / Password incorrect"};}
 
     const [customer] = results;
@@ -3222,8 +3311,8 @@ function NoPunctuationDateTime() {
 }
 
 app.use((err, req, res, next) => {
-    console.error(`[${new Date().toISOString()}] Error:`, err.stack);
-    return res.status(500).send('Something broke! Time: ' + CurrentTime());
+    console.error(`[${new Date().toISOString()}] Unknown top-level error:`, err.stack);
+    return res.status(500).send('Unknown top-level error. Time: ' + CurrentTime());
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -3241,15 +3330,3 @@ process.on('exit', (code) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => { console.log(`Server started on ${PORT} at ${CurrentTime()}`); });
-
-/*
-  query = "SELECT * FROM purchase WHERE paymentIntentId = ?";
-  values = [paymentIntentId];
-  const [payments] = await pool.query(query, values);
-  if (payments.length === 0) {
-    console.error('Error pulling purchase data with paymentIntentId before payment verification. paymentIntentId: ', paymentIntentId);
-    return res.status(500).send('Error pulling purchase data with paymentIntentId before payment verification. paymentIntentId: ', paymentIntentId);
-  }
-  const payment = payments[0];
-  const totalAfterCoupon = payment.amount - payment.couponDiscount;
-*/

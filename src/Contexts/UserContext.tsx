@@ -67,7 +67,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     });
 
     async function initializeUserData() {
-      const token = Cookies.get('WellMillToken');
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';
+      const token = Cookies.get(cookieName);
       if (token) {
         try{
           await loginUserFromToken(token);
@@ -76,11 +78,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         catch(error) {
           console.error("Failed to fetch remote user data:", error);
           console.error("Falling back to local data");
-          pullUserLocal();
+          //pullUserLocal();
+          setUser(emptyCustomer);
           setGuest(true);
         }
       } else {
-        pullUserLocal();
+        //pullUserLocal();
+        setUser(emptyCustomer);
         setGuest(true);
       }
     }
@@ -93,7 +97,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
 
       if (APIResponse.data?.token) {
-        Cookies.set('WellMillToken', APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
+        const subdomain = window.location.hostname.split('.')[0];
+        const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';    
+        Cookies.set(cookieName, APIResponse.data.token, { expires: 31, sameSite: 'Lax' });
       }
 
       //console.log(APIResponse.data.customerData);

@@ -99,7 +99,11 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
-    const paymentIntentId = localStorage.getItem('paymentIntentId');
+    const subdomain = window.location.hostname.split('.')[0];
+    const paymentIntentIdKeyName = subdomain === 'stage' ? 'paymentIntentIdStage' : 'paymentIntentId';
+    const couponKeyName = subdomain === 'stage' ? 'couponDiscountStage' : 'couponDiscount';
+
+    const paymentIntentId = localStorage.getItem(paymentIntentIdKeyName);
     if(!paymentIntentId) return;
 
     const purchase = user.purchases.find(purchase => {return purchase.paymentIntentId === paymentIntentId});
@@ -118,7 +122,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     }
 
     setCouponDiscount(Math.min(actualCouponDiscount, cart.cost));
-    localStorage.setItem('couponDiscount', actualCouponDiscount.toString());
+    localStorage.setItem(couponKeyName, actualCouponDiscount.toString());
 
     const updateIntentData = {
       customerKey: user.customerKey,
@@ -179,7 +183,9 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     }
     const couponCodeHash = await sha1(couponCode);
 
-    const currentCoupons = user.coupons.length > 0 ? user.coupons : JSON.parse(localStorage.getItem('coupons') || "[]");
+    const subdomain = window.location.hostname.split('.')[0];
+    const keyName = subdomain === 'stage' ? 'couponsStage' : 'coupons';
+    const currentCoupons = user.coupons.length > 0 ? user.coupons : JSON.parse(localStorage.getItem(keyName) || "[]");
     const coupon = currentCoupons.find((coupon: Coupon) => {return coupon.hash === couponCodeHash});
     if(!coupon) {
       console.log("Coupon not found in currentCoupons.");
@@ -241,6 +247,12 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     // Already doing a purchase
     if(isSendingPayment) { return; }
 
+    const subdomain = window.location.hostname.split('.')[0];
+    const stripeReturnURLSubdomain =
+      subdomain === 'stage' ? 'stage' :
+      //subdomain === 'dev' ? 'dev' :
+      'shop';
+
     // If the email is not valid, set it as an error and return
     const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if(!regex.test(email)) {
@@ -289,7 +301,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     } else if (totalAfterCoupon >= 50) {
       const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: `https://shop.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
+        confirmParams: { return_url: `https://${stripeReturnURLSubdomain}.well-mill.com/post-purchase?ak=${selectedAddressKey}&email=${encodedEmail}` },
       });
 
       // This point will only be reached if there is an immediate error when

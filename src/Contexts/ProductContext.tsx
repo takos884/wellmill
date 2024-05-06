@@ -73,7 +73,9 @@ export function ProductProvider({ children }: ProductProviderProps) {
         const fetchedCoupons = transformCoupons(rawCouponss);
         //console.log("fetchedCoupons");
         //console.log(fetchedCoupons);
-        localStorage.setItem('coupons', JSON.stringify(fetchedCoupons));
+        const subdomain = window.location.hostname.split('.')[0];
+        const keyName = subdomain === 'stage' ? 'couponsStage' : 'coupons';
+        localStorage.setItem(keyName, JSON.stringify(fetchedCoupons));
       } catch (err) {
           setError(err instanceof Error ? err.message : 'An error occurred while fetching coupons.');
       }

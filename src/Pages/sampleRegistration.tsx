@@ -38,7 +38,10 @@ function SampleRegistration() {
 
 
   useEffect(() => {
-    const localSampleId = localStorage.getItem('sampleID');
+    const subdomain = window.location.hostname.split('.')[0];
+    const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+  
+    const localSampleId = localStorage.getItem(keyName);
 
     if(localSampleId) {
       console.log(`Sample ID from local storage: ${localSampleId}`);
@@ -51,10 +54,12 @@ function SampleRegistration() {
 
   useEffect(() => {
     const sampleId = searchParams.get('sample') || searchParams.get('sampleId');
+    const subdomain = window.location.hostname.split('.')[0];
+    const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
 
     if (sampleId) {
       console.log(`Sample ID from query: ${sampleId}`);
-      localStorage.setItem('sampleID', sampleId);
+      localStorage.setItem(keyName, sampleId);
       setKentaiId(sampleId);
       setKentaiIdLock(true);
     }

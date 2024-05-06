@@ -190,7 +190,9 @@ function Profile() {
     // This shouldn't happen, it's not needed, so no token is sent back
     if(response.data.token) {
       loginUser({token: response.data.token});
-      Cookies.set('WellMillToken', response.data.token, { expires: 31, sameSite: 'Lax' });
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';  
+      Cookies.set(cookieName, response.data.token, { expires: 31, sameSite: 'Lax' });
     }
 
     // Gender can pull from the input, or existing data. Azure wants 0, 1, or 9. 🤷
@@ -261,7 +263,9 @@ function Profile() {
     // This shouldn't happen, it's not needed, so no token is sent back
     if(response.data.token) {
       loginUser({token: response.data.token});
-      Cookies.set('WellMillToken', response.data.token, { expires: 31, sameSite: 'Lax' });
+      const subdomain = window.location.hostname.split('.')[0];
+      const cookieName = subdomain === 'stage' ? 'WellMillTokenStage' : 'WellMillToken';  
+      Cookies.set(cookieName, response.data.token, { expires: 31, sameSite: 'Lax' });
     }
 
     // Gender can pull from the input, or existing data. Azure wants 0, 1, or 9. 🤷

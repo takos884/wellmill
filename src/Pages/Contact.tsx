@@ -38,9 +38,10 @@ function Contact() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const endpointSubdomain = window.location.hostname.startsWith('stage') ? "stage" : "shop";
 
     try {
-        const response = await fetch('https://shop.well-mill.com/api/sendEmail', {
+        const response = await fetch(`https://${endpointSubdomain}.well-mill.com/api/sendEmail`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

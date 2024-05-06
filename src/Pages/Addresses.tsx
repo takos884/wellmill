@@ -85,7 +85,9 @@ function Addresses() {
     </>
   )
 
-  const sampleId = localStorage.getItem('sampleID');
+  const subdomain = window.location.hostname.split('.')[0];
+  const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+  const sampleId = localStorage.getItem(keyName);
   const suggestRegister = (sampleId && user && user.addresses.length > 0 && false);
   const suggestRegisterMessage = (
     <div className={styles.registerMessage}>

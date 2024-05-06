@@ -11,16 +11,19 @@ const breadcrumbs = [
   { text: "登録完了", url: "/new-customer" },
 ];
 
-const sampleID = localStorage.getItem('sampleID');
-const suggestAddress = (!!sampleID && false);
-const suggestAddressMessage = (
-  <div className={styles.registerMessage}>
-    <span>サンプルの登録を続けるには、アドレスを追加してください。</span>
-    <Link to="/address"><button>アドレスを登録する</button></Link>
-  </div>
-)
-
 export default function NewCustomer() {
+  const subdomain = window.location.hostname.split('.')[0];
+  const keyName = subdomain === 'stage' ? 'sampleIDStage' : 'sampleID';
+  
+  const sampleID = localStorage.getItem(keyName);
+  const suggestAddress = (!!sampleID && false);
+  const suggestAddressMessage = (
+    <div className={styles.registerMessage}>
+      <span>サンプルの登録を続けるには、アドレスを追加してください。</span>
+      <Link to="/address"><button>アドレスを登録する</button></Link>
+    </div>
+  )
+  
   return(
     <>
       <div className="topDots" />
