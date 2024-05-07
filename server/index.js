@@ -195,10 +195,10 @@ fetchProducts();
 
 
 app.post('/createUser', async (req, res) => {
-    console.log("░▒▓█ Hit createUser. Time: " + CurrentTime());
-    console.log(req.body);
     const subdomains = req.subdomains;
     const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+    console.log(`░▒▓█ Hit createUser. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+    console.log(req.body);
     const stageSubdomain = subdomain === "stage" ? true : false;
     const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -281,11 +281,11 @@ app.post('/createUser', async (req, res) => {
 });
 
 app.post('/updateUser', async (req, res) => {
-  console.log("░▒▓█ Hit updateUser. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit updateUser. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -423,11 +423,11 @@ function ValidateBirthday(birthdayInput) {
 }
 
 app.post('/registerGuest', async (req, res) => {
-  console.log("░▒▓█ Hit registerGuest. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit registerGuest. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -459,11 +459,11 @@ app.post('/registerGuest', async (req, res) => {
 });
 
 app.post('/addAddress', async (req, res) => {
-  console.log("░▒▓█ Hit addAddress. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit addAddress. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -558,11 +558,11 @@ app.post('/addAddress', async (req, res) => {
 });
 
 app.post('/deleteAddress', async (req, res) => {
-  console.log("░▒▓█ Hit deleteAddress. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit deleteAddress. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -661,11 +661,11 @@ app.post('/sendEmail', async (req, res) => {
 });
 
 app.post('/sendWelcome', async (req, res) => {
-  console.log("░▒▓█ Hit sendWelcome. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit sendWelcome. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const emailSubdomain = subdomain === "stage" ? "stage" : "shop";
 
   const recipient = req.body.recipient;
@@ -863,11 +863,11 @@ app.post('/sendWelcome', async (req, res) => {
 });
 
 app.post("/sendOrderEmail", async (req, res) => {
-  console.log("░▒▓█ Hit sendOrderEmail (API). Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit sendOrderEmail (API). Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const emailSubdomain = subdomain === "stage" ? "stage" : "shop";
 
   const images = req.body.data.products.flatMap(product => {
@@ -891,7 +891,7 @@ app.post("/sendOrderEmail", async (req, res) => {
 });
 
 async function sendOrderEmail(recipient, purchase, addresses, lineItems, products, images, emailSubdomain) {
-  console.log("░▒▓█ Hit sendOrderEmail (function). Time: " + CurrentTime());
+  console.log(`░▒▓█ Hit sendOrderEmail (function). Subdomain: [${emailSubdomain}] Time: ${CurrentTime()}`);
   console.dir({recipient, purchase, addresses, lineItems, products, images}, { depth: null, colors: true });
 
   let transporter = nodemailer.createTransport({
@@ -1281,11 +1281,11 @@ async function sendOrderEmail(recipient, purchase, addresses, lineItems, product
 }
 
 app.post('/generateReceipt', async (req, res) => {
-  console.log("░▒▓█ Hit generateReceipt. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit generateReceipt. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -1496,11 +1496,11 @@ app.post('/generateReceipt', async (req, res) => {
 });
 
 app.post('/sendPassword', async (req, res) => {
-  console.log("░▒▓█ Hit sendPassword. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit sendPassword. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const emailSubdomain = stageSubdomain ? "stage" : "shop";
   const pool = stageSubdomain ? poolStage : poolProduction;
@@ -1673,11 +1673,11 @@ app.post('/sendPassword', async (req, res) => {
 
 
 app.post('/login', async (req, res) => {
-  console.log("░▒▓█ Hit login. Time:" + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit login. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -1710,11 +1710,11 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/addToCart', async (req, res) => {
-  console.log("░▒▓█ Hit addToCart. Time: " + CurrentTime());
-  console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit addToCart. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body); // { data: { productKey: 1, customerKey: 1, quantity: 1 } }
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -1777,11 +1777,11 @@ app.post('/addToCart', async (req, res) => {
 
 
 app.post('/updateCartQuantity', async (req, res) => {
-  console.log("░▒▓█ Hit updateCartQuantity. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit updateCartQuantity. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -1816,11 +1816,11 @@ app.post('/updateCartQuantity', async (req, res) => {
 });
 
 app.post('/deleteFromCart', async (req, res) => {
-  console.log("░▒▓█ Hit deleteFromCart. Time: " + CurrentTime());
-  console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit deleteFromCart. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body); // { data: { customerKey: 1, token: "abc", lineItemKey: 1 } }
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -1854,11 +1854,11 @@ app.post('/deleteFromCart', async (req, res) => {
 });
 
 app.post('/cancelPurchase', async (req, res) => {
-  console.log("░▒▓█ Hit cancelPurchase. Time: " + CurrentTime());
-  console.log(req.body); // { data: { customerKey: 1, token: "abc", purchaseKey: 193 } }
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit cancelPurchase. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body); // { data: { customerKey: 1, token: "abc", purchaseKey: 193 } }
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
   const stripe = stageSubdomain ? stripeStage : stripeProduction;
@@ -1983,11 +1983,11 @@ app.post('/cancelPurchase', async (req, res) => {
 });
 
 app.post('/deleteLineItem', async (req, res) => {
-  console.log("░▒▓█ Hit deleteLineItem. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit deleteLineItem. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
@@ -2098,13 +2098,12 @@ app.post('/storeBackupData', async (req, res) => {
 */
 
 app.post('/storeBackupData', async (req, res) => {
-  console.log("░▒▓█ Hit storeBackupData. Time: " + CurrentTime());
-  console.dir(req.body, { depth: null, colors: true });
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit storeBackupData. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.dir(req.body, { depth: null, colors: true });
+
   const stageSubdomain = subdomain === "stage" ? true : false;
-  const pool = stageSubdomain ? poolStage : poolProduction;
   const stripe = stageSubdomain ? stripeStage : stripeProduction;
 
 //  // Validation happens against paymentIntentId
@@ -2157,7 +2156,7 @@ app.post('/storeBackupData', async (req, res) => {
 });
 
 async function StoreBackupData(endpoint, inputData, stageSubdomain) {
-  console.log("░▒▓█ Hit storeBackupData function. Time: " + CurrentTime());
+  console.log(`░▒▓█ Hit storeBackupData function. Subdomain: [${stageSubdomain ? "stage" : "not stage"}] Time: ${CurrentTime()}`);
   console.dir({endpoint, inputData}, { depth: null, colors: true });
 
   const fullEndpoint = `${stageSubdomain ? BASE_URL_STAGE : BASE_URL}${endpoint}`;
@@ -2455,11 +2454,11 @@ async function sha1(str) {
 
 //#region Stripe
 app.post("/createPaymentIntent", async (req, res) => {
-  console.log("░▒▓█ Hit createPaymentIntent. Time: " + CurrentTime());
-  console.dir(req.body, { depth: null, colors: true });
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit createPaymentIntent. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.dir(req.body, { depth: null, colors: true });
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
   const stripe = stageSubdomain ? stripeStage : stripeProduction;
@@ -2622,11 +2621,11 @@ app.post("/createPaymentIntent", async (req, res) => {
 
 // This is to apply a coupon
 app.post("/updatePaymentIntent", async (req, res) => {
-  console.log("░▒▓█ Hit updatePaymentIntent. Time: " + CurrentTime());
-  console.dir(req.body, { depth: null, colors: true });
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit updatePaymentIntent. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.dir(req.body, { depth: null, colors: true });
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
   const stripe = stageSubdomain ? stripeStage : stripeProduction;
@@ -2761,11 +2760,11 @@ async function calculateCouponDiscount(cartLines, totalBeforeCoupon, stageSubdom
 
 
 app.post("/finalizePurchase", async (req, res) => {
-  console.log("░▒▓█ Hit finalizePurchase. Time: " + CurrentTime());
-  console.log(req.body);
-
   const subdomains = req.subdomains;
   const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit finalizePurchase. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+
   const stageSubdomain = subdomain === "stage" ? true : false;
   const emailSubdomain = stageSubdomain ? "stage" : "shop";
   const pool = stageSubdomain ? poolStage : poolProduction;
@@ -3114,14 +3113,14 @@ function formatDate(dateString) {
 }
 
 app.post('/1.1/wf/update_fulfillment', async (req, res) => {
-  console.log("░▒▓█ Hit 1.1/wf/update_fulfillment. Time: " + CurrentTime());
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit 1.1/wf/update_fulfillment. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
   console.log("req.body:");
   console.dir(req.body, { depth: null, colors: true });
   console.log("req.headers:");
   console.dir(req.headers, { depth: null, colors: true });
 
-  const subdomains = req.subdomains;
-  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
   const stageSubdomain = subdomain === "stage" ? true : false;
   const pool = stageSubdomain ? poolStage : poolProduction;
 
