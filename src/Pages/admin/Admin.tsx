@@ -70,9 +70,6 @@ export default function Admin() {
     //case "Purchases":
     //  currentElement = <Purchases adminData={adminData} loadAdminData={loadAdminData} />
     //  break;
-    //case "LineItems":
-    //  currentElement = <LineItems adminData={adminData} loadAdminData={loadAdminData} />
-    //  break;
     //case "Products":
     //  currentElement = <Products adminData={adminData} loadAdminData={loadAdminData} />
     //  break;
@@ -94,7 +91,6 @@ export default function Admin() {
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Customers")}}>Customers</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Addresses")}}> › Addresses</span>
         <span style={{color: "#888"}}> › Purchases</span>
-        <span style={{color: "#888"}}> › › Line Items</span>
         <hr style={{width: "8rem"}} />
         <span style={{color: "#888"}}>Products</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Images")}}> › Images</span>
