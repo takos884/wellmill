@@ -124,6 +124,7 @@ export type Coupon = {
 // All are optional, if any one of them is missing, it's still a reasonable address (inside the system)
 export type Address = {
     addressKey?: number | null, // Given by MySQL - null just means we're sure this address doesn't have a key yet
+    customerKey?: number | null,
     lastName?: string, //"デハーン",
     firstName?: string, //"クリス",
     registrationType?: number, //0,   (登録区分): This term likely represents a registration category or type.
@@ -229,3 +230,14 @@ export interface Breadcrumb {
     text: string;
     url: string;
 }
+
+
+export type AdminDataType = {
+    customers: Customer[],
+    addresses: Address[],
+    purchases: Purchase[],
+    products: Product[],
+    coupons: Coupon[],
+    images: Image[],
+    lineItems: LineItem[],
+  }

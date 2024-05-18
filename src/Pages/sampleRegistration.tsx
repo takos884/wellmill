@@ -164,9 +164,9 @@ function SampleRegistration() {
         <span className={styles.subHeader2}>（IDが一致しているか念の為ご確認ください）</span>
         <img src="registerQR.jpg" alt="Sample QR code"/>
         <span className={styles.inputHeader}>検体ID<span className={styles.required}>必須</span></span>
-        <div className={styles.inputWrapper}><input type="text" style={{width: "100%", marginLeft: 0, marginRight: 0, backgroundColor: kentaiIdLock ? "#d3d3d3" : ""}} value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? true : false} />{kentaiIdLock ? /*null*/ clearButton : null}</div>
+        <div className={styles.inputWrapper}><input type="text" style={{width: "100%", marginLeft: 0, marginRight: 0, backgroundColor: kentaiIdLock ? "#ffffff" : ""}} value={kentaiId} name="kentaiId" onChange={handleInputChange} disabled={kentaiIdLock ? false : false} />{kentaiIdLock ? /*null*/ clearButton : null}</div>
         {unknownId}
-        <span className={styles.inputHeader}>採血日<span className={styles.required}>必須</span></span>
+        <span className={styles.inputHeader}>採取日<span className={styles.required}>必須</span></span>
         <input type="date" value={kentaiSaishubi} name="kentaiSaishubi" onChange={handleInputChange}></input>
 
         <div className="customCheckbox" style={{margin: "4rem 0 1rem 0"}}>

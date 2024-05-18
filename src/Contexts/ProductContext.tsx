@@ -36,8 +36,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
       setLoading(true);
       setError(null);
       try {
-        //const response = await fetch('/wellmill/products.json');
-        const response = await fetch('/products.json');
+        const productsFilename = window.location.hostname.split('.')[0] === 'stage' ? 'productsStage.json' : 'products.json';
+        const response = await fetch(productsFilename);
         if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
         const rawResponse = await response.json();
 
@@ -62,7 +62,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
 
 
       try {
-        const response = await fetch('/coupons.json');
+        const couponsFilename = window.location.hostname.split('.')[0] === 'stage' ? 'couponsStage.json' : 'coupons.json';
+        const response = await fetch(couponsFilename);
         if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
         const rawResponse = await response.json();
 

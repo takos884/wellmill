@@ -148,7 +148,8 @@ span.inputX {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 0.25rem;
-  background: #b00;
-  color: #fff;
+  border-radius: 1.5rem;
+  background: #fff;
+  color: #800;
+  font-size: 0.8rem;
 }

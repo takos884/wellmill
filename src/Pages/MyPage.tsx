@@ -83,7 +83,7 @@ const MyPage = () => {
       <div className={styles.content}>
         <span className={styles.header}>{user?.guest === false ? `${user.lastName} ${user.firstName} 様のマイページ` : "購入履歴確認"} </span>
         <div className={styles.linksGrid}>
-          {user?.guest === false ? <Link to="/sample-registration"><span className={styles.link}>検体IDの登録 / 問診</span>{suggestRegister ? suggestRegisterMessage : null}</Link> : null}
+          {user?.guest === false ? <Link to="/sample-registration"><span className={styles.link}>検体IDの登録</span>{suggestRegister ? suggestRegisterMessage : null}</Link> : null}
           {false && (<Link to="/result-list"><span className={styles.link}>検査結果の一覧</span></Link>)}
           {user?.guest === false ? <Link to="/how_to"><span className={styles.link}>採血の方法</span></Link> : null}
           <Link to="/order-list"><span className={styles.link}>購入履歴</span></Link>

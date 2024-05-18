@@ -5,6 +5,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const sharp = require('sharp');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -22,9 +24,24 @@ sgMail.setApiKey(process.env.SENDGRID_NODE_API_KEY)
 
 const app = express();
 app.use(cors());  // Enable CORS for all routes
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    //cb(null, path.join(__dirname, '../../products'));
+    cb(null, '/var/www/wellmill/products');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 25 * 1024 * 1024 } // 25MB file size limit
+});
 
 
 const poolStage = mysql.createPool({
@@ -59,8 +76,8 @@ let products = {};
 let query, values;
 
 const environmentValues = [
-  {name: "production", pool: poolProduction,      products: products, productsFilePath: PRODUCTS_FILE_PATH,       couponsFilePath: COUPONS_FILE_PATH},
-  {name: "stage",      pool: poolStage, products: products, productsFilePath: PRODUCTS_FILE_PATH_STAGE, couponsFilePath: COUPONS_FILE_PATH_STAGE },
+  {name: "production", pool: poolProduction, productsFilePath: PRODUCTS_FILE_PATH,       couponsFilePath: COUPONS_FILE_PATH},
+  {name: "stage",      pool: poolStage,      productsFilePath: PRODUCTS_FILE_PATH_STAGE, couponsFilePath: COUPONS_FILE_PATH_STAGE },
 ]
 
 const prefectureNames = [
@@ -116,14 +133,16 @@ const prefectureNames = [
 async function fetchProducts() {
   console.log("░▒▓█ Hit fetchProducts. Time: " + CurrentTime());
 
-  query = `
+  const productQuery = `
     SELECT p.*, i.imageKey, i.url, i.displayOrder, i.altText 
     FROM product p
     LEFT JOIN image i ON p.productKey = i.productKey`;
 
+  const couponQuery = `SELECT * FROM coupon`;
+
   for(const environmentValue of environmentValues) {
     try{
-      const [results] = (await environmentValue.pool.query(query));
+      const [results] = (await environmentValue.pool.query(productQuery));
 
       if (!results) {
         console.log("Products not found");
@@ -131,13 +150,13 @@ async function fetchProducts() {
       }
 
       // holds products and their images
-      products = {};
+      const productResults = {};
 
 
       results.forEach(row => {
         // If the product is not already in the products object, add it
-        if (!products[row.productKey]) {
-          products[row.productKey] = {
+        if (!productResults[row.productKey]) {
+          productResults[row.productKey] = {
             productKey: row.productKey,
             id: row.id,
             title: row.title,
@@ -155,7 +174,7 @@ async function fetchProducts() {
 
         // Add the image to the product's images array, if image data exists
         if (row.imageKey) {
-          products[row.productKey].images.push({
+          productResults[row.productKey].images.push({
             imageKey: row.imageKey,
             url: row.url,
             displayOrder: row.displayOrder,
@@ -163,19 +182,17 @@ async function fetchProducts() {
           });
         }
       });
+
+      // Write the products to a file
+      fs.writeFileSync(environmentValue.productsFilePath, JSON.stringify(Object.values(productResults), null, 2));
+      console.log(`[${CurrentTime()}] Updated modern ${environmentValue.name} products.json to ${environmentValue.productsFilePath}`);
     } catch(error) {
       console.error(`[${CurrentTime()}] Error fetching ${environmentValue.name} products:`, error);
       return Promise.reject(error);
     }
 
-    // Write the products to a file
-    fs.writeFileSync(environmentValue.productsFilePath, JSON.stringify(Object.values(products), null, 2));
-    console.log(`[${CurrentTime()}] Updated modern ${environmentValue.name} products.json`);
-
-    query = `SELECT * FROM coupon`;
-
     try{
-      const [coupons] = (await environmentValue.pool.query(query));
+      const [coupons] = (await environmentValue.pool.query(couponQuery));
 
       coupons.forEach(coupon => {
         delete coupon.code;
@@ -192,6 +209,355 @@ async function fetchProducts() {
 }
 
 fetchProducts();
+
+app.post('/adminFetch', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminFetch. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const credentials = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(credentials.token && !tokenRegex.test(credentials.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + credentials.token);
+  const token = credentials.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const returnData = {};
+
+  query = "SELECT * FROM customer";
+  values = [];
+  try {
+    const [customerData] = await pool.query(query, values);
+    returnData.customers = customerData;
+  } catch(error) {
+    console.error('Error fetching customer data:', error);
+    return res.status(500).send('Error fetching customer data');
+  }
+
+  query = "SELECT * FROM address";
+  values = [];
+  try {
+    const [addressData] = await pool.query(query, values);
+    returnData.addresses = addressData;
+  } catch(error) {
+    console.error('Error fetching address data:', error);
+    return res.status(500).send('Error fetching address data');
+  }
+
+  query = "SELECT * FROM purchase";
+  values = [];
+  try {
+    const [purchaseData] = await pool.query(query, values);
+    returnData.orders = purchaseData;
+  } catch(error) {
+    console.error('Error fetching purchase data:', error);
+    return res.status(500).send('Error fetching purchase data');
+  }
+
+  query = "SELECT * FROM product";
+  values = [];
+  try {
+    const [productData] = await pool.query(query, values);
+    returnData.products = productData;
+  } catch(error) {
+    console.error('Error fetching product data:', error);
+    return res.status(500).send('Error fetching product data');
+  }
+
+  query = "SELECT * FROM coupon";
+  values = [];
+  try {
+    const [couponData] = await pool.query(query, values);
+    returnData.coupons = couponData;
+  } catch(error) {
+    console.error('Error fetching coupon data:', error);
+    return res.status(500).send('Error fetching coupon data');
+  }
+
+  query = "SELECT * FROM image";
+  values = [];
+  try {
+    const [imageData] = await pool.query(query, values);
+    returnData.images = imageData;
+  } catch(error) {
+    console.error('Error fetching image data:', error);
+    return res.status(500).send('Error fetching image data');
+  }
+
+  query = "Select * FROM lineItem";
+  values = [];
+  try {
+    const [lineItemData] = await pool.query(query, values);
+    returnData.lineItems = lineItemData;
+  } catch(error) {
+    console.error('Error fetching line item data:', error);
+    return res.status(500).send('Error fetching line item data');
+  }
+
+  return res.json(returnData);
+});
+
+app.post('/adminCustomerUpdate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminCustomerUpdate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const customerKey = requestData.customerKey;
+  const firstName = requestData.firstName;
+  const lastName = requestData.lastName;
+  const firstNameKana = requestData.firstNameKana;
+  const lastNameKana = requestData.lastNameKana;
+  const gender = requestData.gender;
+  const birthday = requestData.birthday;
+  const email = requestData.email;
+
+  query = "UPDATE customer SET firstName = ?, lastName = ?, firstNameKana = ?, lastNameKana = ?, gender = ?, birthday = ?, email = ? WHERE customerKey = ?";
+  values = [firstName, lastName, firstNameKana, lastNameKana, gender, birthday, email, customerKey];
+
+  console.log("Update query:")
+  console.log(query)
+  console.log("Update values:")
+  console.log(values)
+
+  try {
+    await pool.query(query, values);
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error updating customer:', error);
+    return res.status(500).send('Error updating customer');
+  }
+});
+
+app.post('/adminCustomerDelete', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminCustomerDelete. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const customerKey = requestData.customerKey;
+
+  query = "DELETE FROM customer WHERE customerKey = ?";
+  values = [customerKey];
+  try {
+    await pool.query(query, values);
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error deleting customer:', error);
+    return res.status(500).send('Error deleting customer');
+  }
+});
+
+app.post('/adminAddressUpdate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminAddressUpdate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const addressKey = requestData.addressKey;
+
+  const customerKey = requestData.customerKey;
+  const firstName = requestData.firstName;
+  const lastName = requestData.lastName;
+  const postalCode = requestData.postalCode;
+  const prefCode = requestData.prefCode;
+  const pref = prefectureNames.find(prefectureName => {return prefectureName.code == prefCode}).name;
+  const city = requestData.city;
+  const ward = requestData.ward;
+  const address2 = requestData.address2;
+  const phoneNumber = requestData.phoneNumber;
+
+  query = "UPDATE address SET firstName = ?, lastName = ?, postalCode = ?, prefCode = ?, pref = ?, city = ?, ward = ?, address2 = ?, phoneNumber = ? WHERE addressKey = ?";
+  values = [firstName, lastName, postalCode, prefCode, pref, city, ward, address2, phoneNumber, addressKey];
+  try {
+    await pool.query(query, values);
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error updating address:', error);
+    return res.status(500).send('Error updating address');
+  }
+});
+
+app.post('/adminAddressDelete', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminAddressDelete. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const addressKey = requestData.addressKey;
+
+  query = "DELETE FROM address WHERE addressKey = ?";
+  values = [addressKey];
+  try {
+    await pool.query(query, values);
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error deleting address:', error);
+    return res.status(500).send('Error deleting address');
+  }
+});
+
+app.post('/adminImageUpload', upload.single("image"), async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminImageUpload. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const { altText, token } = req.body;
+  const file = req.file;
+
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(token && !tokenRegex.test(token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + token);
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  if (!file) {
+    return res.status(400).send("No file uploaded");
+  }
+
+  const imageURL = `products/${file.filename}`
+  query = "INSERT INTO image (url, altText) VALUES (?, ?)";
+  values = [imageURL, altText];
+
+  try {
+    await pool.query(query, values);
+    return res.json({ success: true, imageURL: imageURL });
+  }
+  catch(error) {
+    console.error('Error uploading image:', error);
+    return res.status(500).send('Error uploading image');
+  }
+});
+
+app.post('/adminImageUpdate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminImageUpdate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const imageKey = requestData.imageKey;
+  const productKey = requestData.productKey;
+  let newDisplayOrder = 1;
+
+  query = `
+    SELECT COALESCE(MAX(displayOrder), 0) + 1 AS newDisplayOrder
+    FROM image
+    WHERE productKey = ?
+  `;
+  values = [productKey];
+  try {
+    const [maxDisplayOrderResult] = await pool.query(query, values);
+    newDisplayOrder = maxDisplayOrderResult[0].newDisplayOrder || 1;
+  } catch(error) {
+    console.error('Error fetching new display order:', error);
+    return res.status(500).send('Error fetching new display order');
+  }
+
+  query = `UPDATE image SET productKey = ?, displayOrder = ? WHERE imageKey = ?`;
+  values = [productKey, newDisplayOrder, imageKey];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the products json file with the new image data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error updating image:', error);
+    return res.status(500).send('Error updating image');
+  }
+});
+
+app.post('/adminImageDelete', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminImageDelete. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const imageKey = requestData.imageKey;
+
+  query = "SELECT url FROM image WHERE imageKey = ?";
+  values = [imageKey];
+  try{
+    const [results] = await pool.query(query, values);
+    if (!results) {
+      return res.status(404).send("Image not found");
+    }
+    const imageURL = results[0].url;
+    const filePath = path.join('/var/www/wellmill/', imageURL);
+    fs.unlinkSync(filePath);
+  } catch(error) {
+    console.error('Error deleting image file:', error);
+    return res.status(500).send('Error deleting image file');
+  }
+
+  query = "DELETE FROM image WHERE imageKey = ?";
+  values = [imageKey];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the products json file with the new image data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error deleting image:', error);
+    return res.status(500).send('Error deleting image');
+  }
+});
 
 
 app.post('/createUser', async (req, res) => {
@@ -220,7 +586,7 @@ app.post('/createUser', async (req, res) => {
     const newUser = userData.token ? false : true;
     console.log("New user in createUser: " + newUser);
     const tokenRegex = /^[0-9a-f]+$/i;
-    if(userData.token && !tokenRegex.test(userData.token)) { return {authenticated: false, message: "Malformed token"};}
+    if(userData.token && !tokenRegex.test(userData.token)) { return res.status(400).send("Malformed token"); }
     const token = newUser ? crypto.randomBytes(48).toString('hex') : userData.token;
 
     const birthday = ValidateBirthday(userData.birthday);
@@ -1704,8 +2070,8 @@ app.post('/login', async (req, res) => {
     return res.status(401).json({ error: "No customer credentials given" });
   }
 
-  console.log("customerData");
-  console.dir(customerData, { depth: null, colors: true });
+  // console.log("customerData");
+  // console.dir(customerData, { depth: null, colors: true });
   return res.json({customerData: customerData});
 });
 

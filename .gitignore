@@ -39,3 +39,5 @@ scrap/
 index*.log
 sendgrid.env
 .env
+
+admin.json

@@ -29,6 +29,7 @@ import PurchaseDetails from './Pages/PurchaseDetails';
 import NewCustomer from './Pages/NewCustomer';
 import PasswordRecover from './Pages/PasswordRecover';
 import GTMHead from './Utilities/GTMHead';
+import Admin from './Pages/admin/Admin';
 
 function Layout() {
   const location = useLocation();
@@ -68,6 +69,9 @@ function Layout() {
         <Route path="/return-policy" element={<ReturnPolicy />} />
         <Route path="/privacy-policy" element={<Privacy />} />
         <Route path="/qa" element={<Faq />} />
+
+        <Route path="/admin" element={<Admin />} />
+
         <Route path="/" element={<Home />} />
       </Routes>
     </>
