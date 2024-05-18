@@ -4,6 +4,7 @@ import { AdminDataType } from "../../types";
 import Customers from "./Customers";
 import Addresses from "./Addresses";
 import Images from "./Images";
+import Coupons from "./Coupons";
 
 export default function Admin() {
   const [adminData, setAdminData] = useState<AdminDataType | null>(null);
@@ -78,9 +79,9 @@ export default function Admin() {
     case "Images":
       currentElement = <Images adminData={adminData} loadAdminData={loadAdminData} />
       break;
-    //case "Coupons":
-    //  currentElement = <Coupons adminData={adminData} loadAdminData={loadAdminData} />
-    //  break;
+    case "Coupons":
+      currentElement = <Coupons adminData={adminData} loadAdminData={loadAdminData} />
+      break;
     default:
       currentElement = dashboard;
   }
@@ -97,7 +98,7 @@ export default function Admin() {
         <hr style={{width: "8rem"}} />
         <span style={{color: "#888"}}>Products</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Images")}}> › Images</span>
-        <span style={{color: "#888"}}> › Coupons</span>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Coupons")}}> › Coupons</span>
       </div>
       <div style={{height: "100%", overflowY: "auto", width: "100%"}}>
         {currentElement}

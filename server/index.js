@@ -560,6 +560,71 @@ app.post('/adminImageDelete', async (req, res) => {
 });
 
 
+app.post('/adminCouponCreate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminCouponCreate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const coupon = requestData.coupon;
+  const code = coupon.code;
+  const hash = await sha1(code);
+  const productKey = coupon.productKey || null;
+  const type = coupon.type;
+  const target = coupon.target;
+  const reward = coupon.reward;
+
+  query = "INSERT INTO coupon (code, hash, productKey, type, target, reward) VALUES (?, ?, ?, ?, ?, ?)";
+  values = [code, hash, productKey, type, target, reward];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the coupons json file with the new coupon data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error creating coupon:', error);
+    return res.status(500).send('Error creating coupon');
+  }
+});
+
+app.post('/adminCouponDelete', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminCouponDelete. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const couponKey = requestData.couponKey;
+
+  query = "DELETE FROM coupon WHERE couponKey = ?";
+  values = [couponKey];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the coupons json file with the new coupon data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error deleting coupon:', error);
+    return res.status(500).send('Error deleting coupon');
+  }
+});
+
+
 app.post('/createUser', async (req, res) => {
     const subdomains = req.subdomains;
     const subdomain = subdomains.length > 0 ? subdomains[0] : null;

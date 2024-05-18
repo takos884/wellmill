@@ -115,6 +115,7 @@ export type Coupon = {
     type: number,
     target: number,
     reward: number,
+    code?: string, // This is a secret, never sent to the customer
 }
 //#endregion
 
