@@ -25,7 +25,7 @@ function Shop() {
         <span className="topHeader">SHOP</span>
         <span className={styles.shoppingDescription}></span>
         {productsLoading && <p>Loading...</p>}
-        {productsError && <p>Error: {productsError}</p>}
+        {productsError && false && <p>Error: {productsError}</p>}
         <div className={styles.productGrid}>
           {products?.
           filter(product => product.available === true).

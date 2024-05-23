@@ -109,7 +109,8 @@ export default function Cart() {
 
   if(userLoading) { return(<span className={styles.loading}>Loading profile...</span>) }
   if(productsLoading) { return(<span className={styles.loading}>Loading products...</span>) }
-  if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
+  //if(productsError) { return(<span className={styles.loading}>Loading products error</span>) }
+  if(productsError) { console.log("Unexpected products data - continuing")}
 
   const cartQuantity = cart?.lines ? Math.round(cart.lines.reduce((total, lineItem) => { return total + lineItem.quantity; }, 0)) : 0;
   const cartCost = cart?.lines ? Math.round(cart.lines.reduce((total, lineItem) => { return total + lineItem.unitPrice * (1+lineItem.taxRate) * lineItem.quantity; }, 0)) : 0;

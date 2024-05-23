@@ -5,21 +5,67 @@ import Customers from "./Customers";
 import Addresses from "./Addresses";
 import Images from "./Images";
 import Coupons from "./Coupons";
+import Products from "./Products";
+import Login from "./Login";
+
+const registeredEmails = [
+  "aya.sakamoto@reprocell.com",
+  "urara.sato@reprocell.com",
+  "hayashi@homely.top",
+];
 
 export default function Admin() {
   const [adminData, setAdminData] = useState<AdminDataType | null>(null);
   const [currentScreen, setCurrentScreen] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
-    loadAdminData();
+    checkAuthentication();
   }, []);
 
-  async function loadAdminData() {
-    let token;
-    if (window.location.search) {
-      const params = new URLSearchParams(window.location.search);
-      token = params.get('token') || "";
+  function checkAuthentication(email?: string, token?: string) {
+    if(!email) {
+      email = localStorage.getItem('email') || undefined;
     }
+    if(!email) return;
+
+    if(!token) {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromQuery = params.get('token');
+      token = tokenFromQuery || localStorage.getItem('token') || undefined;
+    }
+    if(!token) return;
+
+    if (registeredEmails.includes(email)) {
+      setEmail(email);
+      setIsAuthenticated(true);
+      loadAdminData(token);
+    } else {
+      setIsAuthenticated(false);
+    }
+  };
+
+  const handleLogin = (email: string, token: string) => {
+    checkAuthentication(email, token);
+  };
+
+  function handleLogout() {
+    localStorage.removeItem('email');
+    localStorage.removeItem('token');
+    setEmail("");
+    setError("");
+    setIsAuthenticated(false);
+  }
+
+  async function loadAdminData(token?: string) {
+    if (!token) {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromQuery = params.get('token');
+      token = tokenFromQuery || localStorage.getItem('token') || undefined;
+    }
+    if(!token) return;
 
     const dev = false;
 
@@ -37,6 +83,11 @@ export default function Admin() {
       const APIResponse = await CallAPI(credentials, "adminFetch");
       console.log("APIResponse in Admin");
       console.log(APIResponse);
+      if(APIResponse.error) {
+        setError(APIResponse.error);
+        setIsAuthenticated(false);
+        return;
+      }
       if (!APIResponse) return;
       setAdminData(APIResponse.data);  
     }
@@ -67,12 +118,9 @@ export default function Admin() {
     case "Addresses":
       currentElement = <Addresses adminData={adminData} loadAdminData={loadAdminData} />
       break;
-    //case "Purchases":
-    //  currentElement = <Purchases adminData={adminData} loadAdminData={loadAdminData} />
-    //  break;
-    //case "Products":
-    //  currentElement = <Products adminData={adminData} loadAdminData={loadAdminData} />
-    //  break;
+    case "Products":
+      currentElement = <Products adminData={adminData} loadAdminData={loadAdminData} />
+      break;
     case "Images":
       currentElement = <Images adminData={adminData} loadAdminData={loadAdminData} />
       break;
@@ -83,6 +131,10 @@ export default function Admin() {
       currentElement = dashboard;
   }
 
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} registeredEmails={registeredEmails} errorMessage={error} />;
+  }
+
   return (
     <div style={{position: "absolute", top: 0, bottom: 0, display: "flex", flexDirection:"row", justifyContent: "flex-start", width:"100%"}}>
       <div style={{display: "flex", flexDirection:"column", width: "10rem", padding:"2rem", backgroundColor:"#eee", fontSize: "1.5rem"}}>
@@ -90,11 +142,12 @@ export default function Admin() {
         <hr style={{width: "8rem"}} />
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Customers")}}>Customers</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Addresses")}}> › Addresses</span>
-        <span style={{color: "#888"}}> › Purchases</span>
         <hr style={{width: "8rem"}} />
-        <span style={{color: "#888"}}>Products</span>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Products")}}>Products</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Images")}}> › Images</span>
         <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Coupons")}}> › Coupons</span>
+        <hr style={{width: "8rem"}} />
+        <span style={{fontFamily: "mono", fontSize: "0.6rem"}}>{email}</span><br/><span style={{ width: "1rem", height: "1rem", border: "1px solid #800", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "0.25rem", background: "rgba(255,128,128,0.5)", fontSize: "0.8rem", }} onClick={handleLogout}>X</span>
       </div>
       <div style={{height: "100%", overflowY: "auto", width: "100%"}}>
         {currentElement}

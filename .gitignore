@@ -41,3 +41,5 @@ sendgrid.env
 .env
 
 admin.json
+ProductInfo.json
+productInfo.json

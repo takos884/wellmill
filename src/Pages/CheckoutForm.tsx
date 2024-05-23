@@ -27,6 +27,7 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   const { user, setUser, setCartLoading } = useContext(UserContext);
   const { products, isLoading: productsLoading, error: productsError } = useProducts();
   const navigate = useNavigate();
+  const subdomain = window.location.hostname.split('.')[0];
 
   //#region Addresses
   const addresses = (user?.addresses || []).sort((a, b) => {
@@ -44,6 +45,8 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(user?.email || "");
   const [emailError, setEmailError] = useState<boolean>(false); // undefined means user tried to submit as empty
+  const [termsChecked, setTermsChecked] = useState<boolean>(false);
+  const [termsGlow, setTermsGlow] = useState<boolean>(false);
   const [isSendingPayment, setIsSendingPayment] = useState(false);
   const [selectedAddressKey, setSelectedAddressKey] = useState<number | null>(defaultAddressKey);
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -99,7 +102,6 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
       return;
     }
 
-    const subdomain = window.location.hostname.split('.')[0];
     const paymentIntentIdKeyName = subdomain === 'stage' ? 'paymentIntentIdStage' : 'paymentIntentId';
     const couponKeyName = subdomain === 'stage' ? 'couponDiscountStage' : 'couponDiscount';
 
@@ -183,7 +185,6 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     }
     const couponCodeHash = await sha1(couponCode);
 
-    const subdomain = window.location.hostname.split('.')[0];
     const keyName = subdomain === 'stage' ? 'couponsStage' : 'coupons';
     const currentCoupons = user.coupons.length > 0 ? user.coupons : JSON.parse(localStorage.getItem(keyName) || "[]");
     const coupon = currentCoupons.find((coupon: Coupon) => {return coupon.hash === couponCodeHash});
@@ -247,7 +248,6 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
     // Already doing a purchase
     if(isSendingPayment) { return; }
 
-    const subdomain = window.location.hostname.split('.')[0];
     const stripeReturnURLSubdomain =
       subdomain === 'stage' ? 'stage' :
       //subdomain === 'dev' ? 'dev' :
@@ -289,6 +289,11 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
 
     if(!address) {
       setMessage("住所を入力してください。");
+      return;
+    }
+
+    if(subdomain === 'stage' && !termsChecked) {
+      setTermsGlow(true);
       return;
     }
 
@@ -503,6 +508,9 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
                   <span className={styles.email}>E-mail</span>
                   <input type="email" className={`${styles.email} ${(emailError && styles.emailError)}`} value={email} onChange={HandleEmailChange} />
                 </div>
+                {subdomain === 'stage' ? <div><label>
+                  <input type="checkbox" style={{boxShadow: termsGlow ? "0px 0px 5px 2px rgba(128,0,0,0.5)" : "" }} checked={termsChecked} onChange={(event) => {setTermsChecked(event.target.checked); setTermsGlow(false)}} />
+                  <span style={{fontSize: "0.9rem", borderBottom: termsGlow ? "1px solid #800" : ""}}><a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/return-policy" target="_blank">返品規定</a>および<a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/privacy-policy" target="_blank">プライバシーポリシー</a>に同意します</span></label></div>: null}
                 <button disabled={isSendingPayment || !stripe || !elements} id="submit">
                   <span id="button-text">
                     {isSendingPayment ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}

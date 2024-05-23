@@ -36,8 +36,9 @@ export function ProductProvider({ children }: ProductProviderProps) {
       setLoading(true);
       setError(null);
       try {
-        const productsFilename = window.location.hostname.split('.')[0] === 'stage' ? 'productsStage.json' : 'products.json';
+        const productsFilename = window.location.hostname.split('.')[0] === 'stage' ? '/productsStage.json' : '/products.json';
         const response = await fetch(productsFilename);
+        //const response = await fetch('/products.json');
         if (!response.ok) { throw new Error(`HTTP Status: ${response.status}`); }
         const rawResponse = await response.json();
 
@@ -52,7 +53,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'An error occurred while fetching products.');
+          setError("-");
+          //setError(err instanceof Error ? err.message : 'An error occurred while fetching products.');
         }
       } finally {
         if (isMounted) {
@@ -78,7 +80,8 @@ export function ProductProvider({ children }: ProductProviderProps) {
         const keyName = subdomain === 'stage' ? 'couponsStage' : 'coupons';
         localStorage.setItem(keyName, JSON.stringify(fetchedCoupons));
       } catch (err) {
-          setError(err instanceof Error ? err.message : 'An error occurred while fetching coupons.');
+          setError("-");
+          //setError(err instanceof Error ? err.message : 'An error occurred while fetching coupons.');
       }
     }
 

@@ -251,7 +251,7 @@ app.post('/adminFetch', async (req, res) => {
   values = [];
   try {
     const [purchaseData] = await pool.query(query, values);
-    returnData.orders = purchaseData;
+    returnData.purchases = purchaseData;
   } catch(error) {
     console.error('Error fetching purchase data:', error);
     return res.status(500).send('Error fetching purchase data');
@@ -621,6 +621,113 @@ app.post('/adminCouponDelete', async (req, res) => {
   } catch(error) {
     console.error('Error deleting coupon:', error);
     return res.status(500).send('Error deleting coupon');
+  }
+});
+
+app.post('/adminProductCreate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminProductCreate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const product = requestData.product;
+  const title = product.title;
+  const description = product.description;
+  const available = product.available;
+  const price = product.price;
+  const taxRate = product.taxRate;
+  const type = product.type;
+  const discountRate = product.discountRate ? product.discountRate : null; // 0 (or blank) means "null", it's not a 0% discount, it's no discount
+
+  query = "INSERT INTO product (title, description, available, type, price, taxRate, discountRate) VALUES (?, ?, ?, ?, ?, ?, ?)";
+  values = [title, description, available, type, price, taxRate, discountRate];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the products json file with the new product data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error creating product:', error);
+    return res.status(500).send('Error creating product');
+  }
+});
+
+
+app.post('/adminProductUpdate', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminProductUpdate. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const product = requestData.product;
+  const productKey = product.productKey;
+  const description = product.description;
+  const available = product.available;
+  const price = product.price;
+  const taxRate = product.taxRate;
+  const discountRate = product.discountRate ? product.discountRate : null; // 0 (or blank) means "null", it's not a 0% discount, it's no discount
+  const type = product.type;
+
+  query = "UPDATE product SET description = ?, available = ?, price = ?, taxRate = ?, discountRate = ?, type = ? WHERE productKey = ?";
+  values = [description, available, price, taxRate, discountRate, type, productKey];
+  console.log("Update query:")
+  console.log(query)
+  console.log("Update values:")
+  console.log(values)
+
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the products json file with the new product data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error updating product:', error);
+    return res.status(500).send('Error updating product');
+  }
+});
+
+app.post('/adminProductDelete', async (req, res) => {
+  const subdomains = req.subdomains;
+  const subdomain = subdomains.length > 0 ? subdomains[0] : null;
+  console.log(`░▒▓█ Hit adminProductDelete. Subdomain: [${subdomain}] Time: ${CurrentTime()}`);
+  console.log(req.body);
+  const stageSubdomain = subdomain === "stage" ? true : false;
+  const pool = stageSubdomain ? poolStage : poolProduction;
+
+  const requestData = req.body.data;
+  const tokenRegex = /^[0-9a-z]+$/i;
+  if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
+  console.log("Clean Token: " + requestData.token);
+  const token = requestData.token;
+  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+
+  const productKey = requestData.productKey;
+
+  query = "DELETE FROM product WHERE productKey = ?";
+  values = [productKey];
+  try {
+    await pool.query(query, values);
+    fetchProducts(); // Update the products json file with the new product data
+    return res.json({ success: true });
+  } catch(error) {
+    console.error('Error deleting product:', error);
+    return res.status(500).send('Error deleting product');
   }
 });
 

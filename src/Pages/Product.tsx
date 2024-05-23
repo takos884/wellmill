@@ -347,7 +347,7 @@ function Product() {
         <Header breadcrumbs={breadcrumbs} />
         {showModal && loginModal}
         {productsLoading && (<span>Loading Product...</span>)}
-        {productsError && (<span>Loading Product Error</span>)}
+        {productsError && false && (<span>Loading Product Error</span>)}
         <div className={styles.productGrid}>
           <div className={styles.imageGrid}>{productImages}</div>
           <div className={styles.productContent}>
@@ -357,7 +357,7 @@ function Product() {
             数量{quantityNode}
             {actionButton}
             <span className={styles.productLongDescription} dangerouslySetInnerHTML={{ __html: currentProduct?.description || '' }} />
-            {questionsNode}
+            {/*questionsNode*/}
           </div>
         </div>
         <div className={styles.infoLinks}>
