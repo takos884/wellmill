@@ -175,10 +175,15 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
     if (!customer.customerKey) return null;
     if (customer.customerKey <= 17) return null;
 
+    let haystack = (customer.firstName || "") + (customer.lastName || "") + (customer.firstNameKana || "") + (customer.lastNameKana || "") + (customer.email || "");
+
+    const defaultAddress = adminData.addresses.find(a => a.customerKey === customer.customerKey && a.defaultAddress);
+    const defaultAddressElement = defaultAddress ? (<div style={{backgroundColor:"#def"}}>Current default address: {(defaultAddress.firstName || "")} {(defaultAddress.lastName || "")} {(defaultAddress.postalCode || "")} {(defaultAddress.pref || "")} {(defaultAddress.city || "")} {(defaultAddress.ward || "")} {(defaultAddress.address2 || "")} {(defaultAddress.phoneNumber || "")}</div>) : null;
+    haystack += (defaultAddress?.firstName || "") + (defaultAddress?.lastName || "") + (defaultAddress?.postalCode || "") + (defaultAddress?.pref || "") + (defaultAddress?.city || "") + (defaultAddress?.ward || "") + (defaultAddress?.address2 || "") + (defaultAddress?.phoneNumber || "");
+
     const purchases = adminData.purchases.filter(p => p.customerKey === customer.customerKey);
     if (purchases.length === 0 && customer.firstName === null && customer.lastName === null && customer.email === null) return null;
 
-    let haystack = (customer.firstName || "") + (customer.lastName || "") + (customer.firstNameKana || "") + (customer.lastNameKana || "") + (customer.email || "");
     for (const purchase of purchases) {
       const billingAddress = adminData.addresses.find(a => a.addressKey === purchase.addressKey);
       haystack = haystack + (billingAddress?.firstName || "") + (billingAddress?.lastName || "") + (billingAddress?.postalCode || "") + (billingAddress?.pref || "") + (billingAddress?.city || "") + (billingAddress?.ward || "") + (billingAddress?.address2 || "") + (billingAddress?.phoneNumber || "");
@@ -274,6 +279,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayEdit(true)}} style={{width: "2rem"}}>✏️</span>
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayDelete(true)}} style={{width: "2rem"}}>🗑️</span>
         </div>
+        {defaultAddressElement}
         {expandedCustomers.has(customer.customerKey) ? conditionalPurchaseInfo : null}
       </div>
     )

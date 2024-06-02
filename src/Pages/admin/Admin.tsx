@@ -10,8 +10,9 @@ import Login from "./Login";
 
 const registeredEmails = [
   "aya.sakamoto@reprocell.com",
-  "urara.sato@reprocell.com",
-  "hayashi@homely.top",
+  "toguchi@reprocell.com",
+  //"urara.sato@reprocell.com",
+  //"hayashi@homely.top",
 ];
 
 export default function Admin() {
