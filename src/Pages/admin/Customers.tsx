@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AdminDataType } from "../../types";
+import { AdminDataType, Customer } from "../../types";
 import CallAPI from "../../Utilities/CallAPI";
 
 type CustomersProps = {
@@ -19,6 +19,11 @@ type CustomerFields = {
 };
 
 type CustomerFieldKey = keyof CustomerFields;
+
+type customerSortField = {
+  fieldName: keyof Customer; // eg: 'customerKey'
+  desc: boolean;
+};
 
 const buttonStyle = {
   width: "4rem", 
@@ -46,11 +51,24 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   const [displayEdit, setDisplayEdit] = useState<boolean>(false);
   const [displayDelete, setDisplayDelete] = useState<boolean>(false);
   const [searchString, setSearchString] = useState<string>("");
+  const [customerSortField, setCustomerSortField] = useState<customerSortField>({fieldName: 'customerKey', desc: true});
 
   const [expandedCustomers, setExpandedCustomers] = useState<Set<number>>(new Set());
   const [expandedPurchases, setExpandedPurchases] = useState<Set<number>>(new Set());
 
-  const toggleCustomerExpansion = (customerKey: number) => {
+  function handleSortClick(event: React.MouseEvent<HTMLSpanElement>) {
+    if (!(event.target instanceof HTMLElement)) return;
+    const fieldName = event.target.getAttribute('data-name') as keyof Customer;
+    setCustomerSortField(prev => {
+      if (prev.fieldName === fieldName) {
+        return { ...prev, desc: !prev.desc };
+      } else {
+        return { fieldName, desc: true };
+      }
+    });
+  }
+
+  function toggleCustomerExpansion(customerKey: number) {
     setExpandedCustomers(prev => {
       const newExpandedCustomers = new Set(prev);
       if (newExpandedCustomers.has(customerKey)) {
@@ -62,7 +80,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
     });
   };
 
-  const togglePurchaseExpansion = (purchaseKey: number) => {
+  function togglePurchaseExpansion(purchaseKey: number) {
     setExpandedPurchases(prev => {
       const newExpandedPurchases = new Set(prev);
       if (newExpandedPurchases.has(purchaseKey)) {
@@ -92,24 +110,43 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   const customers = adminData?.customers;
   if (!customers) return <span>Loading...</span>;
 
+  const customersSorted = customers.sort((a, b) => {
+    const { fieldName, desc } = customerSortField;
+    const aValue = a[fieldName];
+    const bValue = b[fieldName];
+  
+    // Handle null or undefined values by placing them at the end
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+  
+    // Compare values based on the field type
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return desc ? bValue - aValue : aValue - bValue;
+    } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return desc ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+    }
+  
+    return 0; // Default case (should not occur with valid data)
+  });
+
   const customerHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width: "6rem"}}>購入数</span>
-      <span style={{width: "4rem"}}>Key</span>
-      <span style={{width: "10rem"}}>firstName</span>
-      <span style={{width: "10rem"}}>lastName</span>
-      <span style={{width: "10rem"}}>firstNameKana</span>
-      <span style={{width: "10rem"}}>lastNameKana</span>
-      <span style={{width: "6rem"}}>gender</span>
-      <span style={{width: "10rem"}}>birthday</span>
-      <span style={{width: "20rem"}}>email</span>
-      <span style={{width: "4rem"}}>terms</span>
+      <span style={{width:  "6rem"}}>購入数</span>
+      <span style={{width:  "4rem"}} onClick={handleSortClick} data-name="customerKey">{customerSortField.fieldName === "customerKey" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }Key</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstName">{customerSortField.fieldName === "firstName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }firstName</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastName">{customerSortField.fieldName === "lastName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }lastName</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstNameKana">{customerSortField.fieldName === "firstNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }firstNameKana</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastNameKana">{customerSortField.fieldName === "lastNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }lastNameKana</span>
+      <span style={{width:  "6rem"}} onClick={handleSortClick} data-name="gender">{customerSortField.fieldName === "gender" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }gender</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="birthday">{customerSortField.fieldName === "birthday" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }birthday</span>
+      <span style={{width: "20rem"}} onClick={handleSortClick} data-name="email">{customerSortField.fieldName === "email" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }email</span>
+      <span style={{width:  "4rem"}}>terms</span>
     </div>
   )
 
   const purchaseHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#4bc387"}}>
-      <span style={{width: "6rem"}}>商品の数量</span>
+      <span style={{width:  "6rem"}}>商品の数量</span>
       <span style={{width: "20rem"}}>Stripe ID</span>
       <span style={{width: "15rem"}}>Email</span>
       <span style={{width: "10rem"}}>Payment Status</span>
@@ -123,7 +160,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
 
   const lineItemHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#ebeb47"}}>
-      <span style={{width: "6rem"}}>Product</span>
+      <span style={{width:  "6rem"}}>Product</span>
       <span style={{width: "25rem"}}>Title</span>
       <span style={{width: "10rem"}}>Quantity</span>
       <span style={{width: "10rem"}}>Unit Price</span>
@@ -134,7 +171,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   console.log(adminData);
   let colourToggle = 0;
 
-  const customerList = customers.map((customer, index) => {
+  const customerList = customersSorted.map((customer, index) => {
     if (!customer.customerKey) return null;
     if (customer.customerKey <= 17) return null;
 
@@ -182,7 +219,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
         return (
           <>
             <div key={li.lineItemKey} style={{display:"flex", backgroundColor: "#ffa", padding: "0.5rem"}}>
-              <span style={{width: "6rem"}}>{product.productKey || "-"}</span>
+              <span style={{width:  "6rem"}}>{product.productKey || "-"}</span>
               <span style={{width: "25rem"}}>{product.title || "-"}</span>
               <span style={{width: "10rem"}}>{li.quantity || "-"}</span>
               <span style={{width: "10rem"}}>{li.unitPrice || "-"}</span>
@@ -225,15 +262,15 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
         {customerHeader}
         <div key={customer.customerKey} style={{display:"flex", backgroundColor: backgroundColor, padding: "0.5rem"}}>
           <span style={buttonStyle} onClick={() => {toggleCustomerExpansion(customer.customerKey || 0)}}>⌄ {meaningfulPurchases} <span style={{color: "#888", fontSize:"0.7rem", margin: "0 0.25rem"}}>({purchases.length})</span></span>
-          <span style={{width: "4rem"}}>{customer.customerKey}</span>
+          <span style={{width:  "4rem"}}>{customer.customerKey}</span>
           <span style={{width: "10rem"}}>{customer.firstName}</span>
           <span style={{width: "10rem"}}>{customer.lastName}</span>
           <span style={{width: "10rem"}}>{customer.firstNameKana}</span>
           <span style={{width: "10rem"}}>{customer.lastNameKana}</span>
-          <span style={{width: "6rem"}}>{customer.gender}</span>
+          <span style={{width:  "6rem"}}>{customer.gender}</span>
           <span style={{width: "10rem"}}>{customer.birthday?.substring(0,10)}</span>
           <span style={{width: "20rem"}}>{customer.email}</span>
-          <span style={{width: "4rem", flexGrow: 1}}><input type="checkbox" checked={meaningfulPurchases > 0} disabled={true} /></span>
+          <span style={{width:  "4rem", flexGrow: 1}}><input type="checkbox" checked={meaningfulPurchases > 0} disabled={true} /></span>
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayEdit(true)}} style={{width: "2rem"}}>✏️</span>
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayDelete(true)}} style={{width: "2rem"}}>🗑️</span>
         </div>
