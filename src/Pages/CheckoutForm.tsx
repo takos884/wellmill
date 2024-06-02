@@ -508,9 +508,9 @@ export default function CheckoutForm({ setDisplayCheckout, addressesState }: Che
                   <span className={styles.email}>E-mail</span>
                   <input type="email" className={`${styles.email} ${(emailError && styles.emailError)}`} value={email} onChange={HandleEmailChange} />
                 </div>
-                {subdomain === 'stage' ? <div><label>
+                {(subdomain === 'stage' || true) ? <div><label>
                   <input type="checkbox" style={{boxShadow: termsGlow ? "0px 0px 5px 2px rgba(128,0,0,0.5)" : "" }} checked={termsChecked} onChange={(event) => {setTermsChecked(event.target.checked); setTermsGlow(false)}} />
-                  <span style={{fontSize: "0.9rem", borderBottom: termsGlow ? "1px solid #800" : ""}}><a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/return-policy" target="_blank">返品規定</a>および<a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/privacy-policy" target="_blank">プライバシーポリシー</a>に同意します</span></label></div>: null}
+                  <span style={{fontSize: "0.9rem", borderBottom: termsGlow ? "1px solid #800" : ""}}><a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/return-policy" target="_blank">利用規約</a>および<a style={{textDecoration: "underline", color:"#369"}} href="https://shop.well-mill.com/privacy-policy" target="_blank">プライバシーポリシー</a>に同意します</span></label></div>: null}
                 <button disabled={isSendingPayment || !stripe || !elements} id="submit">
                   <span id="button-text">
                     {isSendingPayment ? <img className={styles.spinner} src="spinner.svg" alt="Spinner"/> : "今すぐ払う"}

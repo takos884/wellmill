@@ -103,6 +103,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
       <span style={{width: "6rem"}}>gender</span>
       <span style={{width: "10rem"}}>birthday</span>
       <span style={{width: "20rem"}}>email</span>
+      <span style={{width: "4rem"}}>terms</span>
     </div>
   )
 
@@ -231,7 +232,8 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
           <span style={{width: "10rem"}}>{customer.lastNameKana}</span>
           <span style={{width: "6rem"}}>{customer.gender}</span>
           <span style={{width: "10rem"}}>{customer.birthday?.substring(0,10)}</span>
-          <span style={{width: "20rem", flexGrow: 1}}>{customer.email}</span>
+          <span style={{width: "20rem"}}>{customer.email}</span>
+          <span style={{width: "4rem", flexGrow: 1}}><input type="checkbox" checked={meaningfulPurchases > 0} disabled={true} /></span>
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayEdit(true)}} style={{width: "2rem"}}>✏️</span>
           <span onClick={() => {setCurrentCustomerKey(customer.customerKey || null); setDisplayDelete(true)}} style={{width: "2rem"}}>🗑️</span>
         </div>
