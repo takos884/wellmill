@@ -175,7 +175,6 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
     if (!customer.customerKey) return null;
     if (customer.customerKey <= 17) return null;
 
-    let meaningfulPurchases = 0
     const purchases = adminData.purchases.filter(p => p.customerKey === customer.customerKey);
     if (purchases.length === 0 && customer.firstName === null && customer.lastName === null && customer.email === null) return null;
 
@@ -191,10 +190,11 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
 
     if(searchString.length > 0 && !haystack.toLowerCase().includes(searchString.toLowerCase())) return null;
 
+    let meaningfulPurchases = 0
     const purchaseList = purchases.map(purchase => {
       const lineItems = adminData.lineItems.filter(li => li.purchaseKey === purchase.purchaseKey);
       const meaningfulLineItems = lineItems.length;
-      meaningfulPurchases = meaningfulPurchases + meaningfulLineItems === 0 ? 0 : 1;
+      meaningfulPurchases = meaningfulPurchases + (meaningfulLineItems === 0 ? 0 : 1);
 
       const billingAddress = adminData.addresses.find(a => a.addressKey === purchase.addressKey);
       const billingAddressInfo = (!billingAddress || lineItems.length === 0) ? null : (

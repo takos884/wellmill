@@ -102,7 +102,28 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   }, [currentAddressKey]);
 
   const addresses = adminData?.addresses;
-  if (!addresses) return <span>Loading...</span>;
+  if (!addresses) return <span>Loading addresses...</span>;
+  const purchases = adminData?.purchases;
+  if (!purchases) return <span>Loading purchases...</span>;
+  const lineItems = adminData?.lineItems
+  if (!lineItems) return <span>Loading lineItems...</span>;
+
+  const succeededAddressKeys = new Set<number>();
+  purchases.forEach(purchase => {
+    if (purchase.status === "succeeded" && purchase.addressKey) {
+      succeededAddressKeys.add(purchase.addressKey);
+    }
+  });
+
+  lineItems.forEach(lineItem => {
+    const purchase = purchases.find(p => p.purchaseKey === lineItem.purchaseKey);
+    if (purchase && purchase.status === "succeeded") {
+      succeededAddressKeys.add(lineItem.addressKey);
+    }
+  });
+
+  const filteredAddresses = addresses.filter(address => {return (address.addressKey && succeededAddressKeys.has(address.addressKey))});
+
   const customer = adminData?.customers.find(c => c.customerKey === currentAddressData?.customerKey);
 
   const header = (
@@ -121,7 +142,7 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   )
 
   let colourToggle = 0;
-  const addressList = addresses.map((address, index) => {
+  const addressList = filteredAddresses.map((address, index) => {
     colourToggle = 1 - colourToggle;
     const backgroundColor = colourToggle ? "#def" : "#fff";
     return (
