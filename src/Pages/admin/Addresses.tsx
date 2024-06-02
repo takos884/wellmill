@@ -81,6 +81,8 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   const [currentAddressData, setCurrentAddressData] = useState<any | null>(null);
   const [displayEdit, setDisplayEdit] = useState<boolean>(false);
   const [displayDelete, setDisplayDelete] = useState<boolean>(false);
+  const [searchString, setSearchString] = useState<string>("");
+
 
   useEffect(() => {
     if (window.location.search) {
@@ -143,6 +145,9 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
 
   let colourToggle = 0;
   const addressList = filteredAddresses.map((address, index) => {
+    let haystack = `${address.addressKey} ${address.customerKey} ${address.firstName} ${address.lastName} ${address.postalCode} ${address.pref} ${address.city} ${address.ward} ${address.address2} ${address.phoneNumber}`;
+    if (searchString && !haystack.toLowerCase().includes(searchString.toLowerCase())) return null;
+
     colourToggle = 1 - colourToggle;
     const backgroundColor = colourToggle ? "#def" : "#fff";
     return (
@@ -277,6 +282,7 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   return (
     <div style={{margin: "2rem"}}>
       <h1>Addresses</h1>
+      Search: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
       {header}
       {addressList}
       {displayEdit ? editModal : null}

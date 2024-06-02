@@ -371,6 +371,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   return (
     <div>
       <div style={{display:"flex", flexDirection:"column", margin: "2rem"}}>
+        <h1>Customers</h1>
         Search: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
         {customerList}
         {displayEdit ? editModal : null}
