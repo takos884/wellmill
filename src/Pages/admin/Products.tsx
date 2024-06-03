@@ -175,6 +175,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
 
   function handleFieldChange(field: ProductFieldKey, value: any) {
     if (!currentProductData) return;
+    if(field === "available") value = !currentProductData.available;
     const newProductData = {...currentProductData};
     newProductData[field] = value;
     setCurrentProductData(newProductData);
