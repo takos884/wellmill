@@ -126,6 +126,19 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
 
   const filteredAddresses = addresses.filter(address => {return (address.addressKey && succeededAddressKeys.has(address.addressKey))});
 
+  // Sorting function
+  const sortedAddresses = filteredAddresses.sort((a, b) => {
+    if (!a.addressKey && !b.addressKey) {
+      return 0;
+    } else if (!a.addressKey) {
+      return 1;
+    } else if (!b.addressKey) {
+      return -1;
+    } else {
+      return b.addressKey - a.addressKey;
+    }
+  });
+
   const customer = adminData?.customers.find(c => c.customerKey === currentAddressData?.customerKey);
 
   const header = (
@@ -144,7 +157,7 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   )
 
   let colourToggle = 0;
-  const addressList = filteredAddresses.map((address, index) => {
+  const addressList = sortedAddresses.map((address, index) => {
     let haystack = `${address.addressKey} ${address.customerKey} ${address.firstName} ${address.lastName} ${address.postalCode} ${address.pref} ${address.city} ${address.ward} ${address.address2} ${address.phoneNumber}`;
     if (searchString && !haystack.toLowerCase().includes(searchString.toLowerCase())) return null;
 

@@ -68,6 +68,8 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
 
   const header = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
+      <span style={{width: "4rem"}}>Key</span>
+      <span style={{width: "10rem"}}>ID</span>
       <span style={{width: "20rem"}}>Title</span>
       <span style={{width: "20rem"}}>Description</span>
       <span style={{width: "6rem"}}>Available</span>
@@ -83,6 +85,8 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
 
     return (
       <div key={index} style={{display:"flex", padding: "0.5rem", backgroundColor: backgroundColor}}>
+        <span style={{width: "4rem"}}>{product.productKey}</span>
+        <span style={{width: "10rem"}}>{product.id}</span>
         <span style={{width: "20rem"}}>{product.title}</span>
         <span style={{width: "20rem", maxHeight: "15rem", overflow: "hidden"}}>{product.description}</span>
         <span style={{width: "6rem"}}>{product.available ? "Yes" : "No"}</span>

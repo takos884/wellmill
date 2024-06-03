@@ -651,7 +651,14 @@ app.post('/adminProductCreate', async (req, res) => {
   query = "INSERT INTO product (title, description, available, type, price, taxRate, discountRate) VALUES (?, ?, ?, ?, ?, ?, ?)";
   values = [title, description, available, type, price, taxRate, discountRate];
   try {
-    await pool.query(query, values);
+    const [newProductResult] = await pool.query(query, values);
+
+    const newProductKey = newProductResult.insertId;
+    const newProductId = `S${newProductKey.toString().padStart(5, '0')}`;
+    const updateQuery = "UPDATE product SET id = ? WHERE productKey = ?";
+    const updateValues = [newProductId, newProductKey];
+    await pool.query(updateQuery, updateValues);
+
     fetchProducts(); // Update the products json file with the new product data
     return res.json({ success: true });
   } catch(error) {

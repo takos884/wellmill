@@ -82,6 +82,7 @@ const MyPage = () => {
       <span className="topHeader">マイページ</span>
       <div className={styles.content}>
         <span className={styles.header}>{user?.guest === false ? `${user.lastName} ${user.firstName} 様のマイページ` : "購入履歴確認"} </span>
+        <span style={{fontSize: "1rem", color: "#af3e92", fontWeight: 700}}>会員番号: NV{user.customerKey}</span>
         <div className={styles.linksGrid}>
           {user?.guest === false ? <Link to="/sample-registration"><span className={styles.link}>検体IDの登録</span>{suggestRegister ? suggestRegisterMessage : null}</Link> : null}
           {false && (<Link to="/result-list"><span className={styles.link}>検査結果の一覧</span></Link>)}
