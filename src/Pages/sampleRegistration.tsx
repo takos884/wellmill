@@ -119,7 +119,12 @@ function SampleRegistration() {
 
   //console.dir(sampleBackupData);
 
-  const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
+  const subdomain = window.location.hostname.split('.')[0];
+  const staging = subdomain === 'stage';
+
+  //const forceSignin = (!userLoading && !user?.customerKey && kentaiIdLock);
+  //const forceSignin = staging ? (!userLoading && !user?.firstName) : (!userLoading && !user?.customerKey && kentaiIdLock);
+  const forceSignin = (!userLoading && !user?.firstName);
   const forceSigninMessage = (
     <>
       検体ID登録の前にマイページの<br/>

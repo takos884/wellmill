@@ -38,6 +38,7 @@ export type Product = {
     type: number,
     images: Image[],
     coupons?: Coupon[],
+    productOrder: number,
 }
 
 export type Image = {

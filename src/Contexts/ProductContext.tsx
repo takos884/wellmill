@@ -107,6 +107,7 @@ export function ProductProvider({ children }: ProductProviderProps) {
         discountValue: Number(rawProduct.discountValue) || 0,
         type: Number(rawProduct.type) || 0,
         images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
+        productOrder: Number(rawProduct.productOrder) || 0,
       };
   
       return product;

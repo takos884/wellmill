@@ -168,7 +168,8 @@ async function fetchProducts() {
             discountRate: row.discountRate,
             discountValue: row.discountValue,
             type: row.type,
-            images: []
+            images: [],
+            productOrder: row.productOrder,
           };
         }
 

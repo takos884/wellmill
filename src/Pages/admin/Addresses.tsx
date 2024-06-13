@@ -85,11 +85,12 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
 
 
   useEffect(() => {
+    let queryStringToken = localStorage.getItem('token') || "";
     if (window.location.search) {
       const params = new URLSearchParams(window.location.search);
-      const queryStringToken = params.get('token');
-      setToken(queryStringToken || "");
+      if (params.get('token')) { queryStringToken = params.get('token') || ""; }
     }
+    setToken(queryStringToken || "");
   }, []);
 
   useEffect(() => {

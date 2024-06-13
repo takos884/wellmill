@@ -93,11 +93,12 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   }
 
   useEffect(() => {
+    let queryStringToken = localStorage.getItem('token') || "";
     if (window.location.search) {
       const params = new URLSearchParams(window.location.search);
-      const queryStringToken = params.get('token');
-      setToken(queryStringToken || "");
+      if (params.get("token")) { queryStringToken = params.get('token') || ""; }
     }
+    setToken(queryStringToken);
   }, []);
 
   useEffect(() => {
@@ -186,7 +187,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
 
     for (const purchase of purchases) {
       const billingAddress = adminData.addresses.find(a => a.addressKey === purchase.addressKey);
-      haystack = haystack + (billingAddress?.firstName || "") + (billingAddress?.lastName || "") + (billingAddress?.postalCode || "") + (billingAddress?.pref || "") + (billingAddress?.city || "") + (billingAddress?.ward || "") + (billingAddress?.address2 || "") + (billingAddress?.phoneNumber || "");
+      haystack = haystack + (purchase.email) + (billingAddress?.firstName || "") + (billingAddress?.lastName || "") + (billingAddress?.postalCode || "") + (billingAddress?.pref || "") + (billingAddress?.city || "") + (billingAddress?.ward || "") + (billingAddress?.address2 || "") + (billingAddress?.phoneNumber || "");
       const lineItems = adminData.lineItems.filter(li => li.purchaseKey === purchase.purchaseKey);
       for (const lineItem of lineItems) {
         haystack = haystack + (lineItem.firstName || "") + (lineItem.lastName || "") + (lineItem.postalCode || "") + (lineItem.pref || "") + (lineItem.city || "") + (lineItem.ward || "") + (lineItem.address2 || "") + (lineItem.phoneNumber || "");

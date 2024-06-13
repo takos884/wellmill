@@ -28,7 +28,7 @@ const emptyCoupon: CouponFields = {
 
 type CouponFieldKey = keyof CouponFields;
 
-const token = window.location.search ? new URLSearchParams(window.location.search).get('token') || "" : "";
+const token = window.location.search ? new URLSearchParams(window.location.search).get('token') || "" : localStorage.getItem('token') || "";
 
 export default function Coupons({ adminData, loadAdminData }: CouponsProps) {
   const [showAddCoupon, setShowAddCoupon] = useState<boolean>(false);

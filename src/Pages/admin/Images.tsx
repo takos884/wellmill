@@ -17,7 +17,7 @@ type ImageFields = {
 
 const host = window.location.hostname;
 const subdomain = host.split('.')[0];
-const token = window.location.search ? new URLSearchParams(window.location.search).get('token') || "" : "";
+const token = window.location.search ? new URLSearchParams(window.location.search).get('token') || "" : localStorage.getItem('token') || "";
 
 export default function Images({ adminData, loadAdminData }: ImagesProps) {
   const [showAddImage, setShowAddImage] = useState<boolean>(false);
