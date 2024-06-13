@@ -19,7 +19,8 @@ type FormData = {
   message: string;
 };
 
-function Contact() {
+export default function Contact() {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -28,41 +29,64 @@ function Contact() {
     message: ''
   });
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     setFormData(prev => ({
         ...prev,
         [name]: value
     }));
+    setErrorMessage(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const endpointSubdomain = window.location.hostname.startsWith('stage') ? "stage" : "shop";
 
-    try {
-        const response = await fetch(`https://${endpointSubdomain}.well-mill.com/api/sendEmail`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        });
+    // Check for empty required fields
+    const requiredFields: { [key: string]: string } = {
+      name: "お名前",
+      email: "メールアドレス",
+      phone: "電話番号",
+      inquiry: "お問い合わせ項目",
+      message: "お問い合わせ内容"
+    };
 
-        if (response.ok) {
-            alert("Email sent successfully");
-            setFormData({  // Reset form
-                name: '',
-                email: '',
-                phone: '',
-                inquiry: '',
-                message: ''
-            });
-        } else {
-            alert('Failed to send email');
-        }
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (!formData[key as keyof FormData]) {
+        setErrorMessage(`フィールド ${value} を空にすることはできません`);
+        return;
+      }
+    }
+
+    const checkbox = document.getElementById('customCheckbox') as HTMLInputElement;
+    if (!checkbox?.checked) {
+      setErrorMessage("プライバシーポリシーに同意する必要があります");
+      return;
+    } 
+   
+    try {
+      const response = await fetch(`https://${endpointSubdomain}.well-mill.com/api/sendEmail`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert("Email sent successfully");
+        setFormData({  // Reset form
+            name: '',
+            email: '',
+            phone: '',
+            inquiry: '',
+            message: ''
+        });
+      } else {
+          alert('Failed to send email');
+      }
     } catch (error) {
-        alert('An error occurred');
+      alert('An error occurred');
     }
   };
 
@@ -117,11 +141,11 @@ function Contact() {
           </label>
         </div>
 
+        {errorMessage ? <span className={styles.errorMessage}>{errorMessage}</span> : null}
+
         <button onClick={handleSubmit}>送信</button>
       </div>
       <Footer />
     </>
   )
 }
-
-export default Contact

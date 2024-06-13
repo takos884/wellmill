@@ -23,6 +23,12 @@ span.finePrint {
   color: #666;
 }
 
+span.errorMessage {
+  font-size: 1.25rem;
+  color: #b33;
+  margin-top: 1rem;
+}
+
 div.formGrid {
   display: grid;
   width: 40rem;

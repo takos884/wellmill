@@ -2443,6 +2443,12 @@ app.post('/cancelPurchase', async (req, res) => {
     // await connection.query(updatePurchaseQuery, [customerKey, purchaseKey]);
     // console.log(`Query: ${updatePurchaseQuery}, customerKey: ${customerKey}, purchaseKey: ${purchaseKey}`);
 
+    if(stageSubdomain) {
+      // Save refund time
+      const refundTimePurchaseQuery = "UPDATE purchase SET refundTime = CURRENT_TIMESTAMP, status = 'canceled' WHERE customerKey = ? AND purchaseKey = ?";
+      await connection.query(refundTimePurchaseQuery, [customerKey, purchaseKey]);
+    }
+
     // Commit the transaction if both queries succeed
     await connection.commit();
   } catch (error) {
