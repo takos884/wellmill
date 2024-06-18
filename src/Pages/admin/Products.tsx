@@ -71,15 +71,16 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
 
   const header = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width: "4rem"}}>Key</span>
+      <span style={{width:  "4rem"}}>キー</span>
       <span style={{width: "10rem"}}>ID</span>
-      <span style={{width: "20rem"}}>Title</span>
-      <span style={{width: "20rem"}}>Description</span>
-      <span style={{width: "6rem"}}>Available</span>
-      <span style={{width: "6rem"}}>Type</span>
-      <span style={{width: "6rem"}}>Price</span>
-      <span style={{width: "6rem"}}>Tax Rate</span>
-      <span style={{width: "6rem"}}>Discount Rate</span>
+      <span style={{width: "20rem"}}>タイトル</span>
+      <span style={{width: "20rem"}}>説明</span>
+      <span style={{width:  "6rem"}}>利用可能</span>
+      <span style={{width:  "4rem"}}>表示順</span>
+      <span style={{width:  "6rem"}}>タイプ</span>
+      <span style={{width:  "6rem"}}>価格</span>
+      <span style={{width:  "6rem"}}>税率</span>
+      <span style={{width:  "6rem"}}>割引率</span>
     </div>
   );
 
@@ -88,16 +89,17 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
 
     return (
       <div key={index} style={{display:"flex", padding: "0.5rem", backgroundColor: backgroundColor}}>
-        <span style={{width: "4rem"}}>{product.productKey}</span>
+        <span style={{width:  "4rem"}}>{product.productKey}</span>
         <span style={{width: "10rem"}}>{product.id}</span>
         <span style={{width: "20rem"}}>{product.title}</span>
         <span style={{width: "20rem", maxHeight: "15rem", overflow: "hidden"}}>{product.description}</span>
-        <span style={{width: "6rem"}}>{product.available ? "Yes" : "No"}</span>
-        <span style={{width: "6rem"}}>{product.type}</span>
-        <span style={{width: "6rem"}}>{product.price}</span>
-        <span style={{width: "6rem"}}>{product.taxRate * 100}%</span>
-        <span style={{width: "6rem"}}>{product.discountRate ? `${product.discountRate * 100}%` : "-"} </span>
-        <span style={{width: "2rem"}} onClick={() => {
+        <span style={{width:  "6rem"}}>{product.available ? "✅" : "❌"}</span>
+        <span style={{width:  "4rem"}}>{product.productOrder}</span>
+        <span style={{width:  "6rem"}}>{product.type}</span>
+        <span style={{width:  "6rem"}}>{product.price}</span>
+        <span style={{width:  "6rem"}}>{product.taxRate * 100}%</span>
+        <span style={{width:  "6rem"}}>{product.discountRate ? `${product.discountRate * 100}%` : "-"} </span>
+        <span style={{width:  "2rem"}} onClick={() => {
           setCurrentProductKey(product.productKey);
           setSaveEndpoint("adminProductUpdate");
           setDisplayEdit(true);
