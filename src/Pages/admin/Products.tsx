@@ -11,6 +11,7 @@ type ProductFields = {
   title: string;
   description: string;
   available: boolean;
+  displayOrder: number;
   price: number;
   taxRate: number;
   type: number;
@@ -22,6 +23,7 @@ const emptyProduct: ProductFields = {
   title: "",
   description: "",
   available: true,
+  displayOrder: 0,
   price: 0,
   taxRate: 0,
   type: 0,
@@ -119,31 +121,35 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem", width: "60rem", alignItems: "center"}}>
         <h2>Edit Product</h2>
         <div style={rowStyle}>
-          <span style={spanStyle}>Title:</span>
+          <span style={spanStyle}>製品タイトル:</span>
           <input style={textFieldStyle} type="text" onChange={(event) => {handleFieldChange("title", event.target.value)}} value={currentProductData?.title} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Description:</span>
+          <span style={spanStyle}>製品説明:</span>
           <textarea style={{width: "40rem", height: "10rem"}} onChange={(event) => {handleFieldChange("description", event.target.value)}} value={currentProductData?.description} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Available:</span>
+          <span style={spanStyle}>Shopに展示する:</span>
           <input style={checkboxStyle} type="checkbox" onChange={(event) => {handleFieldChange("available", event.target.value)}} checked={currentProductData?.available} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Price:</span>
+          <span style={spanStyle}>表示順:</span>
+          <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("displayOrder", event.target.value)}} value={currentProductData?.displayOrder} />
+        </div>
+        <div style={rowStyle}>
+          <span style={spanStyle}>価格（割引後）:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("price", event.target.value)}} value={currentProductData?.price} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Tax Rate:</span>
+          <span style={spanStyle}>税率:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("taxRate", event.target.value)}} value={currentProductData?.taxRate} />*
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Type:</span>
+          <span style={spanStyle}>種類:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("type", event.target.value)}} value={currentProductData?.type} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Discount Rate:</span>
+          <span style={spanStyle}>割引率:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("discountRate", event.target.value)}} value={currentProductData?.discountRate} />*
         </div>
         <span>* 0.05 = 5% | 0.1 = 10% | 0.35 = 35% </span>

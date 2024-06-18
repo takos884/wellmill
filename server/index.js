@@ -688,13 +688,14 @@ app.post('/adminProductUpdate', async (req, res) => {
   const productKey = product.productKey;
   const description = product.description;
   const available = product.available;
+  const displayOrder = product.displayOrder;
   const price = product.price;
   const taxRate = product.taxRate;
   const discountRate = product.discountRate ? product.discountRate : null; // 0 (or blank) means "null", it's not a 0% discount, it's no discount
   const type = product.type;
 
-  query = "UPDATE product SET description = ?, available = ?, price = ?, taxRate = ?, discountRate = ?, type = ? WHERE productKey = ?";
-  values = [description, available, price, taxRate, discountRate, type, productKey];
+  query = "UPDATE product SET description = ?, available = ?, displayOrder = ?, price = ?, taxRate = ?, discountRate = ?, type = ? WHERE productKey = ?";
+  values = [description, available, displayOrder, price, taxRate, discountRate, type, productKey];
   console.log("Update query:")
   console.log(query)
   console.log("Update values:")
