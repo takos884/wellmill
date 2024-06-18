@@ -11,7 +11,7 @@ type ProductFields = {
   title: string;
   description: string;
   available: boolean;
-  displayOrder: number;
+  productOrder: number;
   price: number;
   taxRate: number;
   type: number;
@@ -23,7 +23,7 @@ const emptyProduct: ProductFields = {
   title: "",
   description: "",
   available: true,
-  displayOrder: 0,
+  productOrder: 0,
   price: 0,
   taxRate: 0,
   type: 0,
@@ -134,7 +134,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
         </div>
         <div style={rowStyle}>
           <span style={spanStyle}>表示順:</span>
-          <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("displayOrder", event.target.value)}} value={currentProductData?.displayOrder} />
+          <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("productOrder", event.target.value)}} value={currentProductData?.productOrder} />
         </div>
         <div style={rowStyle}>
           <span style={spanStyle}>価格（割引後）:</span>
@@ -155,11 +155,11 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
         <span>* 0.05 = 5% | 0.1 = 10% | 0.35 = 35% </span>
         <button onClick={() => {
           handleProductUpdate();
-        }}>Save</button>
+        }}>保存</button>
         <button onClick={() => {
           setCurrentProductKey(null);
           setDisplayEdit(false);
-        }}>Cancel</button>
+        }}>キャンセル</button>
       </div>
     </div>
   );
@@ -167,15 +167,15 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
   const deleteModal = (
     <div style={{position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)"}}>
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem", width: "40rem", alignItems: "center"}}>
-        <h2>Delete Product</h2>
-        <span>Are you sure you want to delete this product?</span>
+        <h2>製品を削除</h2>
+        <span>この製品を削除してもよろしいですか?</span>
         <button onClick={() => {
           handleProductDelete();
-        }}>Yes</button>
+        }}>はい</button>
         <button onClick={() => {
           setCurrentProductKey(null);
           setDisplayDelete(false);
-        }}>No</button>
+        }}>いいえ</button>
       </div>
     </div>
   );

@@ -224,7 +224,7 @@ app.post('/adminFetch', async (req, res) => {
   if(credentials.token && !tokenRegex.test(credentials.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + credentials.token);
   const token = credentials.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const returnData = {};
 
@@ -314,7 +314,7 @@ app.post('/adminCustomerUpdate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const customerKey = requestData.customerKey;
   const firstName = requestData.firstName;
@@ -355,7 +355,7 @@ app.post('/adminCustomerDelete', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const customerKey = requestData.customerKey;
 
@@ -383,7 +383,7 @@ app.post('/adminAddressUpdate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const addressKey = requestData.addressKey;
 
@@ -422,7 +422,7 @@ app.post('/adminAddressDelete', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const addressKey = requestData.addressKey;
 
@@ -451,7 +451,7 @@ app.post('/adminImageUpload', upload.single("image"), async (req, res) => {
   const tokenRegex = /^[0-9a-z]+$/i;
   if(token && !tokenRegex.test(token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + token);
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   if (!file) {
     return res.status(400).send("No file uploaded");
@@ -484,7 +484,7 @@ app.post('/adminImageUpdate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const imageKey = requestData.imageKey;
   const productKey = requestData.productKey;
@@ -529,7 +529,7 @@ app.post('/adminImageDelete', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const imageKey = requestData.imageKey;
 
@@ -574,7 +574,7 @@ app.post('/adminCouponCreate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const coupon = requestData.coupon;
   const code = coupon.code;
@@ -609,7 +609,7 @@ app.post('/adminCouponDelete', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const couponKey = requestData.couponKey;
 
@@ -638,7 +638,7 @@ app.post('/adminProductCreate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const product = requestData.product;
   const title = product.title;
@@ -682,20 +682,27 @@ app.post('/adminProductUpdate', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const product = requestData.product;
-  const productKey = product.productKey;
-  const description = product.description;
-  const available = product.available;
-  const displayOrder = product.displayOrder;
-  const price = product.price;
-  const taxRate = product.taxRate;
-  const discountRate = product.discountRate ? product.discountRate : null; // 0 (or blank) means "null", it's not a 0% discount, it's no discount
-  const type = product.type;
+  if(!product) { return res.status(400).send("Missing product data"); }
 
-  query = "UPDATE product SET description = ?, available = ?, displayOrder = ?, price = ?, taxRate = ?, discountRate = ?, type = ? WHERE productKey = ?";
-  values = [description, available, displayOrder, price, taxRate, discountRate, type, productKey];
+  const productKey = product.productKey;
+  if(!productKey) { return res.status(400).send("Missing product key"); }
+
+  const title = product.title || "";
+  const description = product.description || "";
+  const available = product.available || 0;
+  const productOrder = product.productOrder || 1000;
+  const price = product.price;
+  if(!price) { return res.status(400).send("Missing price"); }
+
+  const taxRate = product.taxRate || 0.1;
+  const discountRate = product.discountRate ? product.discountRate : null; // 0 (or blank) means "null", it's not a 0% discount, it's no discount
+  const type = product.type || 1;
+
+  query = "UPDATE product SET title = ?, description = ?, available = ?, productOrder = ?, price = ?, taxRate = ?, discountRate = ?, type = ? WHERE productKey = ?";
+  values = [title, description, available, productOrder, price, taxRate, discountRate, type, productKey];
   console.log("Update query:")
   console.log(query)
   console.log("Update values:")
@@ -724,7 +731,7 @@ app.post('/adminProductDelete', async (req, res) => {
   if(requestData.token && !tokenRegex.test(requestData.token)) { return res.status(400).send("Malformed token"); }
   console.log("Clean Token: " + requestData.token);
   const token = requestData.token;
-  if (token !== "well828984") { return res.status(401).send("Unauthorized"); }
+  if (token !== process.env.ADMIN_TOKEN) { return res.status(401).send("Unauthorized"); }
 
   const productKey = requestData.productKey;
 
