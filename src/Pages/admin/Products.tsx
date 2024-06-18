@@ -66,7 +66,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
       setCurrentProductData(emptyProduct);
       setSaveEndpoint("adminProductCreate");
       setDisplayEdit(true);
-    }}>Add Product</button>
+    }}>商品を追加</button>
   );
 
   const header = (
