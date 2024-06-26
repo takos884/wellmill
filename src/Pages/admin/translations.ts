@@ -14,13 +14,20 @@ const translations = [
     { id: 'loadingLineItems', en: 'Loading line items...', jp: '行アイテムを読み込んでいます...' },
     { id: 'loadingImages', en: 'Loading images...', jp: '画像を読み込んでいます...' },
     { id: 'loadingProducts', en: 'Loading products...', jp: '商品を読み込んでいます...' },
+
     { id: 'cancel', en: 'Cancel', jp: 'キャンセル' },
     { id: 'delete', en: 'Delete', jp: '削除' },
     { id: 'search', en: 'Search', jp: '検索' },
     { id: 'save', en: 'Save', jp: '保存' },
     { id: 'upload', en: 'Upload', jp: 'アップロード' },
     { id: 'create', en: 'Create', jp: '作成' },
+    { id: 'search', en: 'Search', jp: '検索' },
     { id: 'none', en: 'None', jp: 'なし' },
+
+    { id: 'key', en: 'Key', jp: 'キー' },
+    { id: 'customerKey', en: 'Customer key', jp: '顧客キー' },
+    { id: 'addressKey', en: 'Address key', jp: '住所キー' },
+    { id: 'productKey', en: 'Product key', jp: '商品キー' },
 
 
 
@@ -44,7 +51,6 @@ const translations = [
     /* Customers */
     { id: 'customers', en: 'Customers', jp: '顧客' },
     { id: 'purchaseNumber', en: 'Purchase number', jp: '購入数' },
-    { id: 'key', en: 'Key', jp: 'キー' },
     { id: 'firstName', en: 'First name', jp: '名' },
     { id: 'lastName', en: 'Last name', jp: '姓' },
     { id: 'firstNameKana', en: 'Phonetic first name', jp: '名（カナ）' },
@@ -70,7 +76,6 @@ const translations = [
     { id: 'purchaseTotal', en: 'Purchase total', jp: '購入合計' },
     { id: 'couponDiscount', en: 'Coupon discount', jp: 'クーポン割引' },
 
-    { id: 'productKey', en: 'Product key', jp: '商品キー' },
     { id: 'productTitle', en: 'Product title', jp: '商品タイトル' },
     { id: 'productQuantity', en: 'Product quantity', jp: '商品数量' },
     { id: 'unitPrice', en: 'Unit price', jp: '単価' },
@@ -84,14 +89,13 @@ const translations = [
 
     /* Addresses */
     { id: 'editAddress', en: 'Edit address', jp: '住所を編集' },
-    { id: 'addressKey', en: 'Address key', jp: '住所キー' },
     { id: 'phone', en: 'Phone', jp: '電話' },
     { id: 'address', en: 'Address', jp: '住所' },
     { id: 'postalCode', en: 'Zip code', jp: '郵便番号' },
     { id: 'pref', en: 'Prefecture', jp: '都道府県' },
     { id: 'city', en: 'City', jp: '市' },
     { id: 'ward', en: 'Ward', jp: '区' },
-    { id: 'building', en: 'Building', jp: '建物' },
+    { id: 'building', en: 'Building', jp: 'それ以降の住所' },
     { id: 'phoneNumber', en: 'Phone number', jp: '電話番号' },
 
     { id: 'shippingAddress', en: 'Shipping address', jp: '配送先住所' },

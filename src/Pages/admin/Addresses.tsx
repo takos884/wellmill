@@ -146,15 +146,15 @@ export default function Addresses({ adminData, loadAdminData, language }: Addres
 
   const header = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width:  "6rem"}}>{getText("key", language)}</span>
-      <span style={{width:  "6rem"}}>{getText("number", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("addressKey", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("customerKey", language)}</span>
       <span style={{width: "10rem"}}>{getText("firstName", language)}</span>
       <span style={{width: "10rem"}}>{getText("lastName", language)}</span>
       <span style={{width:  "6rem"}}>{getText("postalCode", language)}</span>
       <span style={{width: "10rem"}}>{getText("pref", language)}</span>
-      <span style={{width: "10rem"}}>{getText("city", language)}</span>
       <span style={{width: "10rem"}}>{getText("ward", language)}</span>
-      <span style={{width: "20rem"}}>{getText("address2", language)}</span>
+      <span style={{width: "10rem"}}>{getText("city", language)}</span>
+      <span style={{width: "20rem"}}>{getText("building", language)}</span>
       <span style={{width: "10rem"}}>{getText("phoneNumber", language)}</span>
     </div>
   )
@@ -168,14 +168,14 @@ export default function Addresses({ adminData, loadAdminData, language }: Addres
     const backgroundColor = colourToggle ? "#def" : "#fff";
     return (
       <div key={index} style={{display:"flex", padding: "0.5rem", backgroundColor}}>
-        <span style={{width: "6rem"}}>{address.addressKey}</span>
-        <span style={{width: "6rem"}}>{address.customerKey}</span>
-        <span style={{width: "10rem"}}>{address.firstName}</span>
+        <span style={{width:  "6rem"}}>{address.addressKey}</span>
+        <span style={{width:  "6rem"}}>{address.customerKey}</span>
         <span style={{width: "10rem"}}>{address.lastName}</span>
-        <span style={{width: "6rem"}}>{address.postalCode}</span>
+        <span style={{width: "10rem"}}>{address.firstName}</span>
+        <span style={{width:  "6rem"}}>{address.postalCode}</span>
         <span style={{width: "10rem"}}>{address.pref}</span>
-        <span style={{width: "10rem"}}>{address.city}</span>
         <span style={{width: "10rem"}}>{address.ward}</span>
+        <span style={{width: "10rem"}}>{address.city}</span>
         <span style={{width: "20rem"}}>{address.address2}</span>
         <span style={{width: "10rem", flexGrow: 1}}>{address.phoneNumber}</span>
         <span onClick={() => {setCurrentAddressKey(address.addressKey || null); setDisplayEdit(true)}} style={{width: "2rem"}}>✏️</span>
@@ -200,14 +200,14 @@ export default function Addresses({ adminData, loadAdminData, language }: Addres
       <div style={{position: "fixed", top: "10%", left: "10%", width: "80%", backgroundColor: "#fff", padding: "2rem"}}>
         <h2>{getText("editAddress", language)}</h2>
         <h3 style={spanStyle}>{getText("addressKey", language)}: {currentAddressData?.addressKey || "Unknown"}</h3>
-        <span style={{display:"flex", marginLeft: "1rem", paddingBottom:"1rem"}}>Customer - Key: {customer?.customerKey || "Unknown"} | {customer?.lastName || ""}, {customer?.firstName || ""}</span>
-        <div style={rowStyle}>
-          <span style={spanStyle}>{getText("firstName", language)}:</span>
-          <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("firstName", event.target.value)}} value={currentAddressData?.firstName || ""} />
-        </div>
+        <span style={{display:"flex", marginLeft: "1rem", paddingBottom:"1rem"}}>{getText("customerKey",language)}: {customer?.customerKey || "Unknown"} {customer?.lastName || ""} {customer?.firstName || ""}</span>
         <div style={rowStyle}>
           <span style={spanStyle}>{getText("lastName", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("lastName", event.target.value)}} value={currentAddressData?.lastName || ""} />
+        </div>
+        <div style={rowStyle}>
+          <span style={spanStyle}>{getText("firstName", language)}:</span>
+          <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("firstName", event.target.value)}} value={currentAddressData?.firstName || ""} />
         </div>
         <div style={rowStyle}>
           <span style={spanStyle}>{getText("postalCode", language)}:</span>
@@ -218,12 +218,12 @@ export default function Addresses({ adminData, loadAdminData, language }: Addres
           {prefSelect}
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>{getText("city", language)}:</span>
-          <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("city", event.target.value)}} value={currentAddressData?.city || ""} />
-        </div>
-        <div style={rowStyle}>
           <span style={spanStyle}>{getText("ward", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("ward", event.target.value)}} value={currentAddressData?.ward || ""} />
+        </div>
+        <div style={rowStyle}>
+          <span style={spanStyle}>{getText("city", language)}:</span>
+          <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("city", event.target.value)}} value={currentAddressData?.city || ""} />
         </div>
         <div style={rowStyle}>
           <span style={spanStyle}>{getText("building", language)}:</span>
@@ -297,8 +297,8 @@ export default function Addresses({ adminData, loadAdminData, language }: Addres
 
   return (
     <div style={{margin: "2rem"}}>
-      <h1>Addresses</h1>
-      Search: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
+      <h1>{getText("addresses", language)}</h1>
+      {getText("search", language)}: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
       {header}
       {addressList}
       {displayEdit ? editModal : null}
