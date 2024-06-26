@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { AdminDataType, Customer } from "../../types";
 import CallAPI from "../../Utilities/CallAPI";
+import { LanguageType, getText } from "./translations";
 
 type CustomersProps = {
   adminData: AdminDataType | null;
   loadAdminData: () => void;
+  language: LanguageType;
 };
 
 type CustomerFields = {
@@ -44,7 +46,7 @@ const buttonStyle = {
   justifyContent: "center",
 };
 
-export default function Customers({ adminData, loadAdminData }: CustomersProps) {
+export default function Customers({ adminData, loadAdminData, language }: CustomersProps) {
   const [token , setToken] = useState<string>("");
   const [currentCustomerKey, setCurrentCustomerKey] = useState<number | null>(null);
   const [currentCustomerData, setCurrentCustomerData] = useState<any | null>(null);
@@ -109,7 +111,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   }, [currentCustomerKey]);
 
   const customers = adminData?.customers;
-  if (!customers) return <span>Loading...</span>;
+  if (!customers) return <span>{getText("loading", language)}</span>;
 
   const customersSorted = customers.sort((a, b) => {
     const { fieldName, desc } = customerSortField;
@@ -132,40 +134,40 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
 
   const customerHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width:  "6rem"}}>購入数</span>
-      <span style={{width:  "4rem"}} onClick={handleSortClick} data-name="customerKey">{customerSortField.fieldName === "customerKey" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }Key</span>
-      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstName">{customerSortField.fieldName === "firstName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }firstName</span>
-      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastName">{customerSortField.fieldName === "lastName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }lastName</span>
-      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstNameKana">{customerSortField.fieldName === "firstNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }firstNameKana</span>
-      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastNameKana">{customerSortField.fieldName === "lastNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }lastNameKana</span>
-      <span style={{width:  "6rem"}} onClick={handleSortClick} data-name="gender">{customerSortField.fieldName === "gender" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }gender</span>
-      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="birthday">{customerSortField.fieldName === "birthday" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }birthday</span>
-      <span style={{width: "20rem"}} onClick={handleSortClick} data-name="email">{customerSortField.fieldName === "email" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }email</span>
-      <span style={{width:  "4rem"}}>terms</span>
+      <span style={{width:  "6rem"}}>{getText("purchaseNumber", language)}</span>
+      <span style={{width:  "4rem"}} onClick={handleSortClick} data-name="customerKey">{customerSortField.fieldName === "customerKey" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("key", language)}</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstName">{customerSortField.fieldName === "firstName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("firstName", language)}</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastName">{customerSortField.fieldName === "lastName" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("lastName", language)}</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="firstNameKana">{customerSortField.fieldName === "firstNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("firstNameKana", language)}</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="lastNameKana">{customerSortField.fieldName === "lastNameKana" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("lastNameKana", language)}</span>
+      <span style={{width:  "6rem"}} onClick={handleSortClick} data-name="gender">{customerSortField.fieldName === "gender" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("gender", language)}</span>
+      <span style={{width: "10rem"}} onClick={handleSortClick} data-name="birthday">{customerSortField.fieldName === "birthday" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("birthday", language)}</span>
+      <span style={{width: "20rem"}} onClick={handleSortClick} data-name="email">{customerSortField.fieldName === "email" ? customerSortField.desc === true ? "▲ " : "▼ " : "■ " }{getText("email", language)}</span>
+      <span style={{width:  "4rem"}}>{getText("termsOfService", language)}</span>
     </div>
   )
 
   const purchaseHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#4bc387"}}>
-      <span style={{width:  "6rem"}}>商品の数量</span>
+      <span style={{width:  "6rem"}}>{getText("productsQuantity", language)}商品の数量</span>
       <span style={{width: "20rem"}}>Stripe ID</span>
-      <span style={{width: "15rem"}}>Email</span>
-      <span style={{width: "10rem"}}>Payment Status</span>
-      <span style={{width: "10rem"}}>First Add</span>
-      <span style={{width: "10rem"}}>Purchased</span>
-      <span style={{width: "10rem"}}>Refunded</span>
-      <span style={{width: "10rem"}}>Total</span>
-      <span style={{width: "10rem"}}>Coupon discount</span>
+      <span style={{width: "15rem"}}>{getText("email", language)}</span>
+      <span style={{width: "10rem"}}>{getText("paymentStatus", language)}</span>
+      <span style={{width: "10rem"}}>{getText("firstAddedAt", language)}</span>
+      <span style={{width: "10rem"}}>{getText("purchasedAt", language)}</span>
+      <span style={{width: "10rem"}}>{getText("refundedAt", language)}</span>
+      <span style={{width: "10rem"}}>{getText("purchaseTotal", language)}</span>
+      <span style={{width: "10rem"}}>{getText("couponDiscount", language)}</span>
     </div>
   );
 
   const lineItemHeader = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#ebeb47"}}>
-      <span style={{width:  "6rem"}}>Product</span>
-      <span style={{width: "25rem"}}>Title</span>
-      <span style={{width: "10rem"}}>Quantity</span>
-      <span style={{width: "10rem"}}>Unit Price</span>
-      <span style={{width: "10rem"}}>Shipping Status</span>
+      <span style={{width:  "6rem"}}>{getText("productKey", language)}</span>
+      <span style={{width: "25rem"}}>{getText("productTitle", language)}</span>
+      <span style={{width: "10rem"}}>{getText("productQuantity", language)}</span>
+      <span style={{width: "10rem"}}>{getText("unitPrice", language)}</span>
+      <span style={{width: "10rem"}}>{getText("shippingStatus", language)}</span>
     </div>
   );
 
@@ -179,7 +181,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
     let haystack = (customer.firstName || "") + (customer.lastName || "") + (customer.firstNameKana || "") + (customer.lastNameKana || "") + (customer.email || "");
 
     const defaultAddress = adminData.addresses.find(a => a.customerKey === customer.customerKey && a.defaultAddress);
-    const defaultAddressElement = defaultAddress ? (<div style={{backgroundColor:"#def"}}>Current default address: {(defaultAddress.firstName || "")} {(defaultAddress.lastName || "")} {(defaultAddress.postalCode || "")} {(defaultAddress.pref || "")} {(defaultAddress.city || "")} {(defaultAddress.ward || "")} {(defaultAddress.address2 || "")} {(defaultAddress.phoneNumber || "")}</div>) : null;
+    const defaultAddressElement = defaultAddress ? (<div style={{backgroundColor:"#def"}}>{getText("currentDefaultAddress", language)}: {(defaultAddress.firstName || "")} {(defaultAddress.lastName || "")} {(defaultAddress.postalCode || "")} {(defaultAddress.pref || "")} {(defaultAddress.city || "")} {(defaultAddress.ward || "")} {(defaultAddress.address2 || "")} {(defaultAddress.phoneNumber || "")}</div>) : null;
     haystack += (defaultAddress?.firstName || "") + (defaultAddress?.lastName || "") + (defaultAddress?.postalCode || "") + (defaultAddress?.pref || "") + (defaultAddress?.city || "") + (defaultAddress?.ward || "") + (defaultAddress?.address2 || "") + (defaultAddress?.phoneNumber || "");
 
     const purchases = adminData.purchases.filter(p => p.customerKey === customer.customerKey);
@@ -205,7 +207,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
       const billingAddress = adminData.addresses.find(a => a.addressKey === purchase.addressKey);
       const billingAddressInfo = (!billingAddress || lineItems.length === 0) ? null : (
         <div style={{display:"flex", backgroundColor: "#dfe", padding: "0.5rem", margin: "1.5rem", marginTop: 0, marginBottom:"0.5rem"}}>
-          <span style={{marginRight: "1rem"}}>Billing address: </span>
+          <span style={{marginRight: "1rem"}}>{getText("billingAddress", language)}:</span>
           <span style={{display: "flex", alignItems: "flex-end", marginRight: "0.5rem"}}>{billingAddress.firstName}</span>
           <span style={{display: "flex", alignItems: "flex-end", marginRight: "0.5rem"}}>{billingAddress.lastName}</span>
           <span style={{display: "flex", alignItems: "flex-end", marginRight: "0.5rem"}}>{billingAddress.postalCode}</span>
@@ -229,7 +231,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
               <span style={{width: "25rem"}}>{product.title || "-"}</span>
               <span style={{width: "10rem"}}>{li.quantity || "-"}</span>
               <span style={{width: "10rem"}}>{li.unitPrice || "-"}</span>
-              <span style={{width: "10rem"}}>{li.shippingStatus || "-"}</span>
+              <span style={{width: "10rem"}}>{getText(li.shippingStatus, language) || "-"}</span>
             </div>
             {itemShippingAddress}
           </>
@@ -245,7 +247,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
             <span style={buttonStyle} onClick={() => {togglePurchaseExpansion(purchase.purchaseKey || 0)}}>{lineItems.length} ⌄</span>
             <span style={{width: "20rem"}}>{purchase.paymentIntentId || "-"}</span>
             <span style={{width: "15rem"}}>{purchase.email || "-"}</span>
-            <span style={{width: "10rem"}}>{purchase.status || "-"}</span>
+            <span style={{width: "10rem"}}>{getText(purchase.status, language) || "-"}</span>
             <span style={{width: "10rem"}}>{formatDateToJapanTimezone(purchase.creationTime)}</span>
             <span style={{width: "10rem"}}>{formatDateToJapanTimezone(purchase.purchaseTime)}</span>
             <span style={{width: "10rem"}}>{formatDateToJapanTimezone(purchase.refundTime)}</span>
@@ -273,7 +275,7 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
           <span style={{width: "10rem"}}>{customer.lastName}</span>
           <span style={{width: "10rem"}}>{customer.firstNameKana}</span>
           <span style={{width: "10rem"}}>{customer.lastNameKana}</span>
-          <span style={{width:  "6rem"}}>{customer.gender}</span>
+          <span style={{width:  "6rem"}}>{getText(customer.gender, language)}</span>
           <span style={{width: "10rem"}}>{customer.birthday?.substring(0,10)}</span>
           <span style={{width: "20rem"}}>{customer.email}</span>
           <span style={{width:  "4rem", flexGrow: 1}}><input type="checkbox" checked={meaningfulPurchases > 0} disabled={true} /></span>
@@ -295,35 +297,35 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem", width: "60rem", alignItems: "center"}}>
         <span>Editing customer {currentCustomerKey}</span>
         <div style={rowStyle}>
-          <span style={spanStyle}>First Name:</span>
+          <span style={spanStyle}>{getText("firstName", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("firstName", event.target.value)}} value={currentCustomerData?.firstName || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Last Name:</span>
+          <span style={spanStyle}>{getText("lastName", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("lastName", event.target.value)}} value={currentCustomerData?.lastName || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>First Name Kana:</span>
+          <span style={spanStyle}>{getText("firstNameKana", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("firstNameKana", event.target.value)}} value={currentCustomerData?.firstNameKana || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Last Name Kana:</span>
+          <span style={spanStyle}>{getText("lastNameKana", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("lastNameKana", event.target.value)}} value={currentCustomerData?.lastNameKana || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Gender</span>
+          <span style={spanStyle}>{getText("gender", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("gender", event.target.value)}} value={currentCustomerData?.gender || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Birthday:</span>
+          <span style={spanStyle}>{getText("birthday", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("birthday", event.target.value)}} value={currentCustomerData?.birthday?.substring(0,10) || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Email:</span>
+          <span style={spanStyle}>{getText("email", language)}:</span>
           <input type="text" style={fieldStyle} onChange={(event) => {handleFieldChange("email", event.target.value)}} value={currentCustomerData?.email || ""} />
         </div>
-        <button onClick={() => {setDisplayEdit(false)}}>Cancel</button>
-        <button onClick={() => {handleCustomerUpdate()}}>Save</button>
+        <button onClick={() => {setDisplayEdit(false)}}>{getText("cancel", language)}</button>
+        <button onClick={() => {handleCustomerUpdate()}}>{getText("save", language)}</button>
       </div>
     </div>
   )
@@ -356,9 +358,9 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   const deleteModal = (
     <div style={{position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)"}}>
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem"}}>
-        <span>Are you sure you want to delete this customer?</span>
-        <button onClick={() => {setDisplayDelete(false)}}>Cancel</button>
-        <button onClick={() => {handleCustomerDelete()}}>Delete</button>
+        <span>{getText("confirmDeleteCustomer", language)}</span>
+        <button onClick={() => {setDisplayDelete(false)}}>{getText("cancel", language)}</button>
+        <button onClick={() => {handleCustomerDelete()}}>{getText("delete", language)}</button>
       </div>
     </div>
   )
@@ -378,8 +380,8 @@ export default function Customers({ adminData, loadAdminData }: CustomersProps) 
   return (
     <div>
       <div style={{display:"flex", flexDirection:"column", margin: "2rem"}}>
-        <h1>Customers</h1>
-        Search: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
+        <h1>{getText("customers", language)}</h1>
+        {getText("search", language)}: <input type="text" value={searchString} onChange={(event) => {setSearchString(event.target.value)}} />
         {customerList}
         {displayEdit ? editModal : null}
         {displayDelete ? deleteModal : null}

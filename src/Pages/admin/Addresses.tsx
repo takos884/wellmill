@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { AdminDataType } from "../../types";
 import CallAPI from "../../Utilities/CallAPI";
+import { LanguageType, getText } from "./translations";
 
 type AddressesProps = {
   adminData: AdminDataType | null;
   loadAdminData: () => void;
+  language: LanguageType;
 };
 
 type AddressFields = {
@@ -75,7 +77,7 @@ const prefectureNames = [
 ]
 
 
-export default function Addresses({ adminData, loadAdminData }: AddressesProps) {
+export default function Addresses({ adminData, loadAdminData, language }: AddressesProps) {
   const [token , setToken] = useState<string>("");
   const [currentAddressKey, setCurrentAddressKey] = useState<number | null>(null);
   const [currentAddressData, setCurrentAddressData] = useState<any | null>(null);
@@ -105,11 +107,11 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   }, [currentAddressKey]);
 
   const addresses = adminData?.addresses;
-  if (!addresses) return <span>Loading addresses...</span>;
+  if (!addresses) return <span>{getText("loadingAddresses", language)}</span>;
   const purchases = adminData?.purchases;
-  if (!purchases) return <span>Loading purchases...</span>;
+  if (!purchases) return <span>{getText("loadingPurchases", language)}</span>;
   const lineItems = adminData?.lineItems
-  if (!lineItems) return <span>Loading lineItems...</span>;
+  if (!lineItems) return <span>{getText("loadingLineItems", language)}</span>;
 
   const succeededAddressKeys = new Set<number>();
   purchases.forEach(purchase => {
@@ -144,16 +146,16 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
 
   const header = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width: "6rem"}}>Key</span>
-      <span style={{width: "6rem"}}>Customer</span>
-      <span style={{width: "10rem"}}>firstName</span>
-      <span style={{width: "10rem"}}>lastName</span>
-      <span style={{width: "6rem"}}>postalCode</span>
-      <span style={{width: "10rem"}}>pref</span>
-      <span style={{width: "10rem"}}>city</span>
-      <span style={{width: "10rem"}}>ward</span>
-      <span style={{width: "20rem"}}>address2</span>
-      <span style={{width: "10rem"}}>phoneNumber</span>
+      <span style={{width:  "6rem"}}>{getText("key", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("number", language)}</span>
+      <span style={{width: "10rem"}}>{getText("firstName", language)}</span>
+      <span style={{width: "10rem"}}>{getText("lastName", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("postalCode", language)}</span>
+      <span style={{width: "10rem"}}>{getText("pref", language)}</span>
+      <span style={{width: "10rem"}}>{getText("city", language)}</span>
+      <span style={{width: "10rem"}}>{getText("ward", language)}</span>
+      <span style={{width: "20rem"}}>{getText("address2", language)}</span>
+      <span style={{width: "10rem"}}>{getText("phoneNumber", language)}</span>
     </div>
   )
 
@@ -196,44 +198,44 @@ export default function Addresses({ adminData, loadAdminData }: AddressesProps) 
   const editModal = (
     <div style={{position: "fixed", top: "0", left: "0", width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: displayEdit ? "block" : "none"}}>
       <div style={{position: "fixed", top: "10%", left: "10%", width: "80%", backgroundColor: "#fff", padding: "2rem"}}>
-        <h2>Edit Address</h2>
-        <h3 style={spanStyle}>Address Key: {currentAddressData?.addressKey || "Unknown"}</h3>
-        <span style={{display:"flex", marginLeft: "1rem", paddingBottom:"1rem"}}>Customer - Key: {customer?.customerKey || "Unknown"} | {customer?.lastName || "Unknown last name"}, {customer?.firstName || "Unknown first name"}</span>
+        <h2>{getText("editAddress", language)}</h2>
+        <h3 style={spanStyle}>{getText("addressKey", language)}: {currentAddressData?.addressKey || "Unknown"}</h3>
+        <span style={{display:"flex", marginLeft: "1rem", paddingBottom:"1rem"}}>Customer - Key: {customer?.customerKey || "Unknown"} | {customer?.lastName || ""}, {customer?.firstName || ""}</span>
         <div style={rowStyle}>
-          <span style={spanStyle}>First Name:</span>
+          <span style={spanStyle}>{getText("firstName", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("firstName", event.target.value)}} value={currentAddressData?.firstName || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Last Name:</span>
+          <span style={spanStyle}>{getText("lastName", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("lastName", event.target.value)}} value={currentAddressData?.lastName || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Postal Code:</span>
+          <span style={spanStyle}>{getText("postalCode", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("postalCode", event.target.value)}} value={currentAddressData?.postalCode || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Prefecture:</span>
+          <span style={spanStyle}>{getText("pref", language)}:</span>
           {prefSelect}
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>City:</span>
+          <span style={spanStyle}>{getText("city", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("city", event.target.value)}} value={currentAddressData?.city || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Ward:</span>
+          <span style={spanStyle}>{getText("ward", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("ward", event.target.value)}} value={currentAddressData?.ward || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Address2:</span>
+          <span style={spanStyle}>{getText("building", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("address2", event.target.value)}} value={currentAddressData?.address2 || ""} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Phone Number:</span>
+          <span style={spanStyle}>{getText("phoneNumber", language)}:</span>
           <input style={fieldStyle} type="text" onChange={(event) => {handleFieldChange("phoneNumber", event.target.value)}} value={currentAddressData?.phoneNumber || ""} />
         </div>
         <div style={{display: "flex", justifyContent: "center", gap: "2rem"}}>
-          <button onClick={() => setDisplayEdit(false)}>Cancel</button>
-          <button onClick={() => handleAddressUpdate()}>Save</button>
+          <button onClick={() => setDisplayEdit(false)}>{getText("cancel", language)}</button>
+          <button onClick={() => handleAddressUpdate()}>{getText("save", language)}</button>
         </div>
       </div>
     </div>

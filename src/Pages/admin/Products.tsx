@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { AdminDataType } from "../../types";
 import CallAPI from "../../Utilities/CallAPI";
+import { LanguageType, getText } from "./translations";
 
 type ProductsProps = {
   adminData: AdminDataType | null;
   loadAdminData: () => void;
+  language: LanguageType;
 };
 
 type ProductFields = {
@@ -33,7 +35,7 @@ const emptyProduct: ProductFields = {
 
 type ProductFieldKey = keyof ProductFields;
 
-export default function Products({ adminData, loadAdminData }: ProductsProps) {
+export default function Products({ adminData, loadAdminData, language }: ProductsProps) {
   const [token , setToken] = useState("");
   const [currentProductKey, setCurrentProductKey] = useState<number | null>(null);
   const [currentProductData, setCurrentProductData] = useState<any | null>(null);
@@ -58,7 +60,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
   const products = adminData?.products;
   //console.log("adminData in Products.tsx");
   //console.log(adminData);
-  if (!products) return <span>Loading...</span>;
+  if (!products) return <span>{getText("loading", language)}</span>;
 
   const addProductButton = (
     <button onClick={() => {
@@ -66,21 +68,21 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
       setCurrentProductData(emptyProduct);
       setSaveEndpoint("adminProductCreate");
       setDisplayEdit(true);
-    }}>商品を追加</button>
+    }}>{getText("addProduct", language)}</button>
   );
 
   const header = (
     <div style={{display:"flex", padding: "0.5rem", backgroundColor:"#9cf"}}>
-      <span style={{width:  "4rem"}}>キー</span>
-      <span style={{width: "10rem"}}>ID</span>
-      <span style={{width: "20rem"}}>タイトル</span>
-      <span style={{width: "20rem"}}>説明</span>
-      <span style={{width:  "6rem"}}>利用可能</span>
-      <span style={{width:  "4rem"}}>表示順</span>
-      <span style={{width:  "6rem"}}>タイプ</span>
-      <span style={{width:  "6rem"}}>価格</span>
-      <span style={{width:  "6rem"}}>税率</span>
-      <span style={{width:  "6rem"}}>割引率</span>
+      <span style={{width:  "4rem"}}>{getText("key", language)}</span>
+      <span style={{width: "10rem"}}>{getText("id", language)}</span>
+      <span style={{width: "20rem"}}>{getText("title", language)}</span>
+      <span style={{width: "20rem"}}>{getText("description", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("available", language)}</span>
+      <span style={{width:  "4rem"}}>{getText("productOrder", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("type", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("price", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("taxRate", language)}</span>
+      <span style={{width:  "6rem"}}>{getText("discount", language)}</span>
     </div>
   );
 
@@ -93,7 +95,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
         <span style={{width: "10rem"}}>{product.id}</span>
         <span style={{width: "20rem"}}>{product.title}</span>
         <span style={{width: "20rem", maxHeight: "15rem", overflow: "hidden"}}>{product.description}</span>
-        <span style={{width:  "6rem"}}>{product.available ? "✅" : "❌"}</span>
+        <span style={{width:  "6rem", textAlign: "center"}}>{product.available ? "✅" : "❌"}</span>
         <span style={{width:  "4rem"}}>{product.productOrder}</span>
         <span style={{width:  "6rem"}}>{product.type}</span>
         <span style={{width:  "6rem"}}>{product.price}</span>
@@ -121,47 +123,47 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
   const editModal = (
     <div style={{position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)"}}>
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem", width: "60rem", alignItems: "center"}}>
-        <h2>Edit Product</h2>
+        <h2>{getText("editProduct", language)}</h2>
         <div style={rowStyle}>
-          <span style={spanStyle}>製品タイトル:</span>
+          <span style={spanStyle}>{getText("title", language)}:</span>
           <input style={textFieldStyle} type="text" onChange={(event) => {handleFieldChange("title", event.target.value)}} value={currentProductData?.title} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>製品説明:</span>
+          <span style={spanStyle}>{getText("description", language)}:</span>
           <textarea style={{width: "40rem", height: "10rem"}} onChange={(event) => {handleFieldChange("description", event.target.value)}} value={currentProductData?.description} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>Shopに展示する:</span>
+          <span style={spanStyle}>{getText("available", language)}:</span>
           <input style={checkboxStyle} type="checkbox" onChange={(event) => {handleFieldChange("available", event.target.value)}} checked={currentProductData?.available} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>表示順:</span>
+          <span style={spanStyle}>{getText("productOrder", language)}:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("productOrder", event.target.value)}} value={currentProductData?.productOrder} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>価格（割引後）:</span>
+          <span style={spanStyle}>{getText("price", language)}:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("price", event.target.value)}} value={currentProductData?.price} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>税率:</span>
+          <span style={spanStyle}>{getText("taxRate", language)}:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("taxRate", event.target.value)}} value={currentProductData?.taxRate} />*
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>種類:</span>
+          <span style={spanStyle}>{getText("type", language)}:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("type", event.target.value)}} value={currentProductData?.type} />
         </div>
         <div style={rowStyle}>
-          <span style={spanStyle}>割引率:</span>
+          <span style={spanStyle}>{getText("discount", language)}:</span>
           <input style={numberFieldStyle} type="number" onChange={(event) => {handleFieldChange("discountRate", event.target.value)}} value={currentProductData?.discountRate} />*
         </div>
         <span>* 0.05 = 5% | 0.1 = 10% | 0.35 = 35% </span>
         <button onClick={() => {
           handleProductUpdate();
-        }}>保存</button>
+        }}>{getText("save", language)}</button>
         <button onClick={() => {
           setCurrentProductKey(null);
           setDisplayEdit(false);
-        }}>キャンセル</button>
+        }}>{getText("cancel", language)}</button>
       </div>
     </div>
   );
@@ -169,15 +171,15 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
   const deleteModal = (
     <div style={{position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)"}}>
       <div style={{display: "flex", flexDirection: "column", backgroundColor: "#fff", padding: "2rem", width: "40rem", alignItems: "center"}}>
-        <h2>製品を削除</h2>
-        <span>この製品を削除してもよろしいですか?</span>
+        <h2>{getText("deleteProduct", language)}</h2>
+        <span>{getText("confirmDeleteProduct", language)}</span>
         <button onClick={() => {
           handleProductDelete();
-        }}>はい</button>
+        }}>{getText("delete", language)}</button>
         <button onClick={() => {
           setCurrentProductKey(null);
           setDisplayDelete(false);
-        }}>いいえ</button>
+        }}>{getText("cancel", language)}</button>
       </div>
     </div>
   );
@@ -224,7 +226,7 @@ export default function Products({ adminData, loadAdminData }: ProductsProps) {
       {displayEdit ? editModal : null}
       {displayDelete ? deleteModal : null}
       <div>
-        <h1>Products</h1>
+        <h1>{getText("products", language)}</h1>
         {addProductButton}
         {header}
         {productList}

@@ -7,6 +7,7 @@ import Images from "./Images";
 import Coupons from "./Coupons";
 import Products from "./Products";
 import Login from "./Login";
+import { LanguageType, getText } from "./translations";
 
 const registeredEmails = [
   "aya.sakamoto@reprocell.com",
@@ -18,6 +19,7 @@ const registeredEmails = [
 export default function Admin() {
   const [adminData, setAdminData] = useState<AdminDataType | null>(null);
   const [currentScreen, setCurrentScreen] = useState<string>("");
+  const [language, setLanguage] = useState<LanguageType>("jp"); // en or jp
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -101,9 +103,9 @@ export default function Admin() {
   const numRegisteredCustomers = registeredCustomers.length;
   const dashboard = (
     <div style={{margin: "2rem"}}>
-      <h1>Admin</h1>
-      <span style={{display: "flex"}}>Number of guests: {numGuests}</span>
-      <span style={{display: "flex"}}>Number of registered customers: {numRegisteredCustomers}</span>
+      <h1>{getText("admin", language)}</h1>
+      <span style={{display: "flex"}}>{getText("totalCustomers", language)}: {numRegisteredCustomers}</span>
+      <span style={{display: "flex"}}>{getText("numberOfGuests", language)}: {numGuests}</span>
     </div>
   )
 
@@ -114,19 +116,19 @@ export default function Admin() {
       currentElement = dashboard
       break;
     case "Customers":
-      currentElement = <Customers adminData={adminData} loadAdminData={loadAdminData} />
+      currentElement = <Customers adminData={adminData} loadAdminData={loadAdminData} language={language} />
       break;
     case "Addresses":
-      currentElement = <Addresses adminData={adminData} loadAdminData={loadAdminData} />
+      currentElement = <Addresses adminData={adminData} loadAdminData={loadAdminData} language={language} />
       break;
     case "Products":
-      currentElement = <Products adminData={adminData} loadAdminData={loadAdminData} />
+      currentElement = <Products adminData={adminData} loadAdminData={loadAdminData} language={language} />
       break;
     case "Images":
-      currentElement = <Images adminData={adminData} loadAdminData={loadAdminData} />
+      currentElement = <Images adminData={adminData} loadAdminData={loadAdminData} language={language} />
       break;
     case "Coupons":
-      currentElement = <Coupons adminData={adminData} loadAdminData={loadAdminData} />
+      currentElement = <Coupons adminData={adminData} loadAdminData={loadAdminData} language={language} />
       break;
     default:
       currentElement = dashboard;
@@ -138,16 +140,21 @@ export default function Admin() {
 
   return (
     <div style={{position: "absolute", top: 0, bottom: 0, display: "flex", flexDirection:"row", justifyContent: "flex-start", width:"100%"}}>
-      <div style={{display: "flex", flexDirection:"column", width: "10rem", padding:"2rem", backgroundColor:"#eee", fontSize: "1.5rem"}}>
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Dashboard")}}>Dashboard</span>
-        <hr style={{width: "8rem"}} />
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Customers")}}>Customers</span>
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Addresses")}}> › Addresses</span>
-        <hr style={{width: "8rem"}} />
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Products")}}>Products</span>
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Images")}}> › Images</span>
-        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Coupons")}}> › Coupons</span>
-        <hr style={{width: "8rem"}} />
+      <div style={{display: "flex", flexDirection:"column", width: "14rem", padding:"2rem", backgroundColor:"#eee", fontSize: "1.5rem"}}>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Dashboard")}}>{getText("dashboard", language)}</span>
+        <hr style={{width: "12rem"}} />
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Customers")}}>{getText("customers", language)}</span>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Addresses")}}> › {getText("addresses", language)}</span>
+        <hr style={{width: "12rem"}} />
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Products")}}>{getText("products", language)}</span>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Images")}}> › {getText("images", language)}</span>
+        <span style={{color: "#369"}} onClick={() => {setCurrentScreen("Coupons")}}> › {getText("coupons", language)}</span>
+        <hr style={{width: "12rem"}} />
+        <select value={language} onChange={(e) => setLanguage(e.target.value as LanguageType)}>
+          <option value="jp">日本語 ▼</option>
+          <option value="en">English ▼</option>
+        </select>
+        <hr style={{width: "12rem"}} />
         <span style={{fontFamily: "mono", fontSize: "0.6rem"}}>{email}</span><br/><span style={{ width: "1rem", height: "1rem", border: "1px solid #800", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "0.25rem", background: "rgba(255,128,128,0.5)", fontSize: "0.8rem", }} onClick={handleLogout}>X</span>
       </div>
       <div style={{height: "100%", overflowY: "auto", width: "100%"}}>

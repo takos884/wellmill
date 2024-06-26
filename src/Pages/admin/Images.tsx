@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { AdminDataType, Product } from "../../types";
 import CallAPI from "../../Utilities/CallAPI";
+import { LanguageType, getText } from "./translations";
 
 type ImagesProps = {
   adminData: AdminDataType | null;
   loadAdminData: () => void;
+  language: LanguageType;
 };
 
 type ImageFields = {
@@ -19,32 +21,32 @@ const host = window.location.hostname;
 const subdomain = host.split('.')[0];
 const token = window.location.search ? new URLSearchParams(window.location.search).get('token') || "" : localStorage.getItem('token') || "";
 
-export default function Images({ adminData, loadAdminData }: ImagesProps) {
+export default function Images({ adminData, loadAdminData, language }: ImagesProps) {
   const [showAddImage, setShowAddImage] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [altText, setAltText] = useState<string>("");
 
   const images = adminData?.images;
-  if (!images) return <span>Loading images...</span>;
+  if (!images) return <span>{getText("loadingImages", language)}</span>;
   const products = adminData?.products;
-  if (!products) return <span>Loading products...</span>;
+  if (!products) return <span>{getText("loadingProducts", language)}</span>;
 
   const productKeys = new Set(products.map((product: Product) => product.productKey));
   const unassociatedImages = images.filter((image: ImageFields) => (!image.productKey || !productKeys.has(image.productKey)));
 
   //#region Add image
   const addImageButton = (
-    <button onClick={() => setShowAddImage(true)}>Add Image</button>
+    <button onClick={() => setShowAddImage(true)}>{getText("addImage", language)}</button>
   )
 
   const addImageModal = (
     <div style={{position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.5)", zIndex: 100}}>
       <div style={{display:"flex", flexDirection:"column", position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", backgroundColor: "#fff", padding: "1rem", borderRadius: "0.5rem"}}>
-        <h3>Add Image</h3>
+        <h3>{getText("addImage", language)}</h3>
         <input type="file" onChange={handleFileChange} accept="image/*" />
-        <input type="text" onChange={handleAltTextChange} value={altText} placeholder="Alt text" />
-        <button onClick={uploadImage}>Upload</button>
-        <button onClick={() => setShowAddImage(false)}>Close</button>
+        <input type="text" onChange={handleAltTextChange} value={altText} placeholder={getText("imageDescription", language)} />
+        <button onClick={uploadImage}>{getText("upload", language)}</button>
+        <button onClick={() => setShowAddImage(false)}>{getText("cancel", language)}</button>
       </div>
     </div>
   )
@@ -61,12 +63,12 @@ export default function Images({ adminData, loadAdminData }: ImagesProps) {
 
   async function uploadImage() {
     if (!selectedFile) {
-      alert("Please select a file to upload.");
+      alert(getText("selectUploadFile", language));
       return;
     }
 
     if (selectedFile.size > 25 * 1024 * 1024) { // 25MB limit
-      alert("File size exceeds the 25MB limit.");
+      alert(getText("fileTooLarge", language));
       return;
     }
 
@@ -98,7 +100,7 @@ export default function Images({ adminData, loadAdminData }: ImagesProps) {
   const unassociatedImageRows = unassociatedImages.map((image: ImageFields) => {
     const productSelect = (
       <select onChange={(event) => handleProductSelectChange(event, image.imageKey)}>
-        <option value="0">Select product</option>
+        <option value="0">{getText("selectProduct", language)}</option>
         {products.map((product: Product) => {
           return (
             <option key={product.productKey} value={product.productKey}>{product.title}</option>
@@ -122,7 +124,7 @@ export default function Images({ adminData, loadAdminData }: ImagesProps) {
     const product = products.find((product: Product) => product.productKey === productKey);
     if(!product) return;
 
-    if (!window.confirm(`Assign image to product ${product.title}?`)) return;
+    if (!window.confirm(`${getText("assignImageConfirm", language)}: ${product.title}?`)) return;
 
     const requestData = {imageKey: imageKey, productKey: productKey, token: token};
     CallAPI(requestData, "adminImageUpdate");
@@ -156,7 +158,7 @@ export default function Images({ adminData, loadAdminData }: ImagesProps) {
     return (
       <div key={product.productKey} style={{display:"flex", flexDirection:"column", padding: "0.5rem", backgroundColor: productRowColor, borderRadius: "0.5rem", margin:"1rem"}}>
         <span>{product.title} ({product.productKey})</span>
-        <span>Images</span>
+        <span>{getText("images", language)}</span>
         {imageRows}
       </div>
     )
@@ -178,7 +180,7 @@ export default function Images({ adminData, loadAdminData }: ImagesProps) {
   return (
     <>
       <h2>
-        Images
+        {getText("images", language)}
       </h2>
       {showAddImage ? addImageModal : null}
       {addImageButton}
