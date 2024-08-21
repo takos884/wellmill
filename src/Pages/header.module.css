@@ -6,10 +6,9 @@
   border-radius: 0.75rem;
   overflow: hidden;
   height: 4.5rem;
-  background-color: #fba800;
-  margin-top: 3rem;
-  width: 98%;
-  max-width: 76rem;
+  background-color: white;
+  margin-top: 0rem;
+  width: 100%;
   z-index: 10;
 }
 
@@ -55,7 +54,7 @@
   flex-grow: 1;
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: flex-end;
 }
 @media screen and (max-width: 992px) {
   .navItems {
@@ -66,9 +65,10 @@
 
 
 .navItem {
-  color: #fff;
-  font-size: 1rem;
-  font-weight: bold;
+  color: #af3e92;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-left: 20px;
 }
 
 @media screen and (max-width: 992px) {
@@ -84,12 +84,26 @@ div.loginButton {
 }
 
 div.loginButtonGlow {
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.5) 100%);
+  background: linear-gradient(to bottom right, #fff0 70%, #ffffff80);
+  color: white;
+  background: orange;
+  border-radius: 20px;
+  padding: 8px 20px;
+}
+
+div.contactHeader {
+  background: #20AEE5;
+  padding: 8px 20px;
+  border-radius: 20px;
+  color: white;
 }
 
 .cart {
+  margin-top: .2rem;
   position: relative;
-  margin-top: 0.2rem;
+  background: #af3e92;
+  color: white;
+  padding: 10px;
 }
 
 img.cart {
