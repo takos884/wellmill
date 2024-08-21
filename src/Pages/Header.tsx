@@ -73,7 +73,7 @@ function Header({ breadcrumbs, onHomeClick }: HeaderProps) {
                 <div className={styles.navItems}>
                     <div className={styles.navItem}><Link to="/remote-examination">リモート検査とは？</Link></div>
                     <div className={styles.navItem} style={{fontSize: "1.2rem"}}><Link to="/shop">SHOP</Link></div>
-                    <div className={styles.navItem}><Link to="/contact">お問い合わせ</Link></div>
+                    <div className={`${styles.navItem} contactHeader`}><Link to="/contact">お問い合わせ</Link></div>
                     {headerButton}
                     <div className={`${styles.navItem} ${styles.cart}`}>
                         <Link to="/cart"><img className={styles.cart} src="/cart.png" alt="Cart" />{cartDot}</Link>
