@@ -17,7 +17,7 @@ function Footer() {
                     <img className={styles.footerImg} src="/logo.svg" alt="Logo" />
                     <span>ウェルミルは、いつでもどこでも簡単に、体内のホルモンやタンパク質の量を測定できる検査サービスです。</span>
                 </div>
-                <span className={styles.footerLink}><Link to="/remote-examination">リモート検査とは？</Link></span>
+                <span className={styles.footerLink}><Link to="/remote-examination">リモート検査とは</Link></span>
                 <span className={styles.footerLink}><Link to="/shop">SHOP</Link></span>
                 <span className={styles.footerLink}><Link to="/contact">お問い合わせ</Link></span>
                 <span className={styles.footerLink}>{userLink}</span>
