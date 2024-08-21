@@ -23,12 +23,12 @@ function Footer() {
                 <span className={styles.footerLink}>{userLink}</span>
             </div>
             <div className={styles.smallPrint}>
-                <span className={styles.smallPrint}>利用規約</span>|
-                <span className={styles.smallPrint}>プライバシーポリシー</span>|
-                <span className={styles.smallPrint}>研究利用</span>|
-                <span className={styles.smallPrint}>特定商取引に基く表示</span>|
-                <span className={styles.smallPrint}>重要事項説明について</span>|
-                <span className={styles.smallPrint}>運営会社</span>
+                <a href="https://well-mill.com/terms-of-use/"></><span className={styles.smallPrint}>利用規約</span></a>|
+                <a href="https://well-mill.com/privacy-policy-2/"><span className={styles.smallPrint}>プライバシーポリシー</span></a>|
+                <a href="https://well-mill.com/research/"><span className={styles.smallPrint}>研究利用</span></a>|
+                <a href="https://well-mill.com/law/"><span className={styles.smallPrint}>特定商取引に基く表示</span></a>|
+                <a href="https://well-mill.com/important-matters/"><span className={styles.smallPrint}>重要事項説明について</span></a>|
+                <a href="https://reprocell.co.jp/"><span className={styles.smallPrint}>運営会社</span></a>
             </div>
             <div className={styles.footerBlock}>Copyright © WELLMILL. All Rights Reserved.</div>
         </>
